@@ -34,6 +34,10 @@ return [
             'driver' => 'stack',
             'channels' => ['single'],
         ],
+        'deprecations' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/php-deprecation-warnings.log'),
+        ],
         'single' => [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),
