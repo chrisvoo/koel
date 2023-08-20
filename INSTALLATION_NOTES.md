@@ -24,6 +24,15 @@ You can also use [GitHub Actions](https://docs.github.com/en/actions).
 * Store an entry for your duckdns domain in the /etc/hosts file, no need to pass through the Internet
 when you'll using it locally
 
+## TODO
+
+* [ ] Remove AWS integration
+* [ ] Remove Remote controller
+* [ ] Remove upload feature
+* [ ] Introduce roles
+  * [ ] Allow to download files (cannot override global permissions in env)
+  * [ ] Allow to delete files (cannot override global permissions in env)
+
 ## Notes for Alexa integration
 
 * [Caching in Lambda](https://www.sebastianhesse.de/2018/12/16/caching-in-aws-lambda/). Alternatively
