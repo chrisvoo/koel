@@ -58,7 +58,7 @@ class Http {
     this.client.interceptors.response.use(response => {
       Http.hideProgressBar()
 
-      // …get the token from the header or response data if exists, and save it.
+      // …get the tokens from the header or response data if exist, and save them.
       const token = response.headers.authorization || response.data.token
       token && authService.setApiToken(token)
 
@@ -72,7 +72,7 @@ class Http {
       // Also, if we receive a Bad Request / Unauthorized error
       if (error.response?.status === 400 || error.response?.status === 401) {
         // and we're not trying to log in
-        if (!(error.config.method === 'post' && /\/api\/me\/?$/.test(error.config.url))) {
+        if (!(error.config.method === 'post' && error.config.url === 'me')) {
           // the token must have expired. Log out.
           eventBus.emit('LOG_OUT')
         }
