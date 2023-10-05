@@ -19,7 +19,7 @@ You can also use [GitHub Actions](https://docs.github.com/en/actions).
 * `sudo apt-get -y install inotify-tools` for automatically sync modifications of the file system with your database.
   See [the guide on Koel doc site](https://docs.koel.dev/watch.html#_2-set-up-a-watcher-script). Alternatively a
   [cronjob](https://docs.koel.dev/#music-discovery) to sync your files by night (slower)
-* [DuckDNS](https://www.duckdns.org/): DNS binding between a chosen subdomain and your local IP
+* ~~[DuckDNS](https://www.duckdns.org/): DNS binding between a chosen subdomain and your local IP~~ Currently using [No-IP](https://www.noip.com/).
 * Port forwarding of ports 80/443
 * Store an entry for your duckdns domain in the /etc/hosts file, no need to pass through the Internet
 when you'll using it locally
@@ -29,6 +29,7 @@ when you'll using it locally
 * [ ] Remove AWS integration
 * [ ] Remove Remote controller
 * [ ] Remove upload feature
+* [ ] Make .gitignore in the project's root not downloadable
 * [ ] Introduce roles
   * [ ] Allow to download files (cannot override global permissions in env)
   * [ ] Allow to delete files (cannot override global permissions in env)

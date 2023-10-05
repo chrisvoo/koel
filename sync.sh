@@ -1,6 +1,5 @@
-MEDIA_PATH=/media/christian/Data/Music/
-PHP_BIN=/usr/bin/php
+MEDIA_PATH=/media/christian/Data/Music
 
 inotifywait -rme move,close_write,delete --format "%e %w%f" $MEDIA_PATH | while read file; do
-  $PHP_BIN artisan koel:sync "${file}"
+  php /var/www/koel/artisan koel:sync "${file}"
 done
