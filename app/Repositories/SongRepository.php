@@ -125,12 +125,6 @@ class SongRepository extends Repository
     }
 
     /** @return Collection|array<array-key, Song> */
-    public function getFavorites(?User $scopedUser = null): Collection
-    {
-        return Song::query()->withMeta($scopedUser ?? $this->auth->user())->where('interactions.liked', true)->get();
-    }
-
-    /** @return Collection|array<array-key, Song> */
     public function getByAlbum(Album $album, ?User $scopedUser = null): Collection
     {
         return Song::query()

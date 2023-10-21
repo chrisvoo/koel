@@ -23,7 +23,6 @@ class SongTest extends TestCase
         'album_artist_name',
         'album_cover',
         'length',
-        'liked',
         'play_count',
         'track',
         'genre',

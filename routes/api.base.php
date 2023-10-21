@@ -13,14 +13,11 @@ use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\DataController;
 use App\Http\Controllers\API\DemoCreditController;
 use App\Http\Controllers\API\ExcerptSearchController;
-use App\Http\Controllers\API\FavoriteSongController;
 use App\Http\Controllers\API\FetchAlbumInformationController;
 use App\Http\Controllers\API\FetchArtistInformationController;
 use App\Http\Controllers\API\FetchRandomSongsInGenreController;
 use App\Http\Controllers\API\GenreController;
 use App\Http\Controllers\API\GenreSongController;
-use App\Http\Controllers\API\Interaction\BatchLikeController;
-use App\Http\Controllers\API\Interaction\LikeController;
 use App\Http\Controllers\API\Interaction\PlayCountController;
 use App\Http\Controllers\API\LastfmController;
 use App\Http\Controllers\API\ObjectStorage\S3\SongController as S3SongController;
@@ -96,12 +93,7 @@ Route::prefix('api')->middleware('api')->group(static function (): void {
 
         // Interaction routes
         Route::post('interaction/play', [PlayCountController::class, 'store']);
-        Route::post('interaction/like', [LikeController::class, 'store']);
-        Route::post('interaction/batch/like', [BatchLikeController::class, 'store']);
-        Route::post('interaction/batch/unlike', [BatchLikeController::class, 'destroy']);
-
         Route::get('songs/recently-played', [RecentlyPlayedSongController::class, 'index']);
-        Route::get('songs/favorite', [FavoriteSongController::class, 'index']);
 
         Route::apiResource('playlist-folders', PlaylistFolderController::class);
         Route::apiResource('playlist-folders.playlists', PlaylistFolderPlaylistController::class)->except('destroy');

@@ -29,7 +29,7 @@ new class extends UnitTestCase {
 
       this.renderComponent()
 
-      ;['Favorites', 'Recently Played', 'Foo Playlist', 'Bar Playlist', 'Smart Playlist'].forEach(text => {
+      ;['Recently Played', 'Foo Playlist', 'Bar Playlist', 'Smart Playlist'].forEach(text => {
         screen.getByText(text)
       })
     })

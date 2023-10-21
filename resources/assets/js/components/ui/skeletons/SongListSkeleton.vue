@@ -16,7 +16,6 @@
       <span class="time">
         <span class="text" />
       </span>
-      <span class="favorite" />
     </div>
     <div v-for="i in 40" :key="i" class="song-item">
       <span class="track-number">
@@ -33,9 +32,6 @@
         <span class="text pulse" />
       </span>
       <span class="time">
-        <span class="text pulse" />
-      </span>
-      <span class="favorite">
         <span class="text pulse" />
       </span>
     </div>
@@ -102,10 +98,6 @@
 
   .time {
     flex-basis: 96px;
-  }
-
-  .favorite {
-    flex-basis: 36px;
   }
 
   @media screen and (max-width: 768px) {

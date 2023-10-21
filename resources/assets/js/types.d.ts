@@ -145,7 +145,6 @@ interface Song {
   preloaded?: boolean
   playback_state?: PlaybackState
   play_count: number
-  liked: boolean
   play_start_time?: number
   fmt_length?: string
   created_at: string
@@ -188,11 +187,6 @@ interface SerializedSmartPlaylistRule {
 
 type SmartPlaylistInputTypes = Record<SmartPlaylistModel['type'], SmartPlaylistOperator[]>
 
-type FavoriteList = {
-  name: 'Favorites'
-  songs: Song[]
-}
-
 type RecentlyPlayedList = {
   name: 'Recently Played'
   songs: Song[]
@@ -214,7 +208,7 @@ interface Playlist {
   rules: SmartPlaylistRuleGroup[]
 }
 
-type PlaylistLike = Playlist | FavoriteList | RecentlyPlayedList
+type PlaylistLike = Playlist | RecentlyPlayedList
 
 interface YouTubeVideo {
   readonly id: {
@@ -256,7 +250,6 @@ interface Interaction {
   type: 'interactions'
   readonly id: number
   readonly song_id: Song['id']
-  liked: boolean
   play_count: number
 }
 
@@ -296,7 +289,6 @@ declare type ScreenName =
   | 'Songs'
   | 'Albums'
   | 'Artists'
-  | 'Favorites'
   | 'RecentlyPlayed'
   | 'Settings'
   | 'Users'
@@ -318,7 +310,6 @@ declare type ArtistAlbumCardLayout = 'full' | 'compact'
 
 interface AddToMenuConfig {
   queue: boolean
-  favorites: boolean
 }
 
 interface SongListControlsConfig {

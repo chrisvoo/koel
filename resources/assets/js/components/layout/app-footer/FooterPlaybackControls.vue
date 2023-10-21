@@ -1,8 +1,7 @@
 <template>
   <div class="playback-controls" data-testid="footer-middle-pane">
     <div class="buttons">
-      <LikeButton v-if="song" :song="song" class="like-btn" />
-      <button v-else type="button" /> <!-- a placeholder to maintain the flex layout -->
+      <button type="button" /> <!-- a placeholder to maintain the flex layout -->
 
       <button type="button" title="Play previous song" @click.prevent="playPrev">
         <icon :icon="faStepBackward" />
@@ -27,7 +26,6 @@ import { requireInjection } from '@/utils'
 import { CurrentSongKey } from '@/symbols'
 
 import RepeatModeSwitch from '@/components/ui/RepeatModeSwitch.vue'
-import LikeButton from '@/components/song/SongLikeButton.vue'
 import PlayButton from '@/components/ui/FooterPlayButton.vue'
 
 const song = requireInjection(CurrentSongKey, ref())
@@ -72,7 +70,7 @@ const playNext = async () => await playbackService.playNext()
       color: var(--color-text-primary);
     }
 
-    &.like-btn, &.repeat-mode-btn {
+    &.repeat-mode-btn {
       font-size: 1rem;
     }
   }

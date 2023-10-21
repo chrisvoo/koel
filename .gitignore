@@ -3,6 +3,7 @@ node_modules
 Homestead.yaml
 Homestead.json
 .env
+.env.dev
 .idea
 /_ide_helper.php
 /config.testing
@@ -82,7 +83,8 @@ cypress/downloads/
 coverage.xml
 .phpunit.result.cache
 log.json
-
+phpunit.xml
+phpstan.neon
 .php_cs.cache
 
 demo-credits.json

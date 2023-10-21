@@ -24,7 +24,6 @@ class PlayCountTest extends TestCase
                 'type',
                 'id',
                 'song_id',
-                'liked',
                 'play_count',
             ]);
 
@@ -47,7 +46,6 @@ class PlayCountTest extends TestCase
                 'type',
                 'id',
                 'song_id',
-                'liked',
                 'play_count',
             ]);
 

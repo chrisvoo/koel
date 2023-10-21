@@ -1,5 +1,5 @@
 import { playbackService, socketService, volumeManager } from '@/services'
-import { favoriteStore, queueStore } from '@/stores'
+import { queueStore } from '@/stores'
 
 export const socketListener = {
   listen: () => {
@@ -15,6 +15,5 @@ export const socketListener = {
       })
       .listen('SOCKET_GET_CURRENT_SONG', () => socketService.broadcast('SOCKET_SONG', queueStore.current))
       .listen('SOCKET_SET_VOLUME', (volume: number) => volumeManager.set(volume))
-      .listen('SOCKET_TOGGLE_FAVORITE', () => queueStore.current && favoriteStore.toggleOne(queueStore.current))
   }
 }

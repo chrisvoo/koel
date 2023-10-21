@@ -77,14 +77,14 @@
     ],
     "post-install-cmd": [
       "@php artisan clear-compiled",
-      "sudo -u www-data @php artisan cache:clear",
+      "@php artisan cache:clear",
       "@php -r \"if (!file_exists('.env')) copy('.env.example', '.env');\""
     ],
     "pre-update-cmd": [
       "@php artisan clear-compiled"
     ],
     "post-update-cmd": [
-      "sudo -u www-data @php artisan cache:clear"
+      "@php artisan cache:clear"
     ],
     "post-root-package-install": [
       "@php -r \"copy('.env.example', '.env');\""

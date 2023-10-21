@@ -1,4 +1,3 @@
-import { favoriteStore } from '@/stores'
 import factory from '@/__tests__/factory'
 import { expect, it } from 'vitest'
 import UnitTestCase from '@/__tests__/UnitTestCase'
@@ -35,16 +34,5 @@ new class extends UnitTestCase {
 
       expect(mock).toHaveBeenCalledWith('playlist/42')
     })
-
-    it.each<[Song[], boolean]>([[[], false], [factory<Song>('song', 5), true]])(
-      'downloads favorites if available',
-      (songs, triggered) => {
-        const mock = this.mock(downloadService, 'trigger')
-        favoriteStore.state.songs = songs
-
-        downloadService.fromFavorites()
-
-        triggered ? expect(mock).toHaveBeenCalledWith('favorites') : expect(mock).not.toHaveBeenCalled()
-      })
   }
 }

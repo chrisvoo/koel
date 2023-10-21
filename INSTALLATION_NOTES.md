@@ -21,18 +21,22 @@ You can also use [GitHub Actions](https://docs.github.com/en/actions).
   [cronjob](https://docs.koel.dev/#music-discovery) to sync your files by night (slower)
 * ~~[DuckDNS](https://www.duckdns.org/): DNS binding between a chosen subdomain and your local IP~~ Currently using [No-IP](https://www.noip.com/).
 * Port forwarding of ports 80/443
-* Store an entry for your duckdns domain in the /etc/hosts file, no need to pass through the Internet
+* Store an entry for your domain in the /etc/hosts file, no need to pass through the Internet
 when you'll using it locally
 
-## TODO
+## Commands
 
-* [ ] Remove AWS integration
-* [ ] Remove Remote controller
-* [ ] Remove upload feature
-* [ ] Make .gitignore in the project's root not downloadable
-* [ ] Introduce roles
-  * [ ] Allow to download files (cannot override global permissions in env)
-  * [ ] Allow to delete files (cannot override global permissions in env)
+* `php artisan koel:sync`: manual sync of the music directory
+
+```bash
+# Manual sync watch with inotify
+
+chmod +x watch
+./watch
+# [Ctrl+z]
+bg
+disown -h
+```
 
 ## Notes for Alexa integration
 

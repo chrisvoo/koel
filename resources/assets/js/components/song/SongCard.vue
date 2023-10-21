@@ -16,7 +16,6 @@
           - {{ pluralize(song.play_count, 'play') }}
         </p>
       </div>
-      <LikeButton :song="song" />
     </main>
   </article>
 </template>
@@ -29,7 +28,6 @@ import { playbackService } from '@/services'
 import { useDraggable } from '@/composables'
 
 import SongThumbnail from '@/components/song/SongThumbnail.vue'
-import LikeButton from '@/components/song/SongLikeButton.vue'
 
 const props = defineProps<{ song: Song }>()
 const { song } = toRefs(props)

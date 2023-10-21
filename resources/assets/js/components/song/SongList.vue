@@ -61,8 +61,13 @@
           <icon v-if="sortField === 'length' && sortOrder === 'desc'" :icon="faCaretUp" class="text-highlight" />
         </template>
       </span>
-      <span class="extra">
-        <SongListSorter v-if="config.sortable" :field="sortField" :order="sortOrder" @sort="sort" />
+      <span
+        class="play-count"
+        data-testid="header-play_count"
+        role="button"
+        title="How many times the song was played"
+      >
+        Played
       </span>
     </div>
 
@@ -360,7 +365,7 @@ onMounted(() => render())
     white-space: nowrap;
 
     &.time {
-      flex-basis: 64px;
+      flex-basis: 69px;
       overflow: visible;
     }
 
@@ -370,11 +375,7 @@ onMounted(() => render())
     }
 
     &.album {
-      flex-basis: 27%;
-    }
-
-    &.extra {
-      flex-basis: 36px;
+      flex-basis: 30%;
     }
 
     &.play {
@@ -389,8 +390,8 @@ onMounted(() => render())
       flex: 1;
     }
 
-    &.extra {
-      text-align: center;
+    &.play-count {
+      flex-basis: 86px;
     }
   }
 
@@ -399,11 +400,6 @@ onMounted(() => render())
     letter-spacing: 1px;
     text-transform: uppercase;
     cursor: pointer;
-
-    .extra {
-      padding-left: 0;
-      padding-right: 0;
-    }
   }
 
   .unsortable span {
@@ -452,8 +448,8 @@ onMounted(() => render())
       width: 200%;
     }
 
-    .song-item :is(.track-number, .album, .time),
-    .song-list-header :is(.track-number, .album, .time) {
+    .song-item :is(.track-number, .album),
+    .song-list-header :is(.track-number, .album) {
       display: none;
     }
 
@@ -464,6 +460,14 @@ onMounted(() => render())
       &.thumbnail {
         display: block;
         padding-right: 12px;
+      }
+
+      &.time {
+        padding-left: 50px;
+      }
+
+      &.play-count {
+        padding-left: 50px;
       }
     }
   }

@@ -9,7 +9,7 @@
 import { faPause, faPlay } from '@fortawesome/free-solid-svg-icons'
 import { computed, ref } from 'vue'
 import { playbackService } from '@/services'
-import { commonStore, favoriteStore, queueStore, recentlyPlayedStore, songStore } from '@/stores'
+import { commonStore, queueStore, recentlyPlayedStore, songStore } from '@/stores'
 import { requireInjection } from '@/utils'
 import { useRouter } from '@/composables'
 import { CurrentSongKey } from '@/symbols'
@@ -36,9 +36,6 @@ const initiatePlayback = async () => {
       break
     case 'Playlist':
       songs = await songStore.fetchForPlaylist(parseInt(getRouteParam('id')!))
-      break
-    case 'Favorites':
-      songs = await favoriteStore.fetch()
       break
     case 'RecentlyPlayed':
       songs = await recentlyPlayedStore.fetch()

@@ -17,9 +17,6 @@
           </div>
           <p v-else class="none text-secondary">No song is playing.</p>
           <footer>
-            <a class="favorite" :class="song?.liked ? 'yep' : ''" @click.prevent="toggleFavorite">
-              <icon :icon="song?.liked ? faHeart : faEmptyHeart" />
-            </a>
             <a class="prev" @click="playPrev">
               <icon :icon="faStepBackward" />
             </a>
@@ -155,15 +152,6 @@ const init = async () => {
 
 const toggleVolumeSlider = () => (showingVolumeSlider.value = !showingVolumeSlider.value)
 const closeVolumeSlider = () => (showingVolumeSlider.value = false)
-
-const toggleFavorite = () => {
-  if (!song.value) {
-    return
-  }
-
-  song.value.liked = !song.value.liked
-  socketService.broadcast('SOCKET_TOGGLE_FAVORITE')
-}
 
 const togglePlayback = () => {
   if (song.value) {
@@ -354,10 +342,6 @@ main {
       &:active {
         opacity: .8;
       }
-    }
-
-    .favorite.yep {
-      color: var(--color-maroon);
     }
 
     .prev, .next {

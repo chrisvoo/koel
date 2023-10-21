@@ -12,7 +12,6 @@
 import { GlobalEvents } from 'vue-global-events'
 import { eventBus } from '@/utils'
 import { playbackService, socketService } from '@/services'
-import { favoriteStore, queueStore } from '@/stores'
 
 const togglePlayback = (e: KeyboardEvent) => {
   if (
@@ -78,21 +77,4 @@ const search = (e: KeyboardEvent) => {
   return false
 }
 
-/**
- * Like/unlike the current song when use presses L.
- */
-const toggleLike = (e: KeyboardEvent) => {
-  if (!(e.target instanceof Document) && (e.target as Element).matches('input, select, textarea')) {
-    return true
-  }
-
-  if (!queueStore.current) {
-    return false
-  }
-
-  favoriteStore.toggleOne(queueStore.current)
-  socketService.broadcast('SOCKET_SONG', queueStore.current)
-
-  return false
-}
 </script>

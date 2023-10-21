@@ -1,5 +1,5 @@
 import { Ref } from 'vue'
-import { favoriteStore, queueStore } from '@/stores'
+import { queueStore } from '@/stores'
 import { usePlaylistManagement } from '@/composables'
 import { eventBus } from '@/utils'
 
@@ -21,11 +21,6 @@ export const useSongMenuMethods = (songs: Ref<Song[]>, close: Closure) => {
     queueStore.queueToTop(songs.value)
   }
 
-  const addSongsToFavorite = async () => {
-    close()
-    await favoriteStore.like(songs.value)
-  }
-
   const addSongsToExistingPlaylist = async (playlist: Playlist) => {
     close()
     await addSongsToPlaylist(playlist, songs.value)
@@ -40,7 +35,6 @@ export const useSongMenuMethods = (songs: Ref<Song[]>, close: Closure) => {
     queueSongsAfterCurrent,
     queueSongsToBottom,
     queueSongsToTop,
-    addSongsToFavorite,
     addSongsToExistingPlaylist,
     addSongsToNewPlaylist
   }

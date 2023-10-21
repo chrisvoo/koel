@@ -21,9 +21,7 @@
     </span>
     <span class="album">{{ song.album_name }}</span>
     <span class="time">{{ fmtLength }}</span>
-    <span class="extra">
-      <LikeButton :song="song" />
-    </span>
+    <span class="play-count">{{ song.play_count }}</span>
   </div>
 </template>
 
@@ -33,7 +31,6 @@ import { playbackService } from '@/services'
 import { queueStore } from '@/stores'
 import { secondsToHis } from '@/utils'
 
-import LikeButton from '@/components/song/SongLikeButton.vue'
 import SoundBars from '@/components/ui/SoundBars.vue'
 import SongThumbnail from '@/components/song/SongThumbnail.vue'
 
@@ -84,8 +81,12 @@ const play = () => {
     background-color: rgba(255, 255, 255, .08);
   }
 
+  &.play-count {
+    flex-basis: 86px;
+  }
+
   &.playing {
-    .title, .track-number, .favorite {
+    .title, .track-number {
       color: var(--color-accent) !important;
     }
   }

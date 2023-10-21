@@ -17,10 +17,6 @@
           <li @click="queueSongsToTop">Top of Queue</li>
         </template>
         <li v-else @click="queueSongsToBottom">Queue</li>
-        <template v-if="!isFavoritesScreen">
-          <li class="separator" />
-          <li @click="addSongsToFavorite">Favorites</li>
-        </template>
         <li v-if="normalPlaylists.length" class="separator" />
         <ul v-if="normalPlaylists.length" v-koel-overflow-fade class="playlists">
           <li v-for="p in normalPlaylists" :key="p.id" @click="addSongsToExistingPlaylist(p)">{{ p.name }}</li>
@@ -33,12 +29,6 @@
     <template v-if="isQueueScreen">
       <li class="separator" />
       <li @click="removeFromQueue">Remove from Queue</li>
-      <li class="separator" />
-    </template>
-
-    <template v-if="isFavoritesScreen">
-      <li class="separator" />
-      <li @click="removeFromFavorites">Remove from Favorites</li>
       <li class="separator" />
     </template>
 
@@ -61,7 +51,7 @@
 <script lang="ts" setup>
 import { computed, ref, toRef } from 'vue'
 import { arrayify, copyText, eventBus, pluralize } from '@/utils'
-import { commonStore, favoriteStore, playlistStore, queueStore, songStore } from '@/stores'
+import { commonStore, playlistStore, queueStore, songStore } from '@/stores'
 import { downloadService, playbackService } from '@/services'
 import {
   useAuthorization,
@@ -86,7 +76,6 @@ const {
   queueSongsAfterCurrent,
   queueSongsToBottom,
   queueSongsToTop,
-  addSongsToFavorite,
   addSongsToExistingPlaylist,
   addSongsToNewPlaylist
 } = useSongMenuMethods(songs, close)
@@ -107,7 +96,6 @@ const canBeRemovedFromPlaylist = computed(() => {
 })
 
 const isQueueScreen = computed(() => isCurrentScreen('Queue'))
-const isFavoritesScreen = computed(() => isCurrentScreen('Favorites'))
 
 const doPlayback = () => trigger(() => {
   if (!songs.value.length) return
@@ -141,7 +129,6 @@ const removeFromPlaylist = () => trigger(async () => {
 })
 
 const removeFromQueue = () => trigger(() => queueStore.unqueue(songs.value))
-const removeFromFavorites = () => trigger(() => favoriteStore.unlike(songs.value))
 
 const copyUrl = () => trigger(() => {
   copyText(songStore.getShareableUrl(songs.value[0]))

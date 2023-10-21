@@ -28,7 +28,6 @@ class SongResource extends JsonResource
             'album_artist_name' => $this->song->album_artist->name,
             'album_cover' => $this->song->album->cover,
             'length' => $this->song->length,
-            'liked' => (bool) $this->song->liked,
             'play_count' => (int) $this->song->play_count,
             'track' => $this->song->track,
             'disc' => $this->song->disc,

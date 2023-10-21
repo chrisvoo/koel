@@ -3,7 +3,6 @@
 use App\Facades\ITunes;
 use App\Http\Controllers\Download\AlbumController as AlbumDownloadController;
 use App\Http\Controllers\Download\ArtistController as ArtistDownloadController;
-use App\Http\Controllers\Download\FavoritesController as FavoritesDownloadController;
 use App\Http\Controllers\Download\PlaylistController as PlaylistDownloadController;
 use App\Http\Controllers\Download\SongController as SongDownloadController;
 use App\Http\Controllers\ITunesController;
@@ -35,7 +34,6 @@ Route::middleware('web')->group(static function (): void {
             Route::get('album/{album}', [AlbumDownloadController::class, 'show']);
             Route::get('artist/{artist}', [ArtistDownloadController::class, 'show']);
             Route::get('playlist/{playlist}', [PlaylistDownloadController::class, 'show']);
-            Route::get('favorites', [FavoritesDownloadController::class, 'show']);
         });
     });
 });

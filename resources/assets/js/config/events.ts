@@ -39,7 +39,6 @@ export interface Events {
   SONG_QUEUED_FROM_ROUTE: (songId: string) => void
 
   SOCKET_TOGGLE_PLAYBACK: () => void
-  SOCKET_TOGGLE_FAVORITE: () => void
   SOCKET_PLAY_NEXT: () => void
   SOCKET_PLAY_PREV: () => void
   SOCKET_PLAYBACK_STOPPED: () => void

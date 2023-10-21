@@ -28,10 +28,6 @@ export const routes: Route[] = [
     screen: 'Artists'
   },
   {
-    path: '/favorites',
-    screen: 'Favorites'
-  },
-  {
     path: '/recently-played',
     screen: 'RecentlyPlayed'
   },

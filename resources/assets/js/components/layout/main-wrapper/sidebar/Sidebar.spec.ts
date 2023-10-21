@@ -12,7 +12,6 @@ const standardItems = [
   'Albums',
   'Artists',
   'Genres',
-  'Favorites',
   'Recently Played'
 ]
 

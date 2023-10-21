@@ -7,7 +7,6 @@ use App\Models\Artist;
 use App\Models\Playlist;
 use App\Models\Song;
 use App\Models\User;
-use App\Repositories\InteractionRepository;
 use App\Services\DownloadService;
 use Illuminate\Support\Collection;
 use Mockery;
@@ -155,27 +154,5 @@ class DownloadTest extends TestCase
 
         $this->get("download/playlist/{$playlist->id}?api_token=" . $user->createToken('Koel')->plainTextToken)
             ->assertForbidden();
-    }
-
-    public function testDownloadFavorites(): void
-    {
-        /** @var User $user */
-        $user = User::factory()->create();
-        $favorites = Collection::make();
-
-        self::mock(InteractionRepository::class)
-            ->shouldReceive('getUserFavorites')
-            ->once()
-            ->with(Mockery::on(static fn (User $retrievedUser) => $retrievedUser->is($user)))
-            ->andReturn($favorites);
-
-        $this->downloadService
-            ->shouldReceive('from')
-            ->with($favorites)
-            ->once()
-            ->andReturn($this->mediaPath . '/blank.mp3');
-
-        $this->get('download/favorites?api_token=' . $user->createToken('Koel')->plainTextToken)
-            ->assertOk();
     }
 }

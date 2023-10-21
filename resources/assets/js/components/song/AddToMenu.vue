@@ -24,16 +24,6 @@
         </template>
 
         <li
-          v-if="config.favorites"
-          class="favorites"
-          data-testid="add-to-favorites"
-          tabindex="0"
-          @click="addSongsToFavorite"
-        >
-          Favorites
-        </li>
-
-        <li
           v-for="playlist in playlists"
           :key="playlist.id"
           class="playlist"
@@ -74,7 +64,6 @@ const {
   queueSongsAfterCurrent,
   queueSongsToBottom,
   queueSongsToTop,
-  addSongsToFavorite,
   addSongsToExistingPlaylist,
   addSongsToNewPlaylist
 } = useSongMenuMethods(songs, close)

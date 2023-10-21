@@ -7,8 +7,7 @@ export const useSongListControls = () => {
     const config: SongListControlsConfig = {
       play: true,
       addTo: {
-        queue: true,
-        favorites: true
+        queue: true
       },
       clearQueue: false,
       deletePlaylist: false,
@@ -18,7 +17,6 @@ export const useSongListControls = () => {
 
     config.clearQueue = isCurrentScreen('Queue')
     config.addTo.queue = !isCurrentScreen('Queue')
-    config.addTo.favorites = !isCurrentScreen('Favorites')
     config.deletePlaylist = isCurrentScreen('Playlist')
     config.refresh = isCurrentScreen('Playlist')
 
@@ -26,7 +24,6 @@ export const useSongListControls = () => {
       'Queue',
       'Artist',
       'Album',
-      'Favorites',
       'RecentlyPlayed',
       'Playlist',
       'Search.Songs'

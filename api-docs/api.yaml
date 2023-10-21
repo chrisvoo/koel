@@ -332,91 +332,7 @@ paths:
       tags:
         - interaction
     parameters: [ ]
-  /api/interaction/like:
-    post:
-      summary: Toggle like/unlike a song
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Interaction'
-      operationId: post-interaction-like
-      description: Toggle like ("favorite") or unlike ("unfavorite") a song. The "liked" status of the song will be reversed by this operation.
-      security:
-        - Bearer Token: [ ]
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                song:
-                  type: string
-                  description: ID of the song
-              required:
-                - song
-      tags:
-        - interaction
-  /api/interaction/batch/like:
-    post:
-      summary: Like multiple songs
-      tags:
-        - interaction
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Interaction'
-      operationId: post-interaction-batch-like
-      description: 'Like several songs at once, useful for "batch" (e.g., drag-and-drop) actions'
-      security:
-        - Bearer Token: [ ]
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                songs:
-                  type: array
-                  description: An array of song IDs
-                  items:
-                    type: string
-              required:
-                - songs
-    parameters: [ ]
-  /api/interaction/batch/unlike:
-    post:
-      summary: Unlike multiple songs
-      tags:
-        - interaction
-      responses:
-        '204':
-          description: OK
-      operationId: post-interaction-batch-unlike
-      description: 'Unlike several songs at once, useful for "batch" (e.g., drag-and-drop) actions'
-      security:
-        - Bearer Token: [ ]
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                songs:
-                  type: array
-                  description: An array of song IDs
-                  items:
-                    type: string
-              required:
-                - songs
-  '/api/interaction/recently-played/{count}':
+F  '/api/interaction/recently-played/{count}':
     parameters:
       - schema:
           type: integer
@@ -1322,13 +1238,10 @@ components:
       properties:
         song_id:
           type: string
-        liked:
-          type: boolean
         play_count:
           type: integer
       required:
         - song_id
-        - liked
         - play_count
     Playlist:
       title: Playlist
@@ -1412,8 +1325,6 @@ components:
       properties:
         song_id:
           type: string
-        liked:
-          type: boolean
         play_count:
           type: integer
         song:
@@ -1422,7 +1333,6 @@ components:
           $ref: '#/components/schemas/User'
       required:
         - song_id
-        - liked
         - play_count
         - song
         - user

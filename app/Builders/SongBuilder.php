@@ -29,7 +29,6 @@ class SongBuilder extends Builder
                 'songs.*',
                 'albums.name',
                 'artists.name',
-                'interactions.liked',
                 'interactions.play_count'
             );
     }
