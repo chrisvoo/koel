@@ -75,6 +75,21 @@ class SyncCommand extends Command
             "<fg=yellow>{$results->skipped()->count()}</> unchanged song(s)",
             "<fg=red>{$results->error()->count()}</> invalid file(s)",
         ]);
+
+        $this->newLine(2);
+        $this->components->warn('Listing invalid files');
+        $rows = [];
+
+        if ($results->error()->count() > 0) {
+            foreach ($results->error() as $result) {
+                $rows[] = [str_replace($this->getMediaPath(), '', $result->path), $result->error];
+            }
+        }
+
+        $this->table(
+            ['Path', 'Error'],
+            $rows
+        );
     }
 
     /**

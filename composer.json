@@ -96,7 +96,8 @@
     "coverage": "@php artisan test --coverage-clover=coverage.xml",
     "cs": "phpcs --standard=ruleset.xml",
     "cs:fix": "phpcbf --standard=ruleset.xml",
-    "analyze": "phpstan analyse --memory-limit 1G --configuration phpstan.neon.dist --ansi"
+    "analyze": "phpstan analyse --memory-limit 1G --configuration phpstan.neon.dist --ansi",
+    "sync": "@php artisan koel:sync"
   },
   "config": {
     "preferred-install": "dist",

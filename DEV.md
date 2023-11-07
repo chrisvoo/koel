@@ -4,4 +4,4 @@
 In particular `APP_URL` should match the development server to avoid cross origin errors.
 * Modify the script dev inside `package.json` so that you pass through artisan the option `--env=dev`
 * Vue files are stored in `resources/assets` directory
-* When you're done, run `npm run build`
+* When you're done, run `yarn install && yarn build`
