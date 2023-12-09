@@ -11,6 +11,7 @@ use App\Values\SyncResult;
 use getID3;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Support\Arr;
+use Mhor\MediaInfo\MediaInfo;
 use SplFileInfo;
 use Symfony\Component\Finder\Finder;
 
@@ -50,15 +51,23 @@ class FileSynchronizer
     public function getFileScanInformation(): ?SongScanInformation
     {
         $raw = $this->getID3->analyze($this->filePath);
-        $this->syncError = Arr::get($raw, 'error.0') ?: (Arr::get($raw, 'playtime_seconds') ? null : 'Empty file');
+        $error = Arr::get($raw, 'error.0') ?: (Arr::get($raw, 'playtime_seconds') ? null : 'Empty file');
 
-        if ($this->syncError) {
-            return null;
+        if ($error) {
+            // if the ID3 library can't read metatags, let's try MediaInfo CLI
+            $mediaInfo = (new MediaInfo())->getInfo($this->filePath);
+            $general = $mediaInfo->getGeneral();
+
+            if (is_null($general)) {
+                $this->syncError = $error . ' (mediainfo error too)';
+                return null;
+            }
+
+            return SongScanInformation::fromMediaInfo($general);
         }
 
         $this->getID3->CopyTagsToComments($raw);
         $info = SongScanInformation::fromGetId3Info($raw, $this->filePath);
-
         $info->lyrics = $info->lyrics ?: $this->lrcReader->tryReadForMediaFile($this->filePath);
 
         return $info;

@@ -7,6 +7,9 @@ use App\Models\Artist;
 use App\Services\Helper;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Arr;
+use Mhor\MediaInfo\Attribute\Duration;
+use Mhor\MediaInfo\Attribute\Size;
+use Mhor\MediaInfo\Type\General;
 
 final class SongScanInformation implements Arrayable
 {
@@ -92,6 +95,50 @@ final class SongScanInformation implements Arrayable
         return $value ?? $default;
     }
 
+    private static function getYear(?string $date): ?int
+    {
+        if (is_null($date)) {
+            return null;
+        }
+
+        if (is_numeric($date)) {
+            return intval($date);
+        }
+
+        if (preg_match("/\d{4}\-\d{2}\-\d{2}/i", $date)) {
+            return intval(substr($date, 0, 4));
+        }
+
+        return null;
+    }
+
+    public static function fromMediaInfo(General $general): self
+    {
+        $mediainfo = $general->get();
+        /** @var Size $sizeObj */
+        $sizeObj = $mediainfo['file_size'];
+        /** @var Duration|int $duration */
+        $duration = $mediainfo['duration'] ?? 0;
+        $releaseDate = $mediainfo['original_released_date'] ?? $mediainfo['recorded_date'] ?? null;
+
+        return new self(
+            title: html_entity_decode($mediainfo['title'] ?? 'Unknown title'),
+            albumName: html_entity_decode($mediainfo['album'] ?? Album::UNKNOWN_NAME),
+            artistName: html_entity_decode($mediainfo['performer'] ?? $mediainfo['artists'] ?? Artist::UNKNOWN_NAME),
+            albumArtistName: html_entity_decode($mediainfo['album_performer'] ?? 'Unknown album performer'),
+            track: (int) ($mediainfo['track_name_position'] ?? 0),
+            disc: (int) ($mediainfo['part_position'] ?? 0),
+            year: self::getYear($releaseDate),
+            genre: $mediainfo['genre'] ?? 'Unknown genre',
+            lyrics: null,
+            length: $duration instanceof Duration ? $duration->getMilliseconds() / 1000 : $duration,
+            cover: [],
+            path: $mediainfo['complete_name'],
+            mTime: Helper::getModifiedTime($mediainfo['complete_name']),
+            size: $sizeObj->getBit()
+        );
+    }
+
     /** @return array<mixed> */
     public function toArray(): array
     {
@@ -109,7 +156,7 @@ final class SongScanInformation implements Arrayable
             'cover' => $this->cover,
             'path' => $this->path,
             'mtime' => $this->mTime,
-            'size' => $this->size
+            'size' => $this->size,
         ];
     }
 }

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "310243edd4bc8d4f2184ff38520a52dd",
+    "content-hash": "b074b6a3ad5daea5dea03c6ab27d2833",
     "packages": [
         {
             "name": "algolia/algoliasearch-client-php",
@@ -3373,6 +3373,63 @@
             "time": "2022-08-16T15:18:17+00:00"
         },
         {
+            "name": "mhor/php-mediainfo",
+            "version": "5.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/mhor/php-mediainfo.git",
+                "reference": "eb247c3207dd895e73c2cb94864633af55fa5c11"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/mhor/php-mediainfo/zipball/eb247c3207dd895e73c2cb94864633af55fa5c11",
+                "reference": "eb247c3207dd895e73c2cb94864633af55fa5c11",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.2",
+                "symfony/filesystem": "~3.4|~4.0|~5.0|~6.0",
+                "symfony/process": "~3.4|~4.0|~5.0|~6.0"
+            },
+            "require-dev": {
+                "phpspec/prophecy": "^1.15",
+                "phpunit/phpunit": "~8.5"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "6.0.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Mhor\\MediaInfo\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "mhor",
+                    "email": "maxime.horcholle@gmail.com"
+                }
+            ],
+            "description": "PHP wrapper around the mediainfo command",
+            "keywords": [
+                "id3",
+                "mediainfo",
+                "metadata",
+                "wrapper"
+            ],
+            "support": {
+                "issues": "https://github.com/mhor/php-mediainfo/issues",
+                "source": "https://github.com/mhor/php-mediainfo/tree/5.5.0"
+            },
+            "time": "2023-05-10T16:03:31+00:00"
+        },
+        {
             "name": "monolog/monolog",
             "version": "2.9.2",
             "source": {
@@ -5771,6 +5828,69 @@
                 }
             ],
             "time": "2023-05-23T14:45:45+00:00"
+        },
+        {
+            "name": "symfony/filesystem",
+            "version": "v6.4.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/symfony/filesystem.git",
+                "reference": "952a8cb588c3bc6ce76f6023000fb932f16a6e59"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/symfony/filesystem/zipball/952a8cb588c3bc6ce76f6023000fb932f16a6e59",
+                "reference": "952a8cb588c3bc6ce76f6023000fb932f16a6e59",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=8.1",
+                "symfony/polyfill-ctype": "~1.8",
+                "symfony/polyfill-mbstring": "~1.8"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Symfony\\Component\\Filesystem\\": ""
+                },
+                "exclude-from-classmap": [
+                    "/Tests/"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Fabien Potencier",
+                    "email": "fabien@symfony.com"
+                },
+                {
+                    "name": "Symfony Community",
+                    "homepage": "https://symfony.com/contributors"
+                }
+            ],
+            "description": "Provides basic utilities for the filesystem",
+            "homepage": "https://symfony.com",
+            "support": {
+                "source": "https://github.com/symfony/filesystem/tree/v6.4.0"
+            },
+            "funding": [
+                {
+                    "url": "https://symfony.com/sponsor",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/fabpot",
+                    "type": "github"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
+                    "type": "tidelift"
+                }
+            ],
+            "time": "2023-07-26T17:27:13+00:00"
         },
         {
             "name": "symfony/finder",
