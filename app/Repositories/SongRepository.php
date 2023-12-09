@@ -12,6 +12,8 @@ use App\Values\Genre;
 use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use stdClass;
 use Webmozart\Assert\Assert;
 
 class SongRepository extends Repository
@@ -232,5 +234,20 @@ class SongRepository extends Repository
             ->limit($limit)
             ->inRandomOrder()
             ->get();
+    }
+
+    public function getSongsStats(): stdClass
+    {
+        return DB::table('songs')
+            ->selectRaw(
+                'SUM(size) AS total_size, ' .
+                'COUNT(*) AS total_songs'
+            )
+            ->get()
+            ->map(static function ($item) {
+                $item->total_size = intval($item->total_size);
+                return $item;
+            })
+            ->first();
     }
 }

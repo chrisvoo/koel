@@ -33,6 +33,7 @@ use App\Http\Controllers\API\ScrobbleController;
 use App\Http\Controllers\API\SettingController;
 use App\Http\Controllers\API\SongController;
 use App\Http\Controllers\API\SongSearchController;
+use App\Http\Controllers\API\SystemController;
 use App\Http\Controllers\API\UploadController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\UserInvitationController;
@@ -67,6 +68,7 @@ Route::prefix('api')->middleware('api')->group(static function (): void {
         })->name('broadcasting.auth');
 
         Route::get('overview', [OverviewController::class, 'index']);
+        Route::get('system', [SystemController::class, 'index']);
         Route::get('data', [DataController::class, 'index']);
 
         Route::get('queue/fetch', [QueueController::class, 'fetchSongs']);

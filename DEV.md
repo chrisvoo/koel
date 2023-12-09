@@ -9,8 +9,9 @@ In particular `APP_URL` should match the development server to avoid cross origi
 
 ## TODO:
 
-* [ ] Tweak FileSynchronizer class to use MediaInfo tool if the default ID3 fails. Need to
+* [X] Tweak FileSynchronizer class to use MediaInfo tool if the default ID3 fails. Need to
 check how SongScanInformation is made by ID3 class
-* [ ] alter table on proper class to update records for storing the following info:ù
+* [X] Change greeting returning total number of songs and size
+* [ ] alter table on proper class to update records for storing the following info:
   * `need_to_be_trimmed TINYINT(1) DEFAULT 0`: it needs a proper tool to delete the beginning or the end of the mp3 without losing quality
   * `need_metatag_update TINYINT(1) DEFAULT 0`: metatags are clearly wrong, need to edit them

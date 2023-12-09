@@ -1,4 +1,4 @@
-# Installation notes
+|# Installation notes
 
 ## Sync forked repo
 

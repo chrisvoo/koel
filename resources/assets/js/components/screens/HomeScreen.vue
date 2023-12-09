@@ -1,6 +1,9 @@
 <template>
   <section id="homeWrapper">
-    <ScreenHeader layout="collapsed">{{ greeting }}</ScreenHeader>
+    <ScreenHeader layout="collapsed">
+      Total songs: {{ systemStats.totalSongs }}
+      Total size: {{ humanFileSize(systemStats.totalBytes) }}
+    </ScreenHeader>
 
     <div v-koel-overflow-fade class="main-scroll-wrap" @scroll="scrolling">
       <ScreenEmptyState v-if="libraryEmpty">
@@ -38,7 +41,7 @@ import { faVolumeOff } from '@fortawesome/free-solid-svg-icons'
 import { sample } from 'lodash'
 import { computed, ref } from 'vue'
 import { eventBus, logger, noop } from '@/utils'
-import { commonStore, overviewStore, userStore } from '@/stores'
+import { commonStore, overviewStore, userStore, systemStore } from '@/stores'
 import { useAuthorization, useDialogBox, useInfiniteScroll, useRouter } from '@/composables'
 
 import MostPlayedSongs from '@/components/screens/home/MostPlayedSongs.vue'
@@ -54,23 +57,43 @@ const { ToTopButton, scrolling } = useInfiniteScroll(() => noop())
 const { isAdmin } = useAuthorization()
 const { showErrorDialog } = useDialogBox()
 
-const greetings = [
-  'Oh hai!',
-  'Hey, %s!',
-  'Howdy, %s!',
-  'Yo!',
-  'How’s it going, %s?',
-  'Sup, %s?',
-  'How’s life, %s?',
-  'How’s your day, %s?',
-  'How have you been, %s?'
-]
-
-const greeting = computed(() => userStore.current ? sample(greetings)!.replace('%s', userStore.current.name) : '')
+const systemStats = computed(() => systemStore.state)
 const libraryEmpty = computed(() => commonStore.state.song_length === 0)
 
 const loading = ref(false)
 let initialized = false
+
+/**
+ * Format bytes as human-readable text.
+ *
+ * @param bytes Number of bytes.
+ * @param si True to use metric (SI) units, aka powers of 1000. False to use
+ *           binary (IEC), aka powers of 1024.
+ * @param dp Number of decimal places to display.
+ *
+ * @return Formatted string.
+ */
+function humanFileSize(bytes, si=false, dp=1) {
+  const thresh = si ? 1000 : 1024;
+
+  if (Math.abs(bytes) < thresh) {
+    return bytes + ' B';
+  }
+
+  const units = si
+    ? ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+    : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
+  let u = -1;
+  const r = 10**dp;
+
+  do {
+    bytes /= thresh;
+    ++u;
+  } while (Math.round(Math.abs(bytes) * r) / r >= thresh && u < units.length - 1);
+
+
+  return bytes.toFixed(dp) + ' ' + units[u];
+}
 
 eventBus.on('SONGS_DELETED', () => overviewStore.refresh())
   .on('SONGS_UPDATED', () => overviewStore.refresh())
@@ -80,6 +103,7 @@ useRouter().onScreenActivated('Home', async () => {
     loading.value = true
     try {
       await overviewStore.init()
+      await systemStore.init()
       initialized = true
     } catch (e) {
       showErrorDialog('Failed to load home screen data. Please try again.', 'Error')
