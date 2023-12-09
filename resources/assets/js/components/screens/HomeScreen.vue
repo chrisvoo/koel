@@ -95,7 +95,10 @@ function humanFileSize(bytes, si=false, dp=1) {
   return bytes.toFixed(dp) + ' ' + units[u];
 }
 
-eventBus.on('SONGS_DELETED', () => overviewStore.refresh())
+eventBus.on('SONGS_DELETED', () => {
+  overviewStore.refresh()
+  systemStore.refresh()
+})
   .on('SONGS_UPDATED', () => overviewStore.refresh())
 
 useRouter().onScreenActivated('Home', async () => {
