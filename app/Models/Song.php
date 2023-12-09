@@ -20,6 +20,7 @@ use Laravel\Scout\Searchable;
  * @property Artist $artist
  * @property Artist $album_artist
  * @property float $length
+ * @property int $size
  * @property string $lyrics
  * @property int $track
  * @property int $disc
@@ -49,6 +50,7 @@ class Song extends Model
     protected $casts = [
         'length' => 'float',
         'mtime' => 'int',
+        'size' => 'int',
         'track' => 'int',
         'disc' => 'int',
     ];

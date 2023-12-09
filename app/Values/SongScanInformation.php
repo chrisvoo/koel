@@ -24,6 +24,7 @@ final class SongScanInformation implements Arrayable
         public ?array $cover,
         public ?string $path,
         public ?int $mTime,
+        public ?int $size
     ) {
     }
 
@@ -71,7 +72,8 @@ final class SongScanInformation implements Arrayable
             length: (float) Arr::get($info, 'playtime_seconds'),
             cover: $cover,
             path: $path,
-            mTime: Helper::getModifiedTime($path)
+            mTime: Helper::getModifiedTime($path),
+            size: (int) Arr::get($info, 'filesize')
         );
     }
 
@@ -107,6 +109,7 @@ final class SongScanInformation implements Arrayable
             'cover' => $this->cover,
             'path' => $this->path,
             'mtime' => $this->mTime,
+            'size' => $this->size
         ];
     }
 }
