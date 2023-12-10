@@ -32,6 +32,8 @@ class SongService
             $data->year = $data->year ?: null;
             $data->genre = $data->genre ?: '';
             $data->albumArtistName = $data->albumArtistName ?: $data->artistName;
+            $data->needToUpdateMetatags ??= false;
+            $data->needToBeTrimmed ??= false;
         }
 
         return DB::transaction(function () use ($ids, $data): Collection {
@@ -76,6 +78,8 @@ class SongService
         $song->disc = $data->disc;
         $song->genre = $data->genre;
         $song->year = $data->year;
+        $song->need_metatag_update = $data->needToUpdateMetatags;
+        $song->need_to_be_trimmed = $data->needToBeTrimmed;
 
         $song->push();
 

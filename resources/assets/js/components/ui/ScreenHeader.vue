@@ -6,9 +6,7 @@
 
     <main>
       <div class="heading-wrapper">
-        <h1 class="name">
-          <slot />
-        </h1>
+        <slot />
         <span class="meta text-secondary">
           <slot name="meta" />
         </span>

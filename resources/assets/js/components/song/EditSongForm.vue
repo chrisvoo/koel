@@ -43,6 +43,18 @@
         >
           Lyrics
         </button>
+        <button
+          v-if="editingOnlyOneSong"
+          id="editSongTabMp3EditSong"
+          :aria-selected="currentTab === 'edit_song'"
+          aria-controls="editSongPanelEditSong"
+          data-testid="edit-song-tab"
+          role="tab"
+          type="button"
+          @click.prevent="currentTab = 'edit_song'"
+        >
+          MP3 flags
+        </button>
       </div>
 
       <div class="panes">
@@ -174,6 +186,26 @@
             />
           </div>
         </div>
+
+        <div
+          v-if="editingOnlyOneSong"
+          v-show="currentTab === 'edit_song'"
+          id="editSongPanelEditSong"
+          aria-labelledby="editSongTabMp3EditSong"
+          role="tabpanel"
+          tabindex="0"
+        >
+          <div class="form-row cols">
+            <label>
+              <CheckBox v-model="formData.need_to_be_trimmed" name="need_to_be_trimmed" />
+              Need to be trimmed
+            </label>
+            <label>
+              <CheckBox v-model="formData.need_metatag_update" name="need_metatag_update" />
+              Need metatags update
+            </label>
+          </div>
+        </div>
       </div>
     </main>
 
@@ -188,11 +220,12 @@
 import { computed, reactive, ref } from 'vue'
 import { isEqual } from 'lodash'
 import { defaultCover, eventBus, logger, pluralize } from '@/utils'
-import { songStore, SongUpdateData } from '@/stores'
+import {preferenceStore as preferences, songStore, SongUpdateData} from '@/stores'
 import { useDialogBox, useMessageToaster, useModal, useOverlay } from '@/composables'
 import { genres } from '@/config'
 
 import Btn from '@/components/ui/Btn.vue'
+import CheckBox from "@/components/ui/CheckBox.vue";
 
 const { showOverlay, hideOverlay } = useOverlay()
 const { toastSuccess } = useMessageToaster()
@@ -223,7 +256,9 @@ const formData = reactive<SongUpdateData>({
   track: allSongsShareSameValue('track') && songs[0].track !== 0 ? songs[0].track : null,
   disc: allSongsShareSameValue('disc') && songs[0].disc !== 0 ? songs[0].disc : null,
   year: allSongsShareSameValue('year') ? songs[0].year : null,
-  genre: allSongsShareSameValue('genre') ? songs[0].genre : ''
+  genre: allSongsShareSameValue('genre') ? songs[0].genre : '',
+  need_metatag_update: songs[0].need_metatag_update,
+  need_to_be_trimmed: songs[0].need_to_be_trimmed
 })
 
 // If the album artist(s) is the same as the artist(s), we set the form value as empty to not confuse the user

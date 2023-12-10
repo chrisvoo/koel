@@ -34,6 +34,8 @@ class SongResource extends JsonResource
             'genre' => $this->song->genre,
             'year' => $this->song->year,
             'created_at' => $this->song->created_at,
+            'need_metatag_update' => $this->song->need_metatag_update,
+            'need_to_be_trimmed' => $this->song->need_to_be_trimmed,
         ];
     }
 }

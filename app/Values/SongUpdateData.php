@@ -17,6 +17,8 @@ final class SongUpdateData implements Arrayable
         public ?string $genre,
         public ?int $year,
         public ?string $lyrics,
+        public ?bool $needToBeTrimmed,
+        public ?bool $needToUpdateMetatags
     ) {
         $this->albumArtistName = $this->albumArtistName ?: $this->artistName;
     }
@@ -33,6 +35,8 @@ final class SongUpdateData implements Arrayable
             genre: $request->input('data.genre'),
             year: (int) $request->input('data.year'),
             lyrics: $request->input('data.lyrics'),
+            needToBeTrimmed: $request->input('data.need_to_be_trimmed'),
+            needToUpdateMetatags: $request->input('data.need_metatag_update'),
         );
     }
 
@@ -45,7 +49,9 @@ final class SongUpdateData implements Arrayable
         ?int $disc,
         ?string $genre,
         ?int $year,
-        ?string $lyrics
+        ?string $lyrics,
+        ?bool $needToBeTrimmed,
+        ?bool $needToUpdateMetatags,
     ): self {
         return new self(
             $title,
@@ -57,6 +63,8 @@ final class SongUpdateData implements Arrayable
             $genre,
             $year,
             $lyrics,
+            $needToBeTrimmed,
+            $needToUpdateMetatags
         );
     }
 
@@ -73,6 +81,8 @@ final class SongUpdateData implements Arrayable
             'genre' => $this->genre,
             'year' => $this->year,
             'lyrics' => $this->lyrics,
+            'need_to_be_trimmed' => $this->needToBeTrimmed,
+            'need_metatag_update' => $this->needToUpdateMetatags,
         ];
     }
 }

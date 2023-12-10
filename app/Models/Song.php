@@ -30,6 +30,8 @@ use Laravel\Scout\Searchable;
  * @property string $id
  * @property int $artist_id
  * @property int $mtime
+ * @property boolean $need_to_be_trimmed
+ * @property boolean $need_metatag_update
  * @property ?int $play_count The number of times the song has been played by the current user (dynamically calculated)
  * @property Carbon $created_at
  * @property array<mixed> $s3_params
@@ -50,6 +52,8 @@ class Song extends Model
     protected $casts = [
         'length' => 'float',
         'mtime' => 'int',
+        'need_to_be_trimmed' => 'boolean',
+        'need_metatag_update' => 'boolean',
         'size' => 'int',
         'track' => 'int',
         'disc' => 'int',

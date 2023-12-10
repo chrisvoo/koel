@@ -1,8 +1,8 @@
 <template>
   <section id="homeWrapper">
     <ScreenHeader layout="collapsed">
-      Total songs: {{ systemStats.totalSongs }}
-      Total size: {{ humanFileSize(systemStats.totalBytes) }}
+      <h1 class="name">Total songs: {{ systemStats.totalSongs }}</h1>
+      <h1 class="name">Total size: {{ humanFileSize(systemStats.totalBytes) }}</h1>
     </ScreenHeader>
 
     <div v-koel-overflow-fade class="main-scroll-wrap" @scroll="scrolling">
@@ -138,6 +138,12 @@ useRouter().onScreenActivated('Home', async () => {
     display: grid;
     grid-gap: .7em 1em;
     align-content: start;
+  }
+
+  .heading-wrapper {
+    h1 {
+      font-size: 1em;
+    }
   }
 
   .main-scroll-wrap {

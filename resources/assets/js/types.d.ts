@@ -141,6 +141,9 @@ interface Song {
   genre: string
   year: number | null
   lyrics: string
+  size: number,
+  need_to_be_trimmed: boolean,
+  need_metatag_update: boolean,
   play_count_registered?: boolean
   preloaded?: boolean
   playback_state?: PlaybackState
@@ -367,7 +370,7 @@ interface PaginatorResource {
   }
 }
 
-type EditSongFormTabName = 'details' | 'lyrics'
+type EditSongFormTabName = 'details' | 'lyrics' | 'edit_song'
 
 type ToastMessage = {
   id: string
