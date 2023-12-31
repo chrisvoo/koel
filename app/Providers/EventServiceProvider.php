@@ -9,6 +9,7 @@ use App\Listeners\ClearMediaCache;
 use App\Listeners\DeleteNonExistingRecordsPostSync;
 use App\Listeners\PruneLibrary;
 use App\Listeners\UpdateLastfmNowPlaying;
+use App\Listeners\WriteSyncLog;
 use App\Models\Album;
 use App\Observers\AlbumObserver;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as BaseServiceProvider;
@@ -27,6 +28,7 @@ class EventServiceProvider extends BaseServiceProvider
 
         MediaSyncCompleted::class => [
             DeleteNonExistingRecordsPostSync::class,
+            WriteSyncLog::class,
         ],
     ];
 
