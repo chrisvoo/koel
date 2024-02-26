@@ -3,9 +3,18 @@
 * Create a new file `.env.dev` and modify the values there according to your needs.
 In particular `APP_URL` should match the development server to avoid cross origin errors.
 * Modify the script dev inside `package.json` so that you pass through artisan the option `--env=dev`
+* `git merge upstream/master`
+
+## Frontend
+
+* `npm install --global yarn`
 * Vue files are stored in `resources/assets` directory
 * When you're done, run `yarn install && yarn build`
-* `git merge upstream/master`
+
+## Migrations
+
+* `php artisan migrate:status`: view the status of ll the migrations
+* `php artisan migrate`: run the migrations
 
 ## TODO:
 

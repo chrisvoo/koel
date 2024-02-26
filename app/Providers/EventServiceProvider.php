@@ -4,7 +4,7 @@ namespace App\Providers;
 
 use App\Events\LibraryChanged;
 use App\Events\MediaSyncCompleted;
-use App\Events\SongStartedPlaying;
+use App\Events\PlaybackStarted;
 use App\Listeners\ClearMediaCache;
 use App\Listeners\DeleteNonExistingRecordsPostSync;
 use App\Listeners\PruneLibrary;
@@ -17,7 +17,7 @@ use Illuminate\Foundation\Support\Providers\EventServiceProvider as BaseServiceP
 class EventServiceProvider extends BaseServiceProvider
 {
     protected $listen = [
-        SongStartedPlaying::class => [
+        PlaybackStarted::class => [
             UpdateLastfmNowPlaying::class,
         ],
 
