@@ -1,38 +1,35 @@
-import { useRouter } from '@/composables'
+import { merge } from 'lodash'
+import { reactive } from 'vue'
 
-export const useSongListControls = () => {
-  const { isCurrentScreen } = useRouter()
+import SongListControls from '@/components/song/SongListControls.vue'
 
-  const getSongListControlsConfig = () => {
-    const config: SongListControlsConfig = {
-      play: true,
-      addTo: {
-        queue: true
-      },
-      clearQueue: false,
-      deletePlaylist: false,
-      refresh: false,
-      filter: false
-    }
-
-    config.clearQueue = isCurrentScreen('Queue')
-    config.addTo.queue = !isCurrentScreen('Queue')
-    config.deletePlaylist = isCurrentScreen('Playlist')
-    config.refresh = isCurrentScreen('Playlist')
-
-    config.filter = isCurrentScreen(
+export const useSongListControls = (
+  screen: ScreenName,
+  configOverrides: Partial<SongListControlsConfig> | (() => Partial<SongListControlsConfig>) = {}
+) => {
+  const defaults: SongListControlsConfig = {
+    addTo: {
+      queue: screen !== 'Queue',
+      favorites: screen !== 'Favorites',
+    },
+    clearQueue: screen === 'Queue',
+    deletePlaylist: screen === 'Playlist',
+    refresh: screen === 'Playlist',
+    filter: [
       'Queue',
       'Artist',
       'Album',
+      'Favorites',
       'RecentlyPlayed',
       'Playlist',
       'Search.Songs'
-    )
-
-    return config
+    ].includes(screen)
   }
 
+  const config = merge(defaults, typeof configOverrides === 'function' ? configOverrides() : configOverrides)
+
   return {
-    getSongListControlsConfig
+    SongListControls,
+    config: reactive(config)
   }
 }

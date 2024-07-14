@@ -3,10 +3,11 @@
 namespace App\Providers;
 
 use App\Events\LibraryChanged;
-use App\Events\MediaSyncCompleted;
+use App\Events\MediaScanCompleted;
+use App\Events\NewPlaylistCollaboratorJoined;
 use App\Events\PlaybackStarted;
-use App\Listeners\ClearMediaCache;
-use App\Listeners\DeleteNonExistingRecordsPostSync;
+use App\Listeners\DeleteNonExistingRecordsPostScan;
+use App\Listeners\MakePlaylistSongsPublic;
 use App\Listeners\PruneLibrary;
 use App\Listeners\UpdateLastfmNowPlaying;
 use App\Listeners\WriteSyncLog;
@@ -23,12 +24,15 @@ class EventServiceProvider extends BaseServiceProvider
 
         LibraryChanged::class => [
             PruneLibrary::class,
-            ClearMediaCache::class,
         ],
 
-        MediaSyncCompleted::class => [
-            DeleteNonExistingRecordsPostSync::class,
+        MediaScanCompleted::class => [
+            DeleteNonExistingRecordsPostScan::class,
             WriteSyncLog::class,
+        ],
+
+        NewPlaylistCollaboratorJoined::class => [
+            MakePlaylistSongsPublic::class,
         ],
     ];
 

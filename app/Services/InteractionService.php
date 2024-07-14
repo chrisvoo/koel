@@ -3,22 +3,23 @@
 namespace App\Services;
 
 use App\Models\Interaction;
+use App\Models\Song as Playable;
 use App\Models\User;
 
 class InteractionService
 {
-    /**
-     * Increase the number of times a song is played by a user.
-     *
-     * @return Interaction The affected Interaction object
-     */
-    public function increasePlayCount(string $songId, User $user): Interaction
+    public function increasePlayCount(Playable $playable, User $user): Interaction
     {
         return tap(Interaction::query()->firstOrCreate([
-            'song_id' => $songId,
+            'song_id' => $playable->id,
             'user_id' => $user->id,
         ]), static function (Interaction $interaction): void {
+            if (!$interaction->exists) {
+                $interaction->liked = false;
+            }
+
             $interaction->last_played_at = now();
+
             ++$interaction->play_count;
             $interaction->save();
         });

@@ -82,9 +82,14 @@ cypress/downloads/
 /log
 coverage.xml
 .phpunit.result.cache
+.phpunit.cache
 log.json
 phpunit.xml
 phpstan.neon
 .php_cs.cache
+
+### VitePress ###
+docs/.vitepress/dist
+docs/.vitepress/cache
 
 demo-credits.json

@@ -4,7 +4,6 @@ namespace App\Values;
 
 use App\Models\Album;
 use App\Models\Artist;
-use App\Services\Helper;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Arr;
 use Mhor\MediaInfo\Attribute\Duration;
@@ -75,7 +74,7 @@ final class SongScanInformation implements Arrayable
             length: (float) Arr::get($info, 'playtime_seconds'),
             cover: $cover,
             path: $path,
-            mTime: Helper::getModifiedTime($path),
+            mTime: get_mtime($path),
             size: (int) Arr::get($info, 'filesize')
         );
     }
@@ -84,7 +83,7 @@ final class SongScanInformation implements Arrayable
     {
         $keys = Arr::wrap($keys);
 
-        for ($i = 0; $i < count($keys); ++$i) {
+        for ($i = 0, $j = count($keys); $i < $j; ++$i) {
             $value = Arr::get($arr, $keys[$i] . '.0');
 
             if ($value) {
@@ -134,7 +133,7 @@ final class SongScanInformation implements Arrayable
             length: $duration instanceof Duration ? $duration->getMilliseconds() / 1000 : $duration,
             cover: [],
             path: $mediainfo['complete_name'],
-            mTime: Helper::getModifiedTime($mediainfo['complete_name']),
+            mTime: get_mtime($mediainfo['complete_name']),
             size: $sizeObj->getBit()
         );
     }
