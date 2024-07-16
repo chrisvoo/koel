@@ -5,6 +5,12 @@
     </template>
 
     <ul class="menu">
+      <SidebarItem href="#/queue" screen="Queue">
+        <template #icon>
+          <Icon :icon="faList" fixed-width />
+        </template>
+        Current queue
+      </SidebarItem>
       <SidebarItem href="#/songs" screen="Songs">
         <template #icon>
           <Icon :icon="faMusic" fixed-width />
@@ -43,7 +49,7 @@
 </template>
 
 <script lang="ts" setup>
-import { faCompactDisc, faMicrophone, faMusic, faPodcast, faTags } from '@fortawesome/free-solid-svg-icons'
+import { faCompactDisc, faMicrophone, faList, faMusic, faPodcast, faTags } from '@fortawesome/free-solid-svg-icons'
 import { unescape } from 'lodash'
 import { ref } from 'vue'
 import { eventBus } from '@/utils'

@@ -39,6 +39,18 @@
         >
           Lyrics
         </TabButton>
+        <TabButton
+          v-if="editingOnlyOneSong"
+          id="editSongTabMp3EditSong"
+          :selected="currentTab === 'edit_song'"
+          aria-controls="editSongPanelEditSong"
+          data-testid="edit-song-tab"
+          role="tab"
+          type="button"
+          @click="currentTab = 'edit_song'"
+        >
+          MP3 flags
+        </TabButton>
       </TabList>
 
       <TabPanelContainer>
@@ -153,6 +165,24 @@
             />
           </FormRow>
         </TabPanel>
+
+        <TabPanel
+          v-if="editingOnlyOneSong"
+          v-show="currentTab === 'edit_song'"
+          id="editSongPanelEditSong"
+          aria-labelledby="editSongTabMp3EditSong"
+          role="tabpanel"
+        >
+          <FormRow>
+            <template #label>Need to be trimmed</template>
+            <CheckBox v-model="formData.need_to_be_trimmed" name="need_to_be_trimmed" />
+          </FormRow>
+          <FormRow>
+            <template #label>Need metatags update</template>
+            <CheckBox v-model="formData.need_metatag_update" name="need_metatag_update" />
+          </FormRow>
+        </TabPanel>
+
       </TabPanelContainer>
     </Tabs>
 
@@ -164,8 +194,8 @@
 </template>
 
 <script lang="ts" setup>
+import _ from "lodash";
 import { computed, reactive, ref } from 'vue'
-import { isEqual } from 'lodash'
 import { defaultCover, eventBus, pluralize } from '@/utils'
 import { songStore, SongUpdateData } from '@/stores'
 import { useDialogBox, useErrorHandler, useMessageToaster, useModal, useOverlay } from '@/composables'
@@ -175,6 +205,7 @@ import Btn from '@/components/ui/form/Btn.vue'
 import TextInput from '@/components/ui/form/TextInput.vue'
 import TextArea from '@/components/ui/form/TextArea.vue'
 import FormRow from '@/components/ui/form/FormRow.vue'
+import CheckBox from "@/components/ui/form/CheckBox.vue";
 import Tabs from '@/components/ui/tabs/Tabs.vue'
 import TabList from '@/components/ui/tabs/TabList.vue'
 import TabButton from '@/components/ui/tabs/TabButton.vue'
@@ -210,7 +241,9 @@ const formData = reactive<SongUpdateData>({
   track: allSongsShareSameValue('track') && songs[0].track !== 0 ? songs[0].track : null,
   disc: allSongsShareSameValue('disc') && songs[0].disc !== 0 ? songs[0].disc : null,
   year: allSongsShareSameValue('year') ? songs[0].year : null,
-  genre: allSongsShareSameValue('genre') ? songs[0].genre : ''
+  genre: allSongsShareSameValue('genre') ? songs[0].genre : '',
+  need_metatag_update: songs[0].need_metatag_update,
+  need_to_be_trimmed: songs[0].need_to_be_trimmed
 })
 
 // If the album artist(s) is the same as the artist(s), we set the form value as empty to not confuse the user
@@ -244,7 +277,7 @@ const emit = defineEmits<{ (e: 'close'): void }>()
 const close = () => emit('close')
 
 const maybeClose = async () => {
-  if (isEqual(formData, initialFormData)) {
+  if (_.isEqual(formData, initialFormData)) {
     close()
     return
   }

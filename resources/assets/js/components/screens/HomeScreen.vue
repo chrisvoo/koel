@@ -37,7 +37,6 @@
 
 <script lang="ts" setup>
 import { faVolumeOff } from '@fortawesome/free-solid-svg-icons'
-import { sample } from 'lodash'
 import { computed, ref } from 'vue'
 import { eventBus } from '@/utils'
 import { commonStore, overviewStore, userStore, systemStore } from '@/stores'
@@ -95,10 +94,10 @@ function humanFileSize(bytes, si=false, dp=1) {
 }
 
 eventBus.on('SONGS_DELETED', () => {
-  overviewStore.refresh()
+  overviewStore.fetch()
   systemStore.refresh()
 })
-  .on('SONGS_UPDATED', () => overviewStore.refresh())
+  .on('SONGS_UPDATED', () => overviewStore.fetch())
 
 useRouter().onScreenActivated('Home', async () => {
   if (!initialized) {
