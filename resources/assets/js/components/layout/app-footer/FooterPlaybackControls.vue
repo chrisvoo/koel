@@ -21,16 +21,16 @@
 
 <script lang="ts" setup>
 import { faStepBackward, faStepForward } from '@fortawesome/free-solid-svg-icons'
-// import { ref } from 'vue'
+import { ref } from 'vue'
 import { playbackService } from '@/services'
-// import { requireInjection } from '@/utils'
-// import { CurrentPlayableKey } from '@/symbols'
+import { requireInjection } from '@/utils'
+import { CurrentPlayableKey } from '@/symbols'
 
 import RepeatModeSwitch from '@/components/ui/RepeatModeSwitch.vue'
 import PlayButton from '@/components/ui/FooterPlayButton.vue'
 import FooterBtn from '@/components/layout/app-footer/FooterButton.vue'
 
-// const playable = requireInjection(CurrentPlayableKey, ref())
+const playable = requireInjection(CurrentPlayableKey, ref())
 
 const playPrev = async () => await playbackService.playPrev()
 const playNext = async () => await playbackService.playNext()

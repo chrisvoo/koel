@@ -44,7 +44,8 @@
     "league/flysystem-sftp-v3": "^3.0",
     "saloonphp/xml-wrangler": "^1.2",
     "phanan/poddle": "^1.0",
-    "spatie/laravel-ray": "^1.36"
+    "spatie/laravel-ray": "^1.36",
+    "tiben/crontab-manager": "*"
   },
   "require-dev": {
     "mockery/mockery": "~1.0",
@@ -54,7 +55,9 @@
     "fakerphp/faker": "^1.13",
     "slevomat/coding-standard": "^7.0",
     "laravel/tinker": "^2.9",
-    "larastan/larastan": "^2.9"
+    "larastan/larastan": "^2.9",
+    "phlak/semver": "^5.0",
+    "laravel/prompts": "^0.1.25"
   },
   "suggest": {
     "ext-zip": "Allow downloading multiple songs as Zip archives"

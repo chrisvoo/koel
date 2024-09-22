@@ -104,11 +104,12 @@ You can also edit multiple songs at once, in which case the changes will be appl
 ## Downloading Songs
 
 If `ALLOW_DOWNLOAD` is set to `true` (the default value) in your `.env` file, you can download a song by right-clicking on it and choosing "Download."
-You can also download several songs, all songs from an album, all songs by an artist, or a whole playlist, though it might be resource-intensive for large collections.
 
-:::tip `zip-ext` required
-Downloading multiple songs requires the [`zip` extension](https://www.php.net/manual/en/book.zip.php) to be installed and enabled in your PHP environment.
-Koel will silently fail if this requirement is not met.
+You can also download several songs, all songs from an album, all songs by an artist, or a whole playlist as a zip file via the "Download" buttons found on according screens or context menus.
+This feature requires the [`zip` extension](https://www.php.net/manual/en/book.zip.php) to be installed and enabled on the server.
+
+:::warning Resource Intensive
+Downloading a large number of songs at once (or a big playlist) can be resource-intensive, may take a long time, or even (silently) fail.
 :::
 
 ## Deleting Songs
@@ -132,8 +133,9 @@ Koel has a number of keyboard shortcuts to make it easier to navigate and contro
 Note that these shortcuts are only triggered when the focus is not on an input field (including the volume control and the music track)
 or a textarea.
 
-* <kbd>q</kbd> toggle the Queue screen
-* <kbd>f</kbd> puts the focus into the search box and triggers the instant search screen
+* <kbd>h</kbd> shows the Home screen
+* <kbd>q</kbd> toggles the Queue screen
+* <kbd>f</kbd> puts the focus into the search box and triggers the [instant search](search.md) screen
 * <kbd>Enter</kbd> plays a song. If multiple songs are being selected, <kbd>Enter</kbd> adds them to the bottom of the queue, <kbd>Shift</kbd>+<kbd>Enter</kbd> queues them to top. Adding a <kbd>Cmd</kbd> or <kbd>Ctrl</kbd> into the combo plays the first selected song right away.
 * <kbd>Space</kbd> toggles playback
 * <kbd>j</kbd> plays the next song in queue

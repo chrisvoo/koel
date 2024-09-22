@@ -194,8 +194,8 @@
 </template>
 
 <script lang="ts" setup>
-import _ from "lodash";
 import { computed, reactive, ref } from 'vue'
+import { isEqual } from 'lodash'
 import { defaultCover, eventBus, pluralize } from '@/utils'
 import { songStore, SongUpdateData } from '@/stores'
 import { useDialogBox, useErrorHandler, useMessageToaster, useModal, useOverlay } from '@/composables'
@@ -277,7 +277,7 @@ const emit = defineEmits<{ (e: 'close'): void }>()
 const close = () => emit('close')
 
 const maybeClose = async () => {
-  if (_.isEqual(formData, initialFormData)) {
+  if (isEqual(formData, initialFormData)) {
     close()
     return
   }

@@ -26,7 +26,7 @@ import { faClockRotateLeft, faHeart, faUsers, faWandMagicSparkles } from '@forta
 import { ListMusicIcon } from 'lucide-vue-next'
 import { computed, ref, toRefs } from 'vue'
 import { eventBus } from '@/utils'
-// import { favoriteStore } from '@/stores'
+//import { favoriteStore } from '@/stores'
 import { useDraggable, useDroppable, usePlaylistManagement, useRouter } from '@/composables'
 
 import SidebarItem from '@/components/layout/main-wrapper/sidebar/SidebarItem.vue'

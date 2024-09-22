@@ -98,6 +98,7 @@ eventBus.on('SONGS_DELETED', () => {
   systemStore.refresh()
 })
   .on('SONGS_UPDATED', () => overviewStore.fetch())
+  .on('SONG_UPLOADED', () => overviewStore.fetch())
 
 useRouter().onScreenActivated('Home', async () => {
   if (!initialized) {

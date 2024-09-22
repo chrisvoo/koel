@@ -8,13 +8,12 @@ interface YouTubeSearchResult {
 
 export const youTubeService = {
   searchVideosBySong: async (song: Song, nextPageToken: string) => {
-    return [];
-    // return await cache.remember<YouTubeSearchResult>(
-    //   ['youtube.search', song.id, nextPageToken],
-    //   async () => await http.get<YouTubeSearchResult>(
-    //     `youtube/search/song/${song.id}?pageToken=${nextPageToken}`
-    //   )
-    // )
+    return await cache.remember<YouTubeSearchResult>(
+      ['youtube.search', song.id, nextPageToken],
+      async () => await http.get<YouTubeSearchResult>(
+        `youtube/search/song/${song.id}?pageToken=${nextPageToken}`
+      )
+    )
   },
 
   play: (video: YouTubeVideo): void => {

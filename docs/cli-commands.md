@@ -13,6 +13,7 @@ You can run `php artisan list` from your Koel installation directory and pipe th
 php artisan list | grep koel
  koel
   koel:admin:change-password  Change a user's password
+  koel:doctor                 Check Koel setup
   koel:init                   Install or upgrade Koel
   koel:license:activate       Activate a Koel Plus license
   koel:license:deactivate     Deactivate the currently active Koel Plus license
@@ -25,6 +26,17 @@ php artisan list | grep koel
 In order to get help on a specific command, run `php artisan <command> -h`.
 
 ## Available Commands
+
+:::warning Warning
+Always run commands as your web server user (e.g. `www-data` or `nginx`), **never** as `root`.
+Otherwise, Koel might encounter issues with file permissions (e.g. with cache and storage files) and you might end up with a broken installation.
+
+With the Docker installation, for example, run the command as the `www-data` user:
+
+```bash
+docker exec --user www-data <container_name_for_koel> php artisan <command>
+```
+:::
 
 ### `koel:admin:change-password`
 
@@ -41,6 +53,16 @@ php artisan koel:admin:change-password [<email>]
 |---------|--------------------------------------------------------------|
 | `email` | The user's email. If empty, will get the default admin user. |
 
+### `koel:doctor`
+
+Check Koel setup.
+
+#### Usage
+
+```bash
+php artisan koel:doctor
+```
+
 ### `koel:init`
 
 Install or upgrade Koel.
@@ -52,9 +74,10 @@ php artisan koel:init [options]
 ```
 
 #### Options
-| Name          | Description                     |
-|---------------|---------------------------------|
-| `--no-assets` | Do not compile front-end assets |
+| Name             | Description                     |
+|------------------|---------------------------------|
+| `--no-assets`    | Do not compile front-end assets |
+| `--no-scheduler` | Do not install scheduler        |
 
 ### `koel:license:activate`
 
@@ -132,9 +155,13 @@ php artisan koel:sync [options] # Alias, deprecated
 | `I`, `--ignore=` | The comma-separated tags to ignore (exclude) from scanning. Valid tags are `title`, `album`,`artist`, `albumartist`, `track`, `disc`, `year`, `genre`, `lyrics`, and `cover`. |
 | `F`, `--force`   | Force re-scanning even unchanged files.                                                                                                                                       |
 
+### `koel:scheduler:install`
+
+Install the command scheduler. Refer to [Command Scheduling](#command-scheduling) for more information.
+
 ### `koel:search:import`
 
-Import all searchable entities with Scout. See [Instant Search](./usage/search) for more information.
+Import all searchable entities with Scout. Refer to [Instant Search](./usage/search) for more information.
 
 #### Usage
 
@@ -199,15 +226,22 @@ php artisan koel:tags:collect
 ## Command Scheduling
 
 Some of the commands, such as `koel:scan` and `koel:prune`, can be scheduled to run at regular intervals.
-Koel uses Laravel’s built-in scheduler to manage this.
+Instead of setting up individual cron jobs, you can use Koel’s built-in scheduler to automatically handle the commands for you.
 
-In order to set up the scheduler, you need to add the following cron entry to your server:
+To set up the scheduler, run the `koel:scheduler:install` command as the web server user (e.g. `www-data` or `nginx`):
+
+```bash
+php artisan koel:scheduler:install
+```
+
+Alternatively, you can manually add the following cron entry into the crontab of the webserver user (for example, if it's `www-data`, run `sudo crontab -u www-data -e`):
 
 ```bash
 * * * * * cd /path-to-koel-installation && php artisan schedule:run >> /dev/null 2>&1
 ```
 
-This will run the scheduler every minute, which will then run any scheduled commands as needed.
+Either way, the scheduler will run every minute once installed, executing any scheduled commands as needed.
 By default, `koel:scan`, `koel:prune`, and `koel:podcasts:sync` are set to run every day at midnight.
 
-Though you can still manually set up cron jobs for individual commands, the scheduler is the recommended approach to command scheduling in Koel, as it will automatically cover any commands that may be added in the future.
+Though you can still manually set up cron jobs for individual commands, the scheduler is the recommended approach to do command scheduling in Koel,
+as it will automatically cover any commands that may be added in the future.
