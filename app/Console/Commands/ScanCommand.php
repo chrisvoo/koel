@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\ScanResultType;
 use App\Models\Setting;
 use App\Models\User;
 use App\Repositories\UserRepository;
@@ -100,6 +101,23 @@ class ScanCommand extends Command
             "<fg=yellow>{$results->skipped()->count()}</> unchanged song(s)",
             "<fg=red>{$results->error()->count()}</> invalid file(s)",
         ]);
+
+        if (count($results->error()) > 0) {
+            /** @var array<ScanResult> $filteredErrors */
+            $filteredErrors = array_filter(
+                $results->error()->toArray(),
+                static fn (ScanResult $result) => $result->type !== ScanResultType::SKIPPED
+            );
+
+            if (count($filteredErrors) > 0) {
+                $this->table(
+                    ['Path', 'Type', 'Message'],
+                    $filteredErrors
+                );
+            }
+        } else {
+            $this->info('Invalid results are just skipped');
+        }
     }
 
     /**
