@@ -1,9 +1,10 @@
-import { cache, http } from '@/services'
+import { cache } from '@/services/cache'
+import { http } from '@/services/http'
 
 export const playlistCollaborationService = {
   async createInviteLink (playlist: Playlist) {
     if (playlist.is_smart) {
-      throw Error('Smart playlists are not collaborative.')
+      throw new Error('Smart playlists are not collaborative.')
     }
 
     const token = (await http.post<{ token: string }>(`playlists/${playlist.id}/collaborators/invite`)).token
@@ -22,5 +23,5 @@ export const playlistCollaborationService = {
     await http.delete(`playlists/${playlist.id}/collaborators`, { collaborator: collaborator.id })
     // invalidate the playlist cache
     cache.remove(['playlist.songs', playlist.id])
-  }
+  },
 }

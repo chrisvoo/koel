@@ -59,22 +59,23 @@
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import { reactive, toRef } from 'vue'
 import { cloneDeep, isEqual } from 'lodash'
-import { playlistFolderStore, playlistStore } from '@/stores'
-import { eventBus } from '@/utils'
-import {
-  useDialogBox,
-  useErrorHandler,
-  useKoelPlus,
-  useMessageToaster,
-  useModal,
-  useOverlay,
-  useSmartPlaylistForm
-} from '@/composables'
+import { playlistFolderStore } from '@/stores/playlistFolderStore'
+import { playlistStore } from '@/stores/playlistStore'
+import { eventBus } from '@/utils/eventBus'
+import { useDialogBox } from '@/composables/useDialogBox'
+import { useErrorHandler } from '@/composables/useErrorHandler'
+import { useMessageToaster } from '@/composables/useMessageToaster'
+import { useModal } from '@/composables/useModal'
+import { useOverlay } from '@/composables/useOverlay'
+import { useSmartPlaylistForm } from '@/composables/useSmartPlaylistForm'
+import { useKoelPlus } from '@/composables/useKoelPlus'
+
 import CheckBox from '@/components/ui/form/CheckBox.vue'
 import TextInput from '@/components/ui/form/TextInput.vue'
 import FormRow from '@/components/ui/form/FormRow.vue'
 import SelectBox from '@/components/ui/form/SelectBox.vue'
 
+const emit = defineEmits<{ (e: 'close'): void }>()
 const { showOverlay, hideOverlay } = useOverlay()
 const { toastSuccess } = useMessageToaster()
 const { showConfirmDialog } = useDialogBox()
@@ -94,10 +95,9 @@ const {
   RuleGroup,
   collectedRuleGroups,
   addGroup,
-  onGroupChanged
+  onGroupChanged,
 } = useSmartPlaylistForm(mutablePlaylist.rules)
 
-const emit = defineEmits<{ (e: 'close'): void }>()
 const close = () => emit('close')
 
 const maybeClose = async () => {

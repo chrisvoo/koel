@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest'
 import UnitTestCase from '@/__tests__/UnitTestCase'
-import { preferenceStore, themeStore } from '.'
+import { preferenceStore } from '@/stores/preferenceStore'
+import { themeStore } from '@/stores/themeStore'
 
 const testTheme: Theme = {
   id: 'test',
@@ -8,8 +9,8 @@ const testTheme: Theme = {
   properties: {
     '--color-text-primary': '#eee',
     '--color-text-secondary': '#ddd',
-    '--bg-image': '/images/bg.jpg'
-  }
+    '--bg-image': '/images/bg.jpg',
+  },
 }
 
 new class extends UnitTestCase {
@@ -24,7 +25,7 @@ new class extends UnitTestCase {
 
   protected afterEach () {
     super.afterEach(() => {
-      for (let key in themeStore.defaultProperties) {
+      for (const key in themeStore.defaultProperties) {
         document.documentElement.style.removeProperty(key)
       }
 
@@ -48,7 +49,7 @@ new class extends UnitTestCase {
         '--bg-image': '',
         '--bg-position': '',
         '--bg-attachment': '',
-        '--bg-size': ''
+        '--bg-size': '',
       })
 
       expect(applyMock).toHaveBeenCalled()
@@ -66,8 +67,8 @@ new class extends UnitTestCase {
         id: 'another',
         thumbnailColor: '#ccc',
         properties: {
-          '--color-text-primary': '#ccc'
-        }
+          '--color-text-primary': '#ccc',
+        },
       })
 
       expect(document.documentElement.getAttribute('data-theme')).toEqual('another')

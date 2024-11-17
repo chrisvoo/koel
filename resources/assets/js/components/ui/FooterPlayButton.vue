@@ -13,32 +13,37 @@
 <script lang="ts" setup>
 import { faPause, faPlay } from '@fortawesome/free-solid-svg-icons'
 import { computed, ref } from 'vue'
-import { playbackService } from '@/services'
-import { commonStore, queueStore, recentlyPlayedStore, songStore } from '@/stores'
-import { requireInjection } from '@/utils'
-import { useRouter } from '@/composables'
+import { playbackService } from '@/services/playbackService'
+import { commonStore } from '@/stores/commonStore'
+// import { favoriteStore } from '@/stores/favoriteStore'
+import { queueStore } from '@/stores/queueStore'
+import { recentlyPlayedStore } from '@/stores/recentlyPlayedStore'
+import { songStore } from '@/stores/songStore'
+import { useRouter } from '@/composables/useRouter'
+import { requireInjection } from '@/utils/helpers'
 import { CurrentPlayableKey } from '@/symbols'
+
 import FooterButton from '@/components/layout/app-footer/FooterButton.vue'
 
-const { getCurrentScreen, getRouteParam, go } = useRouter()
+const { getCurrentScreen, getRouteParam, go, url } = useRouter()
 const song = requireInjection(CurrentPlayableKey, ref())
 
 const libraryEmpty = computed(() => commonStore.state.song_count === 0)
 const playing = computed(() => song.value?.playback_state === 'Playing')
 
-const toggle = async () => song.value ? playbackService.toggle() : initiatePlayback()
-
 const initiatePlayback = async () => {
-  if (libraryEmpty.value) return
+  if (libraryEmpty.value) {
+    return
+  }
 
   let playables: Playable[]
 
   switch (getCurrentScreen()) {
     case 'Album':
-      playables = await songStore.fetchForAlbum(parseInt(getRouteParam('id')!))
+      playables = await songStore.fetchForAlbum(Number.parseInt(getRouteParam('id')!))
       break
     case 'Artist':
-      playables = await songStore.fetchForArtist(parseInt(getRouteParam('id')!))
+      playables = await songStore.fetchForArtist(Number.parseInt(getRouteParam('id')!))
       break
     case 'Playlist':
       playables = await songStore.fetchForPlaylist(getRouteParam('id')!)
@@ -52,6 +57,8 @@ const initiatePlayback = async () => {
   }
 
   await playbackService.queueAndPlay(playables)
-  go('queue')
+  go(url('queue'))
 }
+
+const toggle = async () => song.value ? playbackService.toggle() : initiatePlayback()
 </script>

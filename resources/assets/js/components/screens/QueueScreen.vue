@@ -44,7 +44,7 @@
       </template>
 
       No songs queued.
-      <span v-if="libraryNotEmpty" class="d-block secondary">
+      <span v-if="libraryNotEmpty" class="block secondary">
         How about
         <a class="start" @click.prevent="shuffleSome">playing some random songs</a>?
       </span>
@@ -55,17 +55,23 @@
 <script lang="ts" setup>
 import { faCoffee } from '@fortawesome/free-solid-svg-icons'
 import { computed, ref, toRef } from 'vue'
-import { pluralize } from '@/utils'
-import { commonStore, queueStore, songStore } from '@/stores'
-import { cache, playbackService } from '@/services'
-import { useErrorHandler, useRouter, useSongList, useSongListControls } from '@/composables'
+import { pluralize } from '@/utils/formatters'
+import { commonStore } from '@/stores/commonStore'
+import { queueStore } from '@/stores/queueStore'
+import { songStore } from '@/stores/songStore'
+import { cache } from '@/services/cache'
+import { playbackService } from '@/services/playbackService'
+import { useRouter } from '@/composables/useRouter'
+import { useErrorHandler } from '@/composables/useErrorHandler'
+import { useSongList } from '@/composables/useSongList'
+import { useSongListControls } from '@/composables/useSongListControls'
 
 import ScreenHeader from '@/components/ui/ScreenHeader.vue'
 import ScreenEmptyState from '@/components/ui/ScreenEmptyState.vue'
 import SongListSkeleton from '@/components/ui/skeletons/SongListSkeleton.vue'
 import ScreenBase from '@/components/screens/ScreenBase.vue'
 
-const { go, onScreenActivated } = useRouter()
+const { go, onScreenActivated, url } = useRouter()
 
 const {
   SongList,
@@ -81,7 +87,7 @@ const {
   isPhone,
   playSelected,
   applyFilter,
-  onScrollBreakpoint
+  onScrollBreakpoint,
 } = useSongList(toRef(queueStore.state, 'playables'), { type: 'Queue' }, { reorderable: true, sortable: false })
 
 const { SongListControls, config } = useSongListControls('Queue')
@@ -91,7 +97,7 @@ const libraryNotEmpty = computed(() => commonStore.state.song_count > 0)
 
 const playAll = async (shuffle = true) => {
   playbackService.queueAndPlay(songs.value, shuffle)
-  go('queue')
+  go(url('queue'))
 }
 
 const shuffleSome = async () => {
@@ -112,7 +118,9 @@ const clearQueue = () => {
 }
 
 const removeSelected = async () => {
-  if (!selectedPlayables.value.length) return
+  if (!selectedPlayables.value.length) {
+    return
+  }
 
   const currentSongId = queueStore.current?.id
   queueStore.unqueue(selectedPlayables.value)
@@ -137,7 +145,7 @@ onScreenActivated('Queue', async () => {
     song = await songStore.resolve(cache.get('song-to-queue')!)
 
     if (!song) {
-      throw 'Song not found'
+      throw new Error('Song not found')
     }
   } catch (error: unknown) {
     useErrorHandler('dialog').handleHttpError(error)

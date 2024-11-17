@@ -24,14 +24,14 @@
         <p class="text-k-text-secondary text-[0.9rem] opacity-80 overflow-hidden">
           <a
             v-if="isSong(playable)"
-            :href="`#/artist/${playable.artist_id}`"
+            :href="url('artists.show', { id: playable.artist_id })"
             class="!text-k-text-primary hover:!text-k-accent"
           >
             {{ playable.artist_name }}
           </a>
           <a
             v-if="isEpisode(playable)"
-            :href="`#/podcasts/${playable.podcast_id}`"
+            :href="url('podcasts.show', { id: playable.podcast_id })"
             class="!text-k-text-primary hover:!text-k-accent"
           >
             {{ playable.podcast_title }}
@@ -46,9 +46,14 @@
 
 <script lang="ts" setup>
 import { computed, toRefs } from 'vue'
-import { eventBus, isEpisode, isSong, pluralize } from '@/utils'
-import { playbackService } from '@/services'
-import { useAuthorization, useDraggable, useKoelPlus } from '@/composables'
+import { isEpisode, isSong } from '@/utils/typeGuards'
+import { eventBus } from '@/utils/eventBus'
+import { pluralize } from '@/utils/formatters'
+import { playbackService } from '@/services/playbackService'
+import { useAuthorization } from '@/composables/useAuthorization'
+import { useDraggable } from '@/composables/useDragAndDrop'
+import { useKoelPlus } from '@/composables/useKoelPlus'
+import { useRouter } from '@/composables/useRouter'
 
 import SongThumbnail from '@/components/song/SongThumbnail.vue'
 //import LikeButton from '@/components/song/SongLikeButton.vue'
@@ -60,16 +65,19 @@ const { playable } = toRefs(props)
 const { isPlus } = useKoelPlus()
 const { currentUser } = useAuthorization()
 const { startDragging } = useDraggable('playables')
+const { url } = useRouter()
 
 const external = computed(() => {
-  if (!isSong(playable.value)) return false
+  if (!isSong(playable.value)) {
+    return false
+  }
   return isPlus.value && playable.value.owner_id !== currentUser.value?.id
 })
 
 const requestContextMenu = (event: MouseEvent) => eventBus.emit(
   'PLAYABLE_CONTEXT_MENU_REQUESTED',
   event,
-  playable.value
+  playable.value,
 )
 
 const onDragStart = (event: DragEvent) => startDragging(event, [playable.value])
@@ -84,7 +92,8 @@ article {
 
   /* show the thumbnail's playback control on the whole card focus and hover */
 
-  &:hover :deep(.song-thumbnail), &:focus :deep(.song-thumbnail) {
+  &:hover :deep(.song-thumbnail),
+  &:focus :deep(.song-thumbnail) {
     &::before {
       @apply opacity-70;
     }

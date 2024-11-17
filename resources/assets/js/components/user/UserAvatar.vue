@@ -3,14 +3,14 @@
     :alt="`Avatar of ${user.name}`"
     :src="avatar"
     :title="user.name"
-    @error="avatar = defaultCover"
     class="object-cover rounded-full aspect-square bg-k-bg-primary"
+    @error="avatar = defaultCover"
   >
 </template>
 
 <script lang="ts" setup>
-import { toRefs, ref } from 'vue'
-import { defaultCover } from '@/utils'
+import { ref, toRefs } from 'vue'
+import defaultCover from '@/../img/covers/default.svg'
 
 const props = defineProps<{ user: Pick<User, 'name' | 'avatar'> }>()
 const { user } = toRefs(props)

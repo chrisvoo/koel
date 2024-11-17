@@ -33,8 +33,8 @@
 
 <script lang="ts" setup>
 import { computed, toRefs } from 'vue'
-import { useRouter } from '@/composables'
-import { getPlayableCollectionContentType } from '@/utils'
+import { useRouter } from '@/composables/useRouter'
+import { getPlayableCollectionContentType } from '@/utils/typeGuards'
 
 import SongCardSkeleton from '@/components/ui/skeletons/SongCardSkeleton.vue'
 import ExcerptResultBlock from '@/components/screens/search/ExcerptResultBlock.vue'
@@ -59,9 +59,9 @@ const headingText = computed(() => {
 })
 
 const { playables, query, searching } = toRefs(props)
-const { go } = useRouter()
+const { go, url } = useRouter()
 
-const goToSongResults = () => go(`search/songs/?q=${query.value}`)
+const goToSongResults = () => go(`${url('search.songs')}/?q=${query.value}`)
 </script>
 
 <style lang="postcss" scoped>

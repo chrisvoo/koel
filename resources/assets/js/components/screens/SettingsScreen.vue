@@ -4,7 +4,7 @@
       <ScreenHeader>Settings</ScreenHeader>
     </template>
 
-    <p v-if="storageDriver !== 'local'" class="textk-text-secondary">
+    <p v-if="storageDriver !== 'local'" class="text-k-text-secondary">
       Since you’re not using a cloud storage, there’s no need to set a media path.
     </p>
 
@@ -40,9 +40,13 @@
 
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
-import { commonStore, settingStore } from '@/stores'
-import { forceReloadWindow, } from '@/utils'
-import { useDialogBox, useErrorHandler, useMessageToaster, useOverlay, useRouter } from '@/composables'
+import { commonStore } from '@/stores/commonStore'
+import { settingStore } from '@/stores/settingStore'
+import { useRouter } from '@/composables/useRouter'
+import { useDialogBox } from '@/composables/useDialogBox'
+import { useMessageToaster } from '@/composables/useMessageToaster'
+import { useOverlay } from '@/composables/useOverlay'
+import { useErrorHandler } from '@/composables/useErrorHandler'
 
 import ScreenHeader from '@/components/ui/ScreenHeader.vue'
 import Btn from '@/components/ui/form/Btn.vue'
@@ -52,7 +56,7 @@ import FormRow from '@/components/ui/form/FormRow.vue'
 
 const { toastSuccess } = useMessageToaster()
 const { showConfirmDialog } = useDialogBox()
-const { go } = useRouter()
+const { go, url } = useRouter()
 const { showOverlay, hideOverlay } = useOverlay()
 
 const storageDriver = ref(commonStore.state.storage_driver)
@@ -79,8 +83,7 @@ const save = async () => {
     await settingStore.update({ media_path: mediaPath.value })
     toastSuccess('Settings saved.')
     // Make sure we're back to home first.
-    go('home')
-    forceReloadWindow()
+    go(url('home'), true)
   } catch (error: unknown) {
     useErrorHandler('dialog').handleHttpError(error)
   } finally {
@@ -92,7 +95,7 @@ const confirmThenSave = async () => {
   if (shouldWarn.value) {
     await showConfirmDialog('Changing the media path will essentially remove all existing local data – songs, artists, \
           albums, favorites, etc. Sure you want to proceed?', 'Confirm')
-    && await save()
+          && await save()
   } else {
     await save()
   }

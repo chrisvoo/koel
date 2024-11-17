@@ -39,9 +39,11 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, ref, toRef } from 'vue'
-import { searchStore } from '@/stores'
-import { useRouter, useSongList, useSongListControls } from '@/composables'
-import { pluralize } from '@/utils'
+import { searchStore } from '@/stores/searchStore'
+import { useSongList } from '@/composables/useSongList'
+import { useSongListControls } from '@/composables/useSongListControls'
+import { useRouter } from '@/composables/useRouter'
+import { pluralize } from '@/utils/formatters'
 
 import ScreenHeader from '@/components/ui/ScreenHeader.vue'
 import SongListSkeleton from '@/components/ui/skeletons/SongListSkeleton.vue'
@@ -65,7 +67,7 @@ const {
   playAll,
   playSelected,
   applyFilter,
-  onScrollBreakpoint
+  onScrollBreakpoint,
 } = useSongList(toRef(searchStore.state, 'playables'), { type: 'Search.Songs' })
 
 const { SongListControls, config } = useSongListControls('Search.Songs')
@@ -76,7 +78,9 @@ searchStore.resetPlayableResultState()
 
 onMounted(async () => {
   q.value = getRouteParam('q') || ''
-  if (!q.value) return
+  if (!q.value) {
+    return
+  }
 
   loading.value = true
   await searchStore.playableSearch(q.value)

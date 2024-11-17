@@ -19,9 +19,12 @@
 
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
-import { authService } from '@/services'
-import { base64Decode } from '@/utils'
-import { useErrorHandler, useMessageToaster, useRouter } from '@/composables'
+import { authService } from '@/services/authService'
+import { base64Decode } from '@/utils/crypto'
+import { logger } from '@/utils/logger'
+import { useErrorHandler } from '@/composables/useErrorHandler'
+import { useMessageToaster } from '@/composables/useMessageToaster'
+import { useRouter } from '@/composables/useRouter'
 
 import PasswordField from '@/components/ui/form/PasswordField.vue'
 import Btn from '@/components/ui/form/Btn.vue'
@@ -39,6 +42,7 @@ const validPayload = computed(() => email.value && token.value)
 try {
   [email.value, token.value] = base64Decode(decodeURIComponent(getRouteParam('payload')!)).split('|')
 } catch (error: unknown) {
+  logger.error(error)
   toastError('Invalid reset password link.')
 }
 

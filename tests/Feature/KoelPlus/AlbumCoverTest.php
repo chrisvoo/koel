@@ -7,6 +7,7 @@ use App\Models\Song;
 use App\Services\MediaMetadataService;
 use Mockery;
 use Mockery\MockInterface;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\PlusTestCase;
 
 use function Tests\create_admin;
@@ -23,7 +24,8 @@ class AlbumCoverTest extends PlusTestCase
         $this->mediaMetadataService = self::mock(MediaMetadataService::class);
     }
 
-    public function testNormalUserCanUploadCoverIfOwningAllSongsInAlbum(): void
+    #[Test]
+    public function normalUserCanUploadCoverIfOwningAllSongsInAlbum(): void
     {
         $user = create_user();
 
@@ -36,11 +38,12 @@ class AlbumCoverTest extends PlusTestCase
             ->once()
             ->with(Mockery::on(static fn (Album $target) => $target->is($album)), 'data:image/jpeg;base64,Rm9v');
 
-        $this->putAs("api/albums/$album->id/cover", ['cover' => 'data:image/jpeg;base64,Rm9v'], $user)
+        $this->putAs("api/albums/{$album->id}/cover", ['cover' => 'data:image/jpeg;base64,Rm9v'], $user)
             ->assertOk();
     }
 
-    public function testNormalUserCannotUploadCoverIfNotOwningAllSongsInAlbum(): void
+    #[Test]
+    public function normalUserCannotUploadCoverIfNotOwningAllSongsInAlbum(): void
     {
         $user = create_user();
 
@@ -53,11 +56,12 @@ class AlbumCoverTest extends PlusTestCase
             ->shouldReceive('writeAlbumCover')
             ->never();
 
-        $this->putAs("api/albums/$album->id/cover", ['cover' => 'data:image/jpeg;base64,Rm9v'], $user)
+        $this->putAs("api/albums/{$album->id}/cover", ['cover' => 'data:image/jpeg;base64,Rm9v'], $user)
             ->assertForbidden();
     }
 
-    public function testAdminCanUploadCoverEvenIfNotOwningAllSongsInAlbum(): void
+    #[Test]
+    public function adminCanUploadCoverEvenIfNotOwningAllSongsInAlbum(): void
     {
         $user = create_user();
 
@@ -70,7 +74,7 @@ class AlbumCoverTest extends PlusTestCase
             ->once()
             ->with(Mockery::on(static fn (Album $target) => $target->is($album)), 'data:image/jpeg;base64,Rm9v');
 
-        $this->putAs("api/albums/$album->id/cover", ['cover' => 'data:image/jpeg;base64,Rm9v'], create_admin())
+        $this->putAs("api/albums/{$album->id}/cover", ['cover' => 'data:image/jpeg;base64,Rm9v'], create_admin())
             ->assertOk();
     }
 }

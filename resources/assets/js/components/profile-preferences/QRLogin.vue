@@ -12,8 +12,8 @@
 <script lang="ts" setup>
 import { onMounted, ref, watch } from 'vue'
 import { useQRCode } from '@vueuse/integrations/useQRCode'
-import { authService } from '@/services'
-import { base64Encode } from '@/utils'
+import { authService } from '@/services/authService'
+import { base64Encode } from '@/utils/crypto'
 
 const qrCodeData = ref('')
 const oneTimeToken = ref('')
@@ -21,13 +21,13 @@ const oneTimeToken = ref('')
 watch(oneTimeToken, () => {
   qrCodeData.value = base64Encode(JSON.stringify({
     token: oneTimeToken.value,
-    host: window.BASE_URL
+    host: window.BASE_URL,
   }))
 })
 
 const qrCodeUrl = useQRCode(qrCodeData, {
   width: window.devicePixelRatio === 1 ? 196 : 384,
-  height: window.devicePixelRatio === 1 ? 196 : 384
+  height: window.devicePixelRatio === 1 ? 196 : 384,
 })
 
 let oneTimeTokenTimeout: number | null = null

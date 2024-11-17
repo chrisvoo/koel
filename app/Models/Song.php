@@ -19,12 +19,12 @@ use App\Values\SongStorageMetadata\SongStorageMetadata;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Str;
 use Laravel\Scout\Searchable;
 use PhanAn\Poddle\Values\EpisodeMetadata;
 use Throwable;
@@ -76,12 +76,11 @@ class Song extends Model
     use HasFactory;
     use Searchable;
     use SupportsDeleteWhereValueNotIn;
+    use HasUuids;
 
     public const ID_REGEX = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 
-    public $incrementing = false;
     protected $guarded = [];
-
     protected $hidden = ['updated_at', 'path', 'mtime'];
 
     protected $casts = [
@@ -100,13 +99,6 @@ class Song extends Model
     ];
 
     protected $with = ['album', 'artist', 'podcast'];
-
-    protected $keyType = 'string';
-
-    protected static function booted(): void
-    {
-        static::creating(static fn (Song $song) => $song->id ??= Str::uuid()->toString());
-    }
 
     public static function query(?PlayableType $type = null, ?User $user = null): SongBuilder
     {
@@ -139,11 +131,6 @@ class Song extends Model
         return $this->belongsTo(Album::class);
     }
 
-    protected function albumArtist(): Attribute
-    {
-        return Attribute::get(fn () => $this->album?->artist);
-    }
-
     public function podcast(): BelongsTo
     {
         return $this->belongsTo(Podcast::class);
@@ -157,6 +144,11 @@ class Song extends Model
     public function interactions(): HasMany
     {
         return $this->hasMany(Interaction::class);
+    }
+
+    protected function albumArtist(): Attribute
+    {
+        return Attribute::get(fn () => $this->album?->artist)->shouldCache();
     }
 
     protected function type(): Attribute
@@ -175,12 +167,13 @@ class Song extends Model
 
     public function ownedBy(User $user): bool
     {
+        // Do not use $song->owner->is($user) here, as it may trigger an extra query.
         return $this->owner_id === $user->id;
     }
 
     protected function storageMetadata(): Attribute
     {
-        return new Attribute(
+        return (new Attribute(
             get: function (): SongStorageMetadata {
                 try {
                     switch ($this->storage) {
@@ -207,7 +200,7 @@ class Song extends Model
                     return LocalMetadata::make($this->path);
                 }
             }
-        );
+        ))->shouldCache();
     }
 
     public static function getPathFromS3BucketAndKey(string $bucket, string $key): string

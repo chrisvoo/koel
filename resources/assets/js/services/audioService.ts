@@ -1,6 +1,7 @@
-import { equalizerStore } from '@/stores'
-import { frequencies } from '@/config'
-import { dbToGain } from '@/utils'
+import { equalizerStore } from '@/stores/equalizerStore'
+import { frequencies } from '@/config/audio'
+
+export const dbToGain = (db: number) => 10 ** (db / 20) || 0
 
 export interface Band {
   label: string
@@ -57,7 +58,7 @@ export const audioService = {
       this.bands.push({
         node: filter,
         label: String(frequency).replace('000', 'K'),
-        db: config.gains[i]
+        db: config.gains[i],
       })
     })
 
@@ -84,7 +85,9 @@ export const audioService = {
   unlockAudioContext () {
     ['touchend', 'touchstart', 'click'].forEach(event => {
       document.addEventListener(event, () => {
-        if (this.unlocked) return
+        if (this.unlocked) {
+          return
+        }
 
         const source = this.context.createBufferSource()
         source.buffer = this.context.createBuffer(1, 1, 22050)
@@ -93,8 +96,8 @@ export const audioService = {
 
         this.unlocked = true
       }, {
-        once: true
+        once: true,
       })
     })
-  }
+  },
 }

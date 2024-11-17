@@ -41,17 +41,19 @@
         <Icon :icon="faClock" />
       </template>
       No songs recently played.
-      <span class="secondary d-block">Start playing to populate this playlist.</span>
+      <span class="secondary block">Start playing to populate this playlist.</span>
     </ScreenEmptyState>
   </ScreenBase>
 </template>
 
 <script lang="ts" setup>
 import { faClock } from '@fortawesome/free-regular-svg-icons'
-import { pluralize } from '@/utils'
-import { recentlyPlayedStore } from '@/stores'
-import { useRouter, useSongList, useSongListControls } from '@/composables'
 import { ref, toRef } from 'vue'
+import { pluralize } from '@/utils/formatters'
+import { recentlyPlayedStore } from '@/stores/recentlyPlayedStore'
+import { useRouter } from '@/composables/useRouter'
+import { useSongList } from '@/composables/useSongList'
+import { useSongListControls } from '@/composables/useSongListControls'
 
 import ScreenHeader from '@/components/ui/ScreenHeader.vue'
 import ScreenEmptyState from '@/components/ui/ScreenEmptyState.vue'
@@ -75,13 +77,13 @@ const {
   playAll,
   playSelected,
   applyFilter,
-  onScrollBreakpoint
+  onScrollBreakpoint,
 } = useSongList(recentlyPlayedSongs, { type: 'RecentlyPlayed' }, { sortable: false })
 
 const { SongListControls, config } = useSongListControls('RecentlyPlayed')
 
 let initialized = false
-let loading = ref(false)
+const loading = ref(false)
 
 useRouter().onScreenActivated('RecentlyPlayed', async () => {
   if (!initialized) {

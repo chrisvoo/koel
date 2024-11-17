@@ -4,7 +4,7 @@
       <BtnGroup uppercase>
         <template v-if="altPressed">
           <Btn
-            v-if="selectedPlayables.length < 2 && playables.length"
+            v-if="selectedPlayables.length < 2 && filteredPlayables.length"
             v-koel-tooltip.bottom
             class="btn-play-all"
             highlight
@@ -30,7 +30,7 @@
 
         <template v-else>
           <Btn
-            v-if="selectedPlayables.length < 2 && playables.length"
+            v-if="selectedPlayables.length < 2 && filteredPlayables.length"
             v-koel-tooltip.bottom
             class="btn-shuffle-all"
             data-testid="btn-shuffle-all"
@@ -85,7 +85,7 @@
         </Btn>
       </BtnGroup>
 
-      <BtnGroup v-if="config.filter && playables.length">
+      <BtnGroup v-if="config.filter && allPlayables.length">
         <SongListFilter @change="filter" />
       </BtnGroup>
     </div>
@@ -100,22 +100,31 @@
 
 <script lang="ts" setup>
 import { faPlay, faRandom, faRotateRight, faTrashCan } from '@fortawesome/free-solid-svg-icons'
-import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, Ref, ref, toRef, watch } from 'vue'
+import type { Ref } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, toRef, watch } from 'vue'
 import { OnClickOutside } from '@vueuse/components'
-import { PlayablesKey, SelectedPlayablesKey } from '@/symbols'
-import { requireInjection } from '@/utils'
-import { useFloatingUi } from '@/composables'
+import { FilteredPlayablesKey, PlayablesKey, SelectedPlayablesKey } from '@/symbols'
+import { requireInjection } from '@/utils/helpers'
+import { useFloatingUi } from '@/composables/useFloatingUi'
 
 import AddToMenu from '@/components/song/AddToMenu.vue'
 import Btn from '@/components/ui/form/Btn.vue'
 import BtnGroup from '@/components/ui/form/BtnGroup.vue'
 
-const SongListFilter = defineAsyncComponent(() => import('@/components/song/SongListFilter.vue'))
-
 const props = defineProps<{ config: SongListControlsConfig }>()
+
+const emit = defineEmits<{
+  (e: 'playAll' | 'playSelected', shuffle: boolean): void
+  (e: 'filter', keywords: string): void
+  (e: 'clearQueue' | 'deletePlaylist' | 'refresh'): void
+}>()
+
+const SongListFilter = defineAsyncComponent(() => import('@/components/song/song-list/SongListFilter.vue'))
+
 const config = toRef(props, 'config')
 
-const [playables] = requireInjection<[Ref<Playable[]>]>(PlayablesKey)
+const [allPlayables] = requireInjection<[Ref<Playable[]>]>(PlayablesKey)
+const [filteredPlayables] = requireInjection<[Ref<Playable[]>]>(FilteredPlayablesKey)
 const [selectedPlayables] = requireInjection(SelectedPlayablesKey)
 
 const addToButton = ref<InstanceType<typeof Btn>>()
@@ -124,12 +133,6 @@ const showingAddToMenu = ref(false)
 const altPressed = ref(false)
 
 const showAddToButton = computed(() => Boolean(selectedPlayables.value.length))
-
-const emit = defineEmits<{
-  (e: 'playAll' | 'playSelected', shuffle: boolean): void,
-  (e: 'filter', keywords: string): void,
-  (e: 'clearQueue' | 'deletePlaylist' | 'refresh'): void,
-}>()
 
 const shuffle = () => emit('playAll', true)
 const shuffleSelected = () => emit('playSelected', true)

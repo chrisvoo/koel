@@ -1,9 +1,13 @@
 import { computed } from 'vue'
-import { commonStore } from '@/stores'
-import { acceptedMediaTypes } from '@/config'
-import { UploadFile, uploadService } from '@/services'
-import { getAllFileEntries, pluralize } from '@/utils'
-import { useMessageToaster, usePolicies, useRouter } from '@/composables'
+import { commonStore } from '@/stores/commonStore'
+import { acceptedMediaTypes } from '@/config/acceptedMediaTypes'
+import type { UploadFile } from '@/services/uploadService'
+import { uploadService } from '@/services/uploadService'
+import { getAllFileEntries } from '@/utils/directoryReader'
+import { pluralize } from '@/utils/formatters'
+import { useRouter } from '@/composables/useRouter'
+import { useMessageToaster } from '@/composables/useMessageToaster'
+import { usePolicies } from '@/composables/usePolicies'
 
 export const useUpload = () => {
   const { toastSuccess, toastWarning } = useMessageToaster()
@@ -27,7 +31,7 @@ export const useUpload = () => {
         id: `${file.name}-${file.size}`, // for simplicity, a file's identity is determined by its name and size
         status: 'Ready',
         name: file.name,
-        progress: 0
+        progress: 0,
       }))
 
     uploadService.queue(uploadCandidates)
@@ -56,6 +60,6 @@ export const useUpload = () => {
     mediaPathSetUp,
     allowsUpload,
     handleDropEvent,
-    queueFilesForUpload
+    queueFilesForUpload,
   }
 }

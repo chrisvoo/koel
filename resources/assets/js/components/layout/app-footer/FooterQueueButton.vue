@@ -16,17 +16,19 @@
 <script setup lang="ts">
 import { faListOl } from '@fortawesome/free-solid-svg-icons'
 import { ref } from 'vue'
-import { useDroppable, useMessageToaster, useRouter } from '@/composables'
-import { queueStore } from '@/stores'
-import { pluralize } from '@/utils'
+import { useDroppable } from '@/composables/useDragAndDrop'
+import { useRouter } from '@/composables/useRouter'
+import { useMessageToaster } from '@/composables/useMessageToaster'
+import { queueStore } from '@/stores/queueStore'
+import { pluralize } from '@/utils/formatters'
 
 import FooterButton from '@/components/layout/app-footer/FooterButton.vue'
 
-const { go, isCurrentScreen } = useRouter()
+const { go, isCurrentScreen, url } = useRouter()
 const { toastWarning, toastSuccess } = useMessageToaster()
 
 const { acceptsDrop, resolveDroppedItems } = useDroppable(
-  ['playables', 'album', 'artist', 'playlist', 'playlist-folder']
+  ['playables', 'album', 'artist', 'playlist', 'playlist-folder'],
 )
 
 const droppable = ref(false)
@@ -56,7 +58,7 @@ const onDrop = async (event: DragEvent) => {
   return false
 }
 
-const showQueue = () => go(isCurrentScreen('Queue') ? -1 : 'queue')
+const showQueue = () => go(isCurrentScreen('Queue') ? -1 : url('queue'))
 </script>
 
 <style lang="postcss" scoped>

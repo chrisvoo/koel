@@ -1,11 +1,11 @@
 import { merge } from 'lodash'
 import { reactive } from 'vue'
 
-import SongListControls from '@/components/song/SongListControls.vue'
+import SongListControls from '@/components/song/song-list/SongListControls.vue'
 
 export const useSongListControls = (
   screen: ScreenName,
-  configOverrides: Partial<SongListControlsConfig> | (() => Partial<SongListControlsConfig>) = {}
+  configOverrides: Partial<SongListControlsConfig> | (() => Partial<SongListControlsConfig>) = {},
 ) => {
   const defaults: SongListControlsConfig = {
     addTo: {
@@ -22,14 +22,14 @@ export const useSongListControls = (
       'Favorites',
       'RecentlyPlayed',
       'Playlist',
-      'Search.Songs'
-    ].includes(screen)
+      'Search.Songs',
+    ].includes(screen),
   }
 
   const config = merge(defaults, typeof configOverrides === 'function' ? configOverrides() : configOverrides)
 
   return {
     SongListControls,
-    config: reactive(config)
+    config: reactive(config),
   }
 }

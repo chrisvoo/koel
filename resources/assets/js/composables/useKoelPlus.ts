@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import { commonStore } from '@/stores'
+import { commonStore } from '@/stores/commonStore'
 
 export const useKoelPlus = () => {
   return {
@@ -7,10 +7,10 @@ export const useKoelPlus = () => {
     license: {
       shortKey: commonStore.state.koel_plus.short_key,
       customerName: commonStore.state.koel_plus.customer_name,
-      customerEmail: commonStore.state.koel_plus.customer_email
+      customerEmail: commonStore.state.koel_plus.customer_email,
     },
     checkoutUrl: computed(() =>
-      `https://store.koel.dev/checkout/buy/${commonStore.state.koel_plus.product_id}?embed=1&media=0&desc=0`
-    )
+      `https://store.koel.dev/checkout/buy/${commonStore.state.koel_plus.product_id}?embed=1&media=0&desc=0`,
+    ),
   }
 }

@@ -1,6 +1,8 @@
-import { playlistStore } from '@/stores'
-import { eventBus, getPlayableCollectionContentType } from '@/utils'
-import { useErrorHandler, useMessageToaster } from '@/composables'
+import { playlistStore } from '@/stores/playlistStore'
+import { eventBus } from '@/utils/eventBus'
+import { getPlayableCollectionContentType } from '@/utils/typeGuards'
+import { useErrorHandler } from '@/composables/useErrorHandler'
+import { useMessageToaster } from '@/composables/useMessageToaster'
 
 export const usePlaylistManagement = () => {
   const { handleHttpError } = useErrorHandler('dialog')
@@ -18,7 +20,9 @@ export const usePlaylistManagement = () => {
   }
 
   const addToPlaylist = async (playlist: Playlist, playables: Playable[]) => {
-    if (playlist.is_smart || playables.length === 0) return
+    if (playlist.is_smart || playables.length === 0) {
+      return
+    }
 
     try {
       await playlistStore.addContent(playlist, playables)
@@ -30,7 +34,9 @@ export const usePlaylistManagement = () => {
   }
 
   const removeFromPlaylist = async (playlist: Playlist, playables: Playable[]) => {
-    if (playlist.is_smart) return
+    if (playlist.is_smart) {
+      return
+    }
 
     try {
       await playlistStore.removeContent(playlist, playables)
@@ -43,6 +49,6 @@ export const usePlaylistManagement = () => {
 
   return {
     addToPlaylist,
-    removeFromPlaylist
+    removeFromPlaylist,
   }
 }

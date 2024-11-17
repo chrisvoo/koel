@@ -20,11 +20,16 @@
 <script lang="ts" setup>
 import { throttle } from 'lodash'
 import { computed, nextTick, ref, watch } from 'vue'
-import { eventBus, isAudioContextSupported, isSong, requireInjection } from '@/utils'
-import { CurrentPlayableKey } from '@/symbols'
-import { artistStore, preferenceStore } from '@/stores'
-import { audioService, playbackService } from '@/services'
 import { useFullscreen } from '@vueuse/core'
+import { eventBus } from '@/utils/eventBus'
+import { isSong } from '@/utils/typeGuards'
+import { isAudioContextSupported } from '@/utils/supports'
+import { requireInjection } from '@/utils/helpers'
+import { CurrentPlayableKey } from '@/symbols'
+import { artistStore } from '@/stores/artistStore'
+import { preferenceStore } from '@/stores/preferenceStore'
+import { audioService } from '@/services/audioService'
+import { playbackService } from '@/services/playbackService'
 
 import AudioPlayer from '@/components/layout/app-footer/AudioPlayer.vue'
 import SongInfo from '@/components/layout/app-footer/FooterSongInfo.vue'
@@ -38,12 +43,16 @@ const root = ref<HTMLElement>()
 const artist = ref<Artist>()
 
 const requestContextMenu = (event: MouseEvent) => {
-  if (document.fullscreenElement) return
+  if (document.fullscreenElement) {
+    return
+  }
   playable.value && eventBus.emit('PLAYABLE_CONTEXT_MENU_REQUESTED', event, playable.value)
 }
 
 watch(playable, async () => {
-  if (!playable.value) return
+  if (!playable.value) {
+    return
+  }
 
   if (isSong(playable.value)) {
     artist.value = await artistStore.resolve(playable.value.artist_id)
@@ -51,7 +60,9 @@ watch(playable, async () => {
 })
 
 const appBackgroundImage = computed(() => {
-  if (!playable.value || !isSong(playable.value)) return 'none'
+  if (!playable.value || !isSong(playable.value)) {
+    return 'none'
+  }
 
   const src = artist.value?.image ?? playable.value.album_cover
   return src ? `url(${src})` : 'none'
@@ -71,7 +82,9 @@ const initPlaybackRelatedServices = async () => {
 }
 
 watch(preferenceStore.initialized, async initialized => {
-  if (!initialized) return
+  if (!initialized) {
+    return
+  }
   await initPlaybackRelatedServices()
 }, { immediate: true })
 
@@ -80,7 +93,9 @@ const setupControlHidingTimer = () => {
 }
 
 const showControls = throttle(() => {
-  if (!document.fullscreenElement) return
+  if (!document.fullscreenElement) {
+    return
+  }
 
   root.value?.classList.remove('hide-controls')
   window.clearTimeout(hideControlsTimeout)
@@ -103,7 +118,7 @@ eventBus.on('FULLSCREEN_TOGGLE', () => toggleFullscreen())
 
 <style lang="postcss" scoped>
 footer {
-  box-shadow: 0 0 30px 20px rgba(0, 0, 0, .2);
+  box-shadow: 0 0 30px 20px rgba(0, 0, 0, 0.2);
 
   .fullscreen-backdrop {
     background-image: v-bind(appBackgroundImage);
@@ -119,17 +134,20 @@ footer {
     }
 
     .wrapper {
-      @apply z-[3]
+      @apply z-[3];
     }
 
     &::before {
       @apply bg-black bg-repeat absolute top-0 left-0 opacity-50 z-[1] pointer-events-none -m-[20rem];
       content: '';
       background-image: linear-gradient(135deg, #111 25%, transparent 25%),
-      linear-gradient(225deg, #111 25%, transparent 25%),
-      linear-gradient(45deg, #111 25%, transparent 25%),
-      linear-gradient(315deg, #111 25%, rgba(255, 255, 255, 0) 25%);
-      background-position: 6px 0, 6px 0, 0 0, 0 0;
+        linear-gradient(225deg, #111 25%, transparent 25%), linear-gradient(45deg, #111 25%, transparent 25%),
+        linear-gradient(315deg, #111 25%, rgba(255, 255, 255, 0) 25%);
+      background-position:
+        6px 0,
+        6px 0,
+        0 0,
+        0 0;
       background-size: 6px 6px;
       width: calc(100% + 40rem);
       height: calc(100% + 40rem);

@@ -8,8 +8,8 @@ use App\Models\Podcast;
 use App\Models\Song;
 use App\Services\PlaylistService;
 use App\Values\SmartPlaylistRuleGroupCollection;
-use Illuminate\Support\Collection;
 use InvalidArgumentException as BaseInvalidArgumentException;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\PlusTestCase;
 use Tests\TestCase;
 use Webmozart\Assert\InvalidArgumentException;
@@ -27,7 +27,8 @@ class PlaylistServiceTest extends TestCase
         $this->service = app(PlaylistService::class);
     }
 
-    public function testCreatePlaylist(): void
+    #[Test]
+    public function createPlaylist(): void
     {
         $user = create_user();
 
@@ -38,22 +39,22 @@ class PlaylistServiceTest extends TestCase
         self::assertFalse($playlist->is_smart);
     }
 
-    public function testCreatePlaylistWithSongs(): void
+    #[Test]
+    public function createPlaylistWithSongs(): void
     {
-        /** @var Collection<array-key, Song> $songs */
         $songs = Song::factory(3)->create();
-
         $user = create_user();
 
-        $playlist = $this->service->createPlaylist('foo', $user, null, $songs->pluck('id')->all());
+        $playlist = $this->service->createPlaylist('foo', $user, null, $songs->modelKeys());
 
         self::assertSame('foo', $playlist->name);
         self::assertTrue($user->is($playlist->user));
         self::assertFalse($playlist->is_smart);
-        self::assertEqualsCanonicalizing($playlist->playables->pluck('id')->all(), $songs->pluck('id')->all());
+        self::assertEqualsCanonicalizing($playlist->playables->modelKeys(), $songs->modelKeys());
     }
 
-    public function testCreateSmartPlaylist(): void
+    #[Test]
+    public function createSmartPlaylist(): void
     {
         $rules = SmartPlaylistRuleGroupCollection::create([
             [
@@ -78,7 +79,8 @@ class PlaylistServiceTest extends TestCase
         self::assertTrue($playlist->is_smart);
     }
 
-    public function testCreatePlaylistInFolder(): void
+    #[Test]
+    public function createPlaylistInFolder(): void
     {
         /** @var PlaylistFolder $folder */
         $folder = PlaylistFolder::factory()->create();
@@ -90,7 +92,8 @@ class PlaylistServiceTest extends TestCase
         self::assertTrue($playlist->inFolder($folder));
     }
 
-    public function testCreatePlaylistInAnotherUsersFolder(): void
+    #[Test]
+    public function createPlaylistInAnotherUsersFolder(): void
     {
         /** @var PlaylistFolder $folder */
         $folder = PlaylistFolder::factory()->create();
@@ -100,7 +103,8 @@ class PlaylistServiceTest extends TestCase
         $this->service->createPlaylist('foo', create_user(), $folder);
     }
 
-    public function testUpdateSimplePlaylist(): void
+    #[Test]
+    public function updateSimplePlaylist(): void
     {
         /** @var Playlist $playlist */
         $playlist = Playlist::factory()->create(['name' => 'foo']);
@@ -110,7 +114,8 @@ class PlaylistServiceTest extends TestCase
         self::assertSame('bar', $playlist->name);
     }
 
-    public function testUpdateSmartPlaylist(): void
+    #[Test]
+    public function updateSmartPlaylist(): void
     {
         $rules = SmartPlaylistRuleGroupCollection::create([
             [
@@ -150,7 +155,8 @@ class PlaylistServiceTest extends TestCase
         self::assertSame($playlist->rule_groups->first()->rules->first()->value, ['bar']);
     }
 
-    public function testSettingOwnsSongOnlyFailsForCommunityLicenseWhenCreate(): void
+    #[Test]
+    public function settingOwnsSongOnlyFailsForCommunityLicenseWhenCreate(): void
     {
         $this->expectException(BaseInvalidArgumentException::class);
         $this->expectExceptionMessage('"Own songs only" option only works with smart playlists and Plus license.');
@@ -175,7 +181,8 @@ class PlaylistServiceTest extends TestCase
         );
     }
 
-    public function testSettingOwnsSongOnlyFailsForCommunityLicenseWhenUpdate(): void
+    #[Test]
+    public function settingOwnsSongOnlyFailsForCommunityLicenseWhenUpdate(): void
     {
         $this->expectException(BaseInvalidArgumentException::class);
         $this->expectExceptionMessage('"Own songs only" option only works with smart playlists and Plus license.');
@@ -190,7 +197,8 @@ class PlaylistServiceTest extends TestCase
         );
     }
 
-    public function testAddSongsToPlaylist(): void
+    #[Test]
+    public function addSongsToPlaylist(): void
     {
         /** @var Playlist $playlist */
         $playlist = Playlist::factory()->create();
@@ -202,11 +210,12 @@ class PlaylistServiceTest extends TestCase
 
         self::assertCount(2, $addedSongs);
         self::assertCount(5, $playlist->playables);
-        self::assertEqualsCanonicalizing($addedSongs->pluck('id')->all(), $songs->pluck('id')->all());
+        self::assertEqualsCanonicalizing($addedSongs->modelKeys(), $songs->modelKeys());
         $songs->each(static fn (Song $song) => self::assertTrue($playlist->playables->contains($song)));
     }
 
-    public function testAddEpisodesToPlaylist(): void
+    #[Test]
+    public function addEpisodesToPlaylist(): void
     {
         /** @var Playlist $playlist */
         $playlist = Playlist::factory()->create();
@@ -223,10 +232,11 @@ class PlaylistServiceTest extends TestCase
 
         self::assertCount(2, $addedEpisodes);
         self::assertCount(5, $playlist->playables);
-        self::assertEqualsCanonicalizing($addedEpisodes->pluck('id')->all(), $episodes->pluck('id')->all());
+        self::assertEqualsCanonicalizing($addedEpisodes->modelKeys(), $episodes->modelKeys());
     }
 
-    public function testAddMixOfSongsAndEpisodesToPlaylist(): void
+    #[Test]
+    public function addMixOfSongsAndEpisodesToPlaylist(): void
     {
         /** @var Playlist $playlist */
         $playlist = Playlist::factory()->create();
@@ -239,10 +249,11 @@ class PlaylistServiceTest extends TestCase
 
         self::assertCount(4, $addedEpisodes);
         self::assertCount(7, $playlist->playables);
-        self::assertEqualsCanonicalizing($addedEpisodes->pluck('id')->all(), $playables->pluck('id')->all());
+        self::assertEqualsCanonicalizing($addedEpisodes->modelKeys(), $playables->modelKeys());
     }
 
-    public function testPrivateSongsAreMadePublicWhenAddedToCollaborativePlaylist(): void
+    #[Test]
+    public function privateSongsAreMadePublicWhenAddedToCollaborativePlaylist(): void
     {
         PlusTestCase::enablePlusLicense();
 
@@ -260,7 +271,8 @@ class PlaylistServiceTest extends TestCase
         $songs->each(static fn (Song $song) => self::assertTrue($song->refresh()->is_public));
     }
 
-    public function testMakePlaylistSongsPublic(): void
+    #[Test]
+    public function makePlaylistSongsPublic(): void
     {
         /** @var Playlist $playlist */
         $playlist = Playlist::factory()->create();
@@ -271,28 +283,28 @@ class PlaylistServiceTest extends TestCase
         $playlist->playables->each(static fn (Song $song) => self::assertTrue($song->is_public));
     }
 
-    public function testMoveSongsInPlaylist(): void
+    #[Test]
+    public function moveSongsInPlaylist(): void
     {
         /** @var Playlist $playlist */
         $playlist = Playlist::factory()->create();
 
-        /** @var Collection<array-key, Song> $songs */
         $songs = Song::factory(4)->create();
-        $ids = $songs->pluck('id')->all();
+        $ids = $songs->modelKeys();
         $playlist->addPlayables($songs);
 
         $this->service->movePlayablesInPlaylist($playlist, [$ids[2], $ids[3]], $ids[0], 'after');
-        self::assertSame([$ids[0], $ids[2], $ids[3], $ids[1]], $playlist->refresh()->playables->pluck('id')->all());
+        self::assertSame([$ids[0], $ids[2], $ids[3], $ids[1]], $playlist->refresh()->playables->modelKeys());
 
         $this->service->movePlayablesInPlaylist($playlist, [$ids[0]], $ids[3], 'before');
-        self::assertSame([$ids[2], $ids[0], $ids[3], $ids[1]], $playlist->refresh()->playables->pluck('id')->all());
+        self::assertSame([$ids[2], $ids[0], $ids[3], $ids[1]], $playlist->refresh()->playables->modelKeys());
 
         // move to the first position
         $this->service->movePlayablesInPlaylist($playlist, [$ids[0], $ids[1]], $ids[2], 'before');
-        self::assertSame([$ids[0], $ids[1], $ids[2], $ids[3]], $playlist->refresh()->playables->pluck('id')->all());
+        self::assertSame([$ids[0], $ids[1], $ids[2], $ids[3]], $playlist->refresh()->playables->modelKeys());
 
         // move to the last position
         $this->service->movePlayablesInPlaylist($playlist, [$ids[0], $ids[1]], $ids[3], 'after');
-        self::assertSame([$ids[2], $ids[3], $ids[0], $ids[1]], $playlist->refresh()->playables->pluck('id')->all());
+        self::assertSame([$ids[2], $ids[3], $ids[0], $ids[1]], $playlist->refresh()->playables->modelKeys());
     }
 }

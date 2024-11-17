@@ -19,7 +19,7 @@
         <Icon :icon="faSearch" />
       </template>
       Find songs, artists, and albums,
-      <span class="secondary d-block">all in one place.</span>
+      <span class="secondary block">all in one place.</span>
     </ScreenEmptyState>
   </ScreenBase>
 </template>
@@ -28,8 +28,8 @@
 import { faSearch } from '@fortawesome/free-solid-svg-icons'
 import { intersectionBy } from 'lodash'
 import { ref, toRef } from 'vue'
-import { eventBus } from '@/utils'
-import { searchStore } from '@/stores'
+import { eventBus } from '@/utils/eventBus'
+import { searchStore } from '@/stores/searchStore'
 
 import ScreenHeader from '@/components/ui/ScreenHeader.vue'
 import ScreenEmptyState from '@/components/ui/ScreenEmptyState.vue'

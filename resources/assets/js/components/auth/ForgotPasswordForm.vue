@@ -23,17 +23,18 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
-import { authService } from '@/services'
-import { useErrorHandler, useMessageToaster } from '@/composables'
+import { authService } from '@/services/authService'
+import { useErrorHandler } from '@/composables/useErrorHandler'
+import { useMessageToaster } from '@/composables/useMessageToaster'
 
 import Btn from '@/components/ui/form/Btn.vue'
 import TextInput from '@/components/ui/form/TextInput.vue'
 import FormRow from '@/components/ui/form/FormRow.vue'
 
+const emit = defineEmits<{ (e: 'cancel'): void }>()
 const { handleHttpError } = useErrorHandler()
 const { toastSuccess } = useMessageToaster()
 
-const emit = defineEmits<{ (e: 'cancel'): void }>()
 const email = ref('')
 const loading = ref(false)
 

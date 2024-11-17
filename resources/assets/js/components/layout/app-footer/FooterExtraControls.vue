@@ -19,7 +19,7 @@
         title="Show equalizer"
         @click.prevent="showEqualizer"
       >
-        <Icon :icon="faSliders" fixed-width />
+        <AudioLinesIcon size="16" />
       </FooterBtn>
 
       <VolumeSlider />
@@ -32,10 +32,12 @@
 </template>
 
 <script lang="ts" setup>
-import { faBolt, faCompress, faExpand, faSliders } from '@fortawesome/free-solid-svg-icons'
+import { faBolt, faCompress, faExpand } from '@fortawesome/free-solid-svg-icons'
+import { AudioLinesIcon } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
-import { eventBus, isAudioContextSupported as useEqualizer, isFullscreenSupported } from '@/utils'
-import { useRouter } from '@/composables'
+import { eventBus } from '@/utils/eventBus'
+import { isFullscreenSupported, isAudioContextSupported as useEqualizer } from '@/utils/supports'
+import { useRouter } from '@/composables/useRouter'
 
 import VolumeSlider from '@/components/ui/VolumeSlider.vue'
 import FooterBtn from '@/components/layout/app-footer/FooterButton.vue'
@@ -44,11 +46,11 @@ import FooterQueueIcon from '@/components/layout/app-footer/FooterQueueButton.vu
 const isFullscreen = ref(false)
 const fullscreenButtonTitle = computed(() => (isFullscreen.value ? 'Exit fullscreen mode' : 'Enter fullscreen mode'))
 
-const { go, isCurrentScreen } = useRouter()
+const { go, isCurrentScreen, url } = useRouter()
 
 const showEqualizer = () => eventBus.emit('MODAL_SHOW_EQUALIZER')
 const toggleFullscreen = () => eventBus.emit('FULLSCREEN_TOGGLE')
-const toggleVisualizer = () => go(isCurrentScreen('Visualizer') ? -1 : 'visualizer')
+const toggleVisualizer = () => go(isCurrentScreen('Visualizer') ? -1 : url('visualizer'))
 
 onMounted(() => {
   document.addEventListener('fullscreenchange', () => {

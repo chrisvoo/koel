@@ -1,11 +1,14 @@
-import { ref, Ref, watch } from 'vue'
-import { forceReloadWindow } from '@/utils'
+import type { Ref } from 'vue'
+import { ref, watch } from 'vue'
+import { routes } from '@/config/routes'
+import { forceReloadWindow } from '@/utils/helpers'
 
 type RouteParams = Record<string, string>
 type ResolveHook = (params: RouteParams) => Promise<boolean | void> | boolean | void
 type RedirectHook = (params: RouteParams) => Route | string
 
-export type Route = {
+export interface Route {
+  name?: string
   path: string
   screen: ScreenName
   params?: RouteParams
@@ -15,18 +18,15 @@ export type Route = {
 
 type RouteChangedHandler = (newRoute: Route, oldRoute: Route | undefined) => any
 
-// @TODO: Remove support for hashbang (#!) and only support hash (#)
 export default class Router {
   public $currentRoute: Ref<Route>
 
-  private readonly routes: Route[]
   private readonly homeRoute: Route
   private readonly notFoundRoute: Route
   private routeChangedHandlers: RouteChangedHandler[] = []
   private cache: Map<string, { route: Route, params: RouteParams }> = new Map()
 
-  constructor (routes: Route[]) {
-    this.routes = routes
+  constructor () {
     this.homeRoute = routes.find(({ screen }) => screen === 'Home')!
     this.notFoundRoute = routes.find(({ screen }) => screen === '404')!
     this.$currentRoute = ref(this.homeRoute)
@@ -36,8 +36,8 @@ export default class Router {
       (newValue, oldValue) => this.routeChangedHandlers.forEach(async handler => await handler(newValue, oldValue)),
       {
         deep: true,
-        immediate: true
-      }
+        immediate: true,
+      },
     )
 
     addEventListener('popstate', () => this.resolve(), true)
@@ -97,8 +97,8 @@ export default class Router {
 
   private tryMatchRoute () {
     if (!this.cache.has(location.hash)) {
-      for (let i = 0; i < this.routes.length; i++) {
-        const route = this.routes[i]
+      for (let i = 0; i < routes.length; i++) {
+        const route = routes[i]
         const matches = location.hash.match(new RegExp(`^#!?${route.path}/?(?:\\?(.*))?$`))
 
         if (matches) {
@@ -106,7 +106,7 @@ export default class Router {
 
           this.cache.set(location.hash, {
             route,
-            params: Object.assign(Object.fromEntries(searchParams.entries()), matches.groups || {})
+            params: Object.assign(Object.fromEntries(searchParams.entries()), matches.groups || {}),
           })
 
           break
@@ -115,5 +115,30 @@ export default class Router {
     }
 
     return this.cache.get(location.hash)
+  }
+
+  public static url (name: string, params: object = {}) {
+    const route = routes.find(route => route.name === name)
+
+    if (!route) {
+      throw new Error(`Route ${name} not found`)
+    }
+
+    let path = route.path
+
+    // replace the params in the path with the actual values
+    Object.keys(params).forEach(key => {
+      path = path.replace(new RegExp(`\\(\\?<${key}>.*?\\)`), params[key])
+    })
+
+    if (!path.startsWith('/')) {
+      path = `/${path}`
+    }
+
+    if (!path.startsWith('/#')) {
+      path = `/#${path}`
+    }
+
+    return path
   }
 }

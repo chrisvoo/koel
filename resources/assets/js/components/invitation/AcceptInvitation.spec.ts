@@ -1,9 +1,9 @@
 import { screen, waitFor } from '@testing-library/vue'
 import { expect, it } from 'vitest'
 import UnitTestCase from '@/__tests__/UnitTestCase'
-import AcceptInvitation from './AcceptInvitation.vue'
-import { invitationService } from '@/services'
 import factory from '@/__tests__/factory'
+import { invitationService } from '@/services/invitationService'
+import AcceptInvitation from './AcceptInvitation.vue'
 
 new class extends UnitTestCase {
   protected test () {
@@ -12,15 +12,15 @@ new class extends UnitTestCase {
         .mockResolvedValue(factory.states('prospect')('user'))
 
       const acceptMock = this.mock(invitationService, 'accept').mockResolvedValue({
-        token: 'my-api-token',
-        'audio-token': 'my-audio-token'
+        'token': 'my-api-token',
+        'audio-token': 'my-audio-token',
       })
 
       await this.router.activateRoute({
         path: '_',
-        screen: 'Invitation.Accept'
+        screen: 'Invitation.Accept',
       }, {
-        token: 'my-token'
+        token: 'my-token',
       })
 
       this.render(AcceptInvitation)

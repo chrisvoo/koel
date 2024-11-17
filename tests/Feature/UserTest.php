@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 use function Tests\create_admin;
@@ -11,7 +12,8 @@ use function Tests\create_user;
 
 class UserTest extends TestCase
 {
-    public function testNonAdminCannotCreateUser(): void
+    #[Test]
+    public function nonAdminCannotCreateUser(): void
     {
         $this->postAs('api/user', [
             'name' => 'Foo',
@@ -21,7 +23,8 @@ class UserTest extends TestCase
         ])->assertForbidden();
     }
 
-    public function testAdminCreatesUser(): void
+    #[Test]
+    public function adminCreatesUser(): void
     {
         $admin = create_admin();
 
@@ -42,12 +45,13 @@ class UserTest extends TestCase
         self::assertTrue($user->is_admin);
     }
 
-    public function testAdminUpdatesUser(): void
+    #[Test]
+    public function adminUpdatesUser(): void
     {
         $admin = create_admin();
         $user = create_admin(['password' => 'secret']);
 
-        $this->putAs("api/user/$user->id", [
+        $this->putAs("api/user/{$user->id}", [
             'name' => 'Foo',
             'email' => 'bar@baz.com',
             'password' => 'new-secret',
@@ -63,19 +67,21 @@ class UserTest extends TestCase
         self::assertFalse($user->is_admin);
     }
 
-    public function testAdminDeletesUser(): void
+    #[Test]
+    public function adminDeletesUser(): void
     {
         $user = create_user();
 
-        $this->deleteAs("api/user/$user->id", [], create_admin());
+        $this->deleteAs("api/user/{$user->id}", [], create_admin());
         self::assertModelMissing($user);
     }
 
-    public function testSelfDeletionNotAllowed(): void
+    #[Test]
+    public function selfDeletionNotAllowed(): void
     {
         $admin = create_admin();
 
-        $this->deleteAs("api/user/$admin->id", [], $admin)->assertForbidden();
+        $this->deleteAs("api/user/{$admin->id}", [], $admin)->assertForbidden();
         self::assertModelExists($admin);
     }
 }

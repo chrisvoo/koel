@@ -14,7 +14,7 @@
         <Icon :icon="faCompactDisc" />
       </template>
       No albums found.
-      <span class="secondary d-block">
+      <span class="secondary block">
         {{ isAdmin ? 'Have you set up your library yet?' : 'Contact your administrator to set up your library.' }}
       </span>
     </ScreenEmptyState>
@@ -36,8 +36,13 @@
 <script lang="ts" setup>
 import { faCompactDisc } from '@fortawesome/free-solid-svg-icons'
 import { computed, ref, toRef, watch } from 'vue'
-import { albumStore, commonStore, preferenceStore as preferences } from '@/stores'
-import { useAuthorization, useErrorHandler, useInfiniteScroll, useRouter } from '@/composables'
+import { albumStore } from '@/stores/albumStore'
+import { commonStore } from '@/stores/commonStore'
+import { preferenceStore as preferences } from '@/stores/preferenceStore'
+import { useRouter } from '@/composables/useRouter'
+import { useErrorHandler } from '@/composables/useErrorHandler'
+import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
+import { useAuthorization } from '@/composables/useAuthorization'
 
 import AlbumCard from '@/components/album/AlbumCard.vue'
 import AlbumCardSkeleton from '@/components/ui/skeletons/ArtistAlbumCardSkeleton.vue'
@@ -53,10 +58,6 @@ const gridContainer = ref<HTMLDivElement>()
 const viewMode = ref<ArtistAlbumViewMode>('thumbnails')
 const albums = toRef(albumStore.state, 'albums')
 
-const { ToTopButton, makeScrollable } = useInfiniteScroll(gridContainer, async () => await fetchAlbums())
-
-watch(viewMode, () => (preferences.albums_view_mode = viewMode.value))
-
 let initialized = false
 const loading = ref(false)
 const page = ref<number | null>(1)
@@ -67,15 +68,21 @@ const moreAlbumsAvailable = computed(() => page.value !== null)
 const showSkeletons = computed(() => loading.value && albums.value.length === 0)
 
 const fetchAlbums = async () => {
-  if (loading.value || !moreAlbumsAvailable.value) return
+  if (loading.value || !moreAlbumsAvailable.value) {
+    return
+  }
 
   loading.value = true
   page.value = await albumStore.paginate(page.value!)
   loading.value = false
 }
 
+const { ToTopButton, makeScrollable } = useInfiniteScroll(gridContainer, async () => await fetchAlbums())
+
 useRouter().onScreenActivated('Albums', async () => {
-  if (libraryEmpty.value) return
+  if (libraryEmpty.value) {
+    return
+  }
 
   if (!initialized) {
     viewMode.value = preferences.albums_view_mode || 'thumbnails'
@@ -89,4 +96,6 @@ useRouter().onScreenActivated('Albums', async () => {
     }
   }
 })
+
+watch(viewMode, () => (preferences.albums_view_mode = viewMode.value))
 </script>

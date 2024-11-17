@@ -33,8 +33,9 @@
 import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useFullscreen } from '@vueuse/core'
-import { logger } from '@/utils'
-import { preferenceStore as preferences, visualizerStore } from '@/stores'
+import { logger } from '@/utils/logger'
+import { preferenceStore as preferences } from '@/stores/preferenceStore'
+import { visualizerStore } from '@/stores/visualizerStore'
 
 import SelectBox from '@/components/ui/form/SelectBox.vue'
 
@@ -46,6 +47,11 @@ const container = ref<HTMLElement | null>(null)
 const selectedId = ref<Visualizer['id']>()
 
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen(container)
+
+const freeUp = () => {
+  destroyVisualizer?.()
+  el.value && (el.value.innerHTML = '')
+}
 
 const render = async (viz: Visualizer) => {
   if (!el.value) {
@@ -78,11 +84,6 @@ onMounted(() => {
     selectedId.value = 'default'
   }
 })
-
-const freeUp = () => {
-  destroyVisualizer?.()
-  el.value && (el.value.innerHTML = '')
-}
 
 onBeforeUnmount(() => freeUp())
 </script>

@@ -2,11 +2,21 @@ import isMobile from 'ismobilejs'
 import slugify from 'slugify'
 import { merge, orderBy, sumBy, take, unionBy, uniqBy } from 'lodash'
 import { reactive, watch } from 'vue'
-import { arrayify, isSong, logger, secondsToHumanReadable, use } from '@/utils'
-import { authService, cache, http } from '@/services'
-import { albumStore, artistStore, commonStore, overviewStore, playlistStore, preferenceStore } from '@/stores'
+import { arrayify, use } from '@/utils/helpers'
+import { isSong } from '@/utils/typeGuards'
+import { logger } from '@/utils/logger'
+import { secondsToHumanReadable } from '@/utils/formatters'
+import { authService } from '@/services/authService'
+import { cache } from '@/services/cache'
+import { http } from '@/services/http'
+import { preferenceStore } from '@/stores/preferenceStore'
+import { commonStore } from '@/stores/commonStore'
+import { albumStore } from '@/stores/albumStore'
+import { artistStore } from '@/stores/artistStore'
+import { overviewStore } from '@/stores/overviewStore'
+import { playlistStore } from '@/stores/playlistStore'
 
-export type SongUpdateData = {
+export interface SongUpdateData {
   title?: string
   artist_name?: string
   album_name?: string
@@ -48,7 +58,7 @@ export const songStore = {
   vault: new Map<Playable['id'], Playable>(),
 
   state: reactive<{ songs: Playable[] }>({
-    songs: []
+    songs: [],
   }),
 
   getFormattedLength: (playables: MaybeArray<Playable>) => secondsToHumanReadable(sumBy(arrayify(playables), 'length')),
@@ -56,8 +66,12 @@ export const songStore = {
   byId (id: Playable['id']) {
     const playable = this.vault.get(id)
 
-    if (!playable) return
-    if (isSong(playable) && playable.deleted) return
+    if (!playable) {
+      return
+    }
+    if (isSong(playable) && playable.deleted) {
+      return
+    }
     return playable
   },
 
@@ -114,22 +128,22 @@ export const songStore = {
 
   scrobble: async (song: Song) => {
     if (!isSong(song)) {
-      throw 'Scrobble is only supported for songs.'
+      throw new Error('Scrobble is only supported for songs.')
     }
 
     return await http.silently.post(`songs/${song.id}/scrobble`, {
-      timestamp: song.play_start_time
+      timestamp: song.play_start_time,
     })
   },
 
   async update (songsToUpdate: Song[], data: SongUpdateData) {
     if (songsToUpdate.some(song => !isSong(song))) {
-      throw 'Only songs can be updated.'
+      throw new Error('Only songs can be updated.')
     }
 
     const result = await http.put<SongUpdateResult>('songs', {
       data,
-      songs: songsToUpdate.map(song => song.id)
+      songs: songsToUpdate.map(song => song.id),
     })
 
     this.syncWithVault(result.songs)
@@ -149,7 +163,7 @@ export const songStore = {
       : `${commonStore.state.cdn_url}play/${playable.id}?t=${authService.getAudioToken()}`
   },
 
-  getShareableUrl: (song: Playable) => `${window.BASE_URL}#/song/${song.id}`,
+  getShareableUrl: (song: Playable) => `${window.BASE_URL}#/songs/${song.id}`,
 
   syncWithVault (playables: MaybeArray<Playable>) {
     return arrayify(playables).map(playable => {
@@ -179,7 +193,7 @@ export const songStore = {
 
     return this.ensureNotDeleted(await cache.remember<Song[]>(
       [`album.songs`, id],
-      async () => this.syncWithVault(await http.get<Song[]>(`albums/${id}/songs`))
+      async () => this.syncWithVault(await http.get<Song[]>(`albums/${id}/songs`)),
     ))
   },
 
@@ -188,7 +202,7 @@ export const songStore = {
 
     return this.ensureNotDeleted(await cache.remember<Song[]>(
       [`artist.songs`, id],
-      async () => this.syncWithVault(await http.get<Song[]>(`artists/${id}/songs`))
+      async () => this.syncWithVault(await http.get<Song[]>(`artists/${id}/songs`)),
     ))
   },
 
@@ -201,7 +215,7 @@ export const songStore = {
 
     const songs = this.ensureNotDeleted(await cache.remember<Song[]>(
       [`playlist.songs`, id],
-      async () => this.syncWithVault(await http.get<Song[]>(`playlists/${id}/songs`))
+      async () => this.syncWithVault(await http.get<Song[]>(`playlists/${id}/songs`)),
     ))
 
     playlistStore.byId(id)!.playables = songs
@@ -228,7 +242,7 @@ export const songStore = {
 
     return await cache.remember<Episode[]>(
       [`podcast.episodes`, id],
-      async () => this.syncWithVault(await http.get<Episode[]>(`podcasts/${id}/episodes${refresh ? '?refresh=1' : ''}`))
+      async () => this.syncWithVault(await http.get<Episode[]>(`podcasts/${id}/episodes${refresh ? '?refresh=1' : ''}`)),
     )
   },
 
@@ -236,14 +250,14 @@ export const songStore = {
     const name = typeof genre === 'string' ? genre : genre.name
 
     const resource = await http.get<PaginatorResource<Song>>(
-      `genres/${name}/songs?${new URLSearchParams(params).toString()}`
+      `genres/${name}/songs?${new URLSearchParams(params).toString()}`,
     )
 
     const songs = this.syncWithVault(resource.data)
 
     return {
       songs,
-      nextPage: resource.links.next ? ++resource.meta.current_page : null
+      nextPage: resource.links.next ? ++resource.meta.current_page : null,
     }
   },
 
@@ -266,9 +280,9 @@ export const songStore = {
           .from(this.vault.values())
           .filter(playable => isSong(playable) && !playable.deleted && playable.play_count > 0),
         'play_count',
-        'desc'
+        'desc',
       ),
-      count
+      count,
     )
   },
 
@@ -285,23 +299,23 @@ export const songStore = {
 
   async publicize (songs: Song[]) {
     if (songs.some(song => !isSong(song))) {
-      throw 'This action is only supported for songs.'
+      throw new Error('This action is only supported for songs.')
     }
 
     await http.put('songs/publicize', {
-      songs: songs.map(song => song.id)
+      songs: songs.map(song => song.id),
     })
 
-    songs.forEach(song => (song.is_public = true));
+    songs.forEach(song => (song.is_public = true))
   },
 
   async privatize (songs: Song[]) {
     if (songs.some(song => !isSong(song))) {
-      throw 'This action is only supported for songs.'
+      throw new Error('This action is only supported for songs.')
     }
 
     const privatizedIds = await http.put<Song['id'][]>('songs/privatize', {
-      songs: songs.map(({ id }) => id)
+      songs: songs.map(({ id }) => id),
     })
 
     privatizedIds.forEach(id => {
@@ -310,5 +324,5 @@ export const songStore = {
     })
 
     return privatizedIds
-  }
+  },
 }

@@ -25,13 +25,15 @@
 
 <script lang="ts" setup>
 import { computed, defineAsyncComponent, ref, toRefs, watch } from 'vue'
-import { cr2lf, eventBus } from '@/utils'
-import { usePolicies } from '@/composables'
-import { preferenceStore as preferences } from '@/stores'
+import { cr2lf } from '@/utils/formatters'
+import { eventBus } from '@/utils/eventBus'
+import { usePolicies } from '@/composables/usePolicies'
+import { preferenceStore as preferences } from '@/stores/preferenceStore'
+
+const props = defineProps<{ song: Song }>()
 
 const Magnifier = defineAsyncComponent(() => import('@/components/ui/Magnifier.vue'))
 
-const props = defineProps<{ song: Song }>()
 const { song } = toRefs(props)
 
 const { currentUserCan } = usePolicies()

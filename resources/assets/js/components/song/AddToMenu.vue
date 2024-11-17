@@ -48,13 +48,16 @@
 
 <script lang="ts" setup>
 import { computed, toRef, toRefs, watch } from 'vue'
-import { pluralize } from '@/utils'
-import { playlistStore, queueStore } from '@/stores'
-import { usePlayableMenuMethods } from '@/composables'
+import { pluralize } from '@/utils/formatters'
+import { playlistStore } from '@/stores/playlistStore'
+import { queueStore } from '@/stores/queueStore'
+import { usePlayableMenuMethods } from '@/composables/usePlayableMenuMethods'
 
 import Btn from '@/components/ui/form/Btn.vue'
 
 const props = defineProps<{ playables: Playable[], config: AddToMenuConfig }>()
+const emit = defineEmits<{ (e: 'closing'): void }>()
+
 const { playables, config } = toRefs(props)
 
 const queue = toRef(queueStore.state, 'playables')
@@ -63,7 +66,6 @@ const currentPlayable = queueStore.current
 const allPlaylists = toRef(playlistStore.state, 'playlists')
 const playlists = computed(() => allPlaylists.value.filter(({ is_smart }) => !is_smart))
 
-const emit = defineEmits<{ (e: 'closing'): void }>()
 const close = () => emit('closing')
 
 const {
@@ -71,7 +73,7 @@ const {
   queueToBottom,
   queueToTop,
   addToExistingPlaylist,
-  addToNewPlaylist
+  addToNewPlaylist,
 } = usePlayableMenuMethods(playables, close)
 
 watch(playables, () => playables.value.length || close())

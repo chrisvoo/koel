@@ -21,8 +21,8 @@
 <script lang="ts" setup>
 import isMobile from 'ismobilejs'
 import { ref, watch } from 'vue'
-import { preferenceStore } from '@/stores'
-import { useKoelPlus } from '@/composables'
+import { preferenceStore } from '@/stores/preferenceStore'
+import { useKoelPlus } from '@/composables/useKoelPlus'
 
 const delayUntilShow = 30 * 60 * 1000 // 30 minutes
 
@@ -38,9 +38,15 @@ const stopBugging = () => {
 }
 
 watch(preferenceStore.initialized, initialized => {
-  if (!initialized) return
-  if (preferenceStore.state.support_bar_no_bugging || isMobile.any) return
-  if (isPlus.value) return
+  if (!initialized) {
+    return
+  }
+  if (preferenceStore.state.support_bar_no_bugging || isMobile.any) {
+    return
+  }
+  if (isPlus.value) {
+    return
+  }
 
   setUpShowBarTimeout()
 }, { immediate: true })

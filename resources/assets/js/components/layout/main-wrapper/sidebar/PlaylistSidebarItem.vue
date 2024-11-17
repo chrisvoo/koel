@@ -1,7 +1,7 @@
 <template>
   <SidebarItem
     :class="{ current, droppable }"
-    :href="url"
+    :href="href"
     class="playlist select-none"
     draggable="true"
     @contextmenu="onContextMenu"
@@ -25,13 +25,16 @@
 import { faClockRotateLeft, faHeart, faUsers, faWandMagicSparkles } from '@fortawesome/free-solid-svg-icons'
 import { ListMusicIcon } from 'lucide-vue-next'
 import { computed, ref, toRefs } from 'vue'
-import { eventBus } from '@/utils'
-//import { favoriteStore } from '@/stores'
-import { useDraggable, useDroppable, usePlaylistManagement, useRouter } from '@/composables'
+import { eventBus } from '@/utils/eventBus'
+import { useRouter } from '@/composables/useRouter'
+// import { favoriteStore } from '@/stores/favoriteStore'
+import { useDraggable, useDroppable } from '@/composables/useDragAndDrop'
+import { usePlaylistManagement } from '@/composables/usePlaylistManagement'
 
 import SidebarItem from '@/components/layout/main-wrapper/sidebar/SidebarItem.vue'
 
-const { onRouteChanged } = useRouter()
+const props = defineProps<{ list: PlaylistLike }>()
+const { onRouteChanged, url } = useRouter()
 const { startDragging } = useDraggable('playlist')
 const { acceptsDrop, resolveDroppedItems } = useDroppable(['playables', 'album', 'artist'])
 
@@ -39,7 +42,6 @@ const droppable = ref(false)
 
 const { addToPlaylist } = usePlaylistManagement()
 
-const props = defineProps<{ list: PlaylistLike }>()
 const { list } = toRefs(props)
 
 const isPlaylist = (list: PlaylistLike): list is Playlist => 'id' in list
@@ -48,17 +50,29 @@ const isRecentlyPlayedList = (list: PlaylistLike): list is RecentlyPlayedList =>
 
 const current = ref(false)
 
-const url = computed(() => {
-  if (isPlaylist(list.value)) return `#/playlist/${list.value.id}`
-  if (isFavoriteList(list.value)) return '#/favorites'
-  if (isRecentlyPlayedList(list.value)) return '#/recently-played'
+const href = computed(() => {
+  if (isPlaylist(list.value)) {
+    return url('playlists.show', { id: list.value.id })
+  }
+
+  if (isFavoriteList(list.value)) {
+    return url('favorites')
+  }
+
+  if (isRecentlyPlayedList(list.value)) {
+    return url('recently-played')
+  }
 
   throw new Error('Invalid playlist-like type.')
 })
 
 const contentEditable = computed(() => {
-  if (isRecentlyPlayedList(list.value)) return false
-  if (isFavoriteList(list.value)) return true
+  if (isRecentlyPlayedList(list.value)) {
+    return false
+  }
+  if (isFavoriteList(list.value)) {
+    return true
+  }
 
   return !list.value.is_smart
 })
@@ -73,8 +87,12 @@ const onContextMenu = (event: MouseEvent) => {
 const onDragStart = (event: DragEvent) => isPlaylist(list.value) && startDragging(event, list.value)
 
 const onDragOver = (event: DragEvent) => {
-  if (!contentEditable.value) return false
-  if (!acceptsDrop(event)) return false
+  if (!contentEditable.value) {
+    return false
+  }
+  if (!acceptsDrop(event)) {
+    return false
+  }
 
   event.preventDefault()
   droppable.value = true
@@ -87,14 +105,20 @@ const onDragLeave = () => (droppable.value = false)
 const onDrop = async (event: DragEvent) => {
   droppable.value = false
 
-  if (!contentEditable.value) return false
-  if (!acceptsDrop(event)) return false
+  if (!contentEditable.value) {
+    return false
+  }
+  if (!acceptsDrop(event)) {
+    return false
+  }
 
   const playables = await resolveDroppedItems(event)
 
-  if (!playables?.length) return false
+  if (!playables?.length) {
+    return false
+  }
 
-  /*if (isFavoriteList(list.value)) {
+  /* if (isFavoriteList(list.value)) {
     await favoriteStore.like(playables)
   } else */if (isPlaylist(list.value)) {
     await addToPlaylist(list.value, playables)

@@ -9,8 +9,8 @@
     @dragstart="onDragStart"
   >
     <template #name>
-      <a :href="`#/album/${album.id}`" class="font-medium" data-testid="name">{{ album.name }}</a>
-      <a v-if="isStandardArtist" :href="`#/artist/${album.artist_id}`">{{ album.artist_name }}</a>
+      <a :href="url('albums.show', { id: album.id })" class="font-medium" data-testid="name">{{ album.name }}</a>
+      <a v-if="isStandardArtist" :href="url('artists.show', { id: album.artist_id })">{{ album.artist_name }}</a>
       <span v-else class="text-k-text-secondary">{{ album.artist_name }}</span>
     </template>
 
@@ -32,17 +32,22 @@
 
 <script lang="ts" setup>
 import { computed, toRef, toRefs } from 'vue'
-import { eventBus } from '@/utils'
-import { albumStore, artistStore, commonStore, songStore } from '@/stores'
-import { downloadService, playbackService } from '@/services'
-import { useDraggable, useRouter } from '@/composables'
+import { eventBus } from '@/utils/eventBus'
+import { albumStore } from '@/stores/albumStore'
+import { artistStore } from '@/stores/artistStore'
+import { commonStore } from '@/stores/commonStore'
+import { songStore } from '@/stores/songStore'
+import { downloadService } from '@/services/downloadService'
+import { playbackService } from '@/services/playbackService'
+import { useDraggable } from '@/composables/useDragAndDrop'
+import { useRouter } from '@/composables/useRouter'
 
 import BaseCard from '@/components/ui/album-artist/AlbumOrArtistCard.vue'
 
-const { go } = useRouter()
+const props = withDefaults(defineProps<{ album: Album, layout?: ArtistAlbumCardLayout }>(), { layout: 'full' })
+const { go, url } = useRouter()
 const { startDragging } = useDraggable('album')
 
-const props = withDefaults(defineProps<{ album: Album, layout?: ArtistAlbumCardLayout }>(), { layout: 'full' })
 const { album, layout } = toRefs(props)
 
 // We're not checking for supports_batch_downloading here, as the number of songs on the album is not yet known.
@@ -53,7 +58,7 @@ const showing = computed(() => !albumStore.isUnknown(album.value))
 
 const shuffle = async () => {
   playbackService.queueAndPlay(await songStore.fetchForAlbum(album.value), true /* shuffled */)
-  go('queue')
+  go(url('queue'))
 }
 
 const download = () => downloadService.fromAlbum(album.value)

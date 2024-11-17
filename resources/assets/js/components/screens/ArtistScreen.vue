@@ -1,5 +1,5 @@
 <template>
-  <ScreenBase v-if="artist">
+  <ScreenBase v-if="artistId">
     <template #header>
       <ScreenHeaderSkeleton v-if="loading" />
 
@@ -43,22 +43,22 @@
       <template #header>
         <label :class="{ active: activeTab === 'Songs' }">
           Songs
-          <input v-model="activeTab" name="tab" type="radio" value="Songs">
+          <input v-model="activeTab" :disabled="loading" name="tab" type="radio" value="Songs">
         </label>
         <label :class="{ active: activeTab === 'Albums' }">
           Albums
-          <input v-model="activeTab" name="tab" type="radio" value="Albums">
+          <input v-model="activeTab" :disabled="loading" name="tab" type="radio" value="Albums">
         </label>
         <label v-if="useLastfm" :class="{ active: activeTab === 'Info' }">
           Information
-          <input v-model="activeTab" name="tab" type="radio" value="Info">
+          <input v-model="activeTab" :disabled="loading" name="tab" type="radio" value="Info">
         </label>
       </template>
 
       <div v-show="activeTab === 'Songs'" class="songs-pane">
         <SongListSkeleton v-if="loading" />
         <SongList
-          v-else
+          v-if="!loading && artist"
           ref="songList"
           @press:enter="onPressEnter"
           @scroll-breakpoint="onScrollBreakpoint"
@@ -84,11 +84,18 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, defineAsyncComponent, ref, toRef, watch } from 'vue'
-import { eventBus, pluralize } from '@/utils'
-import { albumStore, artistStore, commonStore, songStore } from '@/stores'
-import { downloadService } from '@/services'
-import { useErrorHandler, useRouter, useSongList, useSongListControls, useThirdPartyServices } from '@/composables'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
+import { eventBus } from '@/utils/eventBus'
+import { pluralize } from '@/utils/formatters'
+import { albumStore } from '@/stores/albumStore'
+import { artistStore } from '@/stores/artistStore'
+import { songStore } from '@/stores/songStore'
+import { downloadService } from '@/services/downloadService'
+import { useErrorHandler } from '@/composables/useErrorHandler'
+import { useSongList } from '@/composables/useSongList'
+import { useSongListControls } from '@/composables/useSongListControls'
+import { useThirdPartyServices } from '@/composables/useThirdPartyServices'
+import { useRouter } from '@/composables/useRouter'
 
 import ScreenHeader from '@/components/ui/ScreenHeader.vue'
 import ArtistThumbnail from '@/components/ui/album-artist/AlbumOrArtistThumbnail.vue'
@@ -105,13 +112,13 @@ const AlbumCardSkeleton = defineAsyncComponent(() => import('@/components/ui/ske
 type Tab = 'Songs' | 'Albums' | 'Info'
 const activeTab = ref<Tab>('Songs')
 
-const { getRouteParam, go, onScreenActivated } = useRouter()
+const { getRouteParam, go, onScreenActivated, url } = useRouter()
 
 const artistId = ref<number>()
 const artist = ref<Artist>()
 const songs = ref<Song[]>([])
 const loading = ref(false)
-let albums = ref<Album[] | undefined>()
+const albums = ref<Album[] | undefined>()
 
 const {
   SongList,
@@ -127,7 +134,7 @@ const {
   playAll,
   playSelected,
   applyFilter,
-  onScrollBreakpoint
+  onScrollBreakpoint,
 } = useSongList(songs, { type: 'Artist' })
 
 const { SongListControls, config } = useSongListControls('Artist')
@@ -147,14 +154,16 @@ watch(activeTab, async tab => {
 })
 
 watch(artistId, async id => {
-  if (!id || loading.value) return
+  if (!id || loading.value) {
+    return
+  }
 
   loading.value = true
 
   try {
     [artist.value, songs.value] = await Promise.all([
       artistStore.resolve(id),
-      songStore.fetchForArtist(id)
+      songStore.fetchForArtist(id),
     ])
 
     context.entity = artist.value
@@ -167,8 +176,8 @@ watch(artistId, async id => {
 
 const download = () => downloadService.fromArtist(artist.value!)
 
-onScreenActivated('Artist', () => (artistId.value = parseInt(getRouteParam('id')!)))
+onScreenActivated('Artist', () => (artistId.value = Number.parseInt(getRouteParam('id')!)))
 
 // if the current artist has been deleted, go back to the list
-eventBus.on('SONGS_UPDATED', () => artistStore.byId(artist.value!.id) || go('artists'))
+eventBus.on('SONGS_UPDATED', () => artistStore.byId(artist.value!.id) || go(url('artists.index')))
 </script>

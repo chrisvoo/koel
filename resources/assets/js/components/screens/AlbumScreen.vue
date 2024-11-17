@@ -1,5 +1,5 @@
 <template>
-  <ScreenBase v-if="album">
+  <ScreenBase v-if="albumId">
     <template #header>
       <ScreenHeaderSkeleton v-if="loading" />
 
@@ -12,7 +12,9 @@
         </template>
 
         <template #meta>
-          <a v-if="isNormalArtist" :href="`#/artist/${album.artist_id}`" class="artist">{{ album.artist_name }}</a>
+          <a v-if="isNormalArtist" :href="url('artists.show', { id: album.artist_id })" class="artist">
+            {{ album.artist_name }}
+          </a>
           <span v-else class="nope">{{ album.artist_name }}</span>
           <span>{{ pluralize(songs, 'item') }}</span>
           <span>{{ duration }}</span>
@@ -44,22 +46,22 @@
       <template #header>
         <label :class="{ active: activeTab === 'Songs' }">
           Songs
-          <input v-model="activeTab" name="tab" type="radio" value="Songs">
+          <input v-model="activeTab" :disabled="loading" name="tab" type="radio" value="Songs">
         </label>
         <label :class="{ active: activeTab === 'OtherAlbums' }">
           Other Albums
-          <input v-model="activeTab" name="tab" type="radio" value="OtherAlbums">
+          <input v-model="activeTab" :disabled="loading" name="tab" type="radio" value="OtherAlbums">
         </label>
         <label v-if="useLastfm" :class="{ active: activeTab === 'Info' }">
           Information
-          <input v-model="activeTab" name="tab" type="radio" value="Info">
+          <input v-model="activeTab" :disabled="loading" name="tab" type="radio" value="Info">
         </label>
       </template>
 
       <div v-show="activeTab === 'Songs'" class="songs-pane">
         <SongListSkeleton v-if="loading" />
         <SongList
-          v-else
+          v-if="!loading && album"
           ref="songList"
           @press:enter="onPressEnter"
           @scroll-breakpoint="onScrollBreakpoint"
@@ -89,10 +91,17 @@
 
 <script lang="ts" setup>
 import { computed, defineAsyncComponent, ref, toRef, watch } from 'vue'
-import { eventBus, pluralize } from '@/utils'
-import { albumStore, artistStore, commonStore, songStore } from '@/stores'
-import { downloadService } from '@/services'
-import { useErrorHandler, useRouter, useSongList, useSongListControls } from '@/composables'
+import { eventBus } from '@/utils/eventBus'
+import { pluralize } from '@/utils/formatters'
+import { albumStore } from '@/stores/albumStore'
+import { artistStore } from '@/stores/artistStore'
+import { commonStore } from '@/stores/commonStore'
+import { songStore } from '@/stores/songStore'
+import { downloadService } from '@/services/downloadService'
+import { useErrorHandler } from '@/composables/useErrorHandler'
+import { useSongList } from '@/composables/useSongList'
+import { useSongListControls } from '@/composables/useSongListControls'
+import { useRouter } from '@/composables/useRouter'
 
 import ScreenHeader from '@/components/ui/ScreenHeader.vue'
 import AlbumThumbnail from '@/components/ui/album-artist/AlbumOrArtistThumbnail.vue'
@@ -109,14 +118,14 @@ const AlbumInfo = defineAsyncComponent(() => import('@/components/album/AlbumInf
 const AlbumCard = defineAsyncComponent(() => import('@/components/album/AlbumCard.vue'))
 const AlbumCardSkeleton = defineAsyncComponent(() => import('@/components/ui/skeletons/ArtistAlbumCardSkeleton.vue'))
 
-const { getRouteParam, go, onScreenActivated } = useRouter()
+const { getRouteParam, go, onScreenActivated, url } = useRouter()
 
 const albumId = ref<number>()
 const album = ref<Album | undefined>()
 const songs = ref<Song[]>([])
 const loading = ref(false)
-let otherAlbums = ref<Album[] | undefined>()
-let info = ref<ArtistInfo | undefined>()
+const otherAlbums = ref<Album[] | undefined>()
+const info = ref<ArtistInfo | undefined>()
 
 const {
   SongList,
@@ -133,7 +142,7 @@ const {
   playAll,
   playSelected,
   applyFilter,
-  onScrollBreakpoint
+  onScrollBreakpoint,
 } = useSongList(songs, { type: 'Album' })
 
 const { SongListControls, config } = useSongListControls('Album')
@@ -141,7 +150,9 @@ const { SongListControls, config } = useSongListControls('Album')
 const useLastfm = toRef(commonStore.state, 'uses_last_fm')
 
 const isNormalArtist = computed(() => {
-  if (!album.value) return true
+  if (!album.value) {
+    return true
+  }
   return !artistStore.isVarious(album.value.artist_id) && !artistStore.isUnknown(album.value.artist_id)
 })
 
@@ -155,7 +166,9 @@ watch(activeTab, async tab => {
 })
 
 watch(albumId, async id => {
-  if (!id || loading.value) return
+  if (!id || loading.value) {
+    return
+  }
 
   album.value = undefined
   info.value = undefined
@@ -167,7 +180,7 @@ watch(albumId, async id => {
   try {
     [album.value, songs.value] = await Promise.all([
       albumStore.resolve(id),
-      songStore.fetchForAlbum(id)
+      songStore.fetchForAlbum(id),
     ])
 
     context.entity = album.value
@@ -180,8 +193,8 @@ watch(albumId, async id => {
   }
 })
 
-onScreenActivated('Album', () => (albumId.value = parseInt(getRouteParam('id')!)))
+onScreenActivated('Album', () => (albumId.value = Number.parseInt(getRouteParam('id')!)))
 
 // if the current album has been deleted, go back to the list
-eventBus.on('SONGS_UPDATED', () => albumStore.byId(albumId.value!) || go('albums'))
+eventBus.on('SONGS_UPDATED', () => albumStore.byId(albumId.value!) || go(url('albums.index')))
 </script>

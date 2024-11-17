@@ -8,6 +8,8 @@ use App\Models\Song as Playable;
 use App\Values\SmartPlaylistRuleGroupCollection;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,7 +17,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 use Laravel\Scout\Searchable;
 
 /**
@@ -24,21 +25,22 @@ use Laravel\Scout\Searchable;
  * @property bool $is_smart
  * @property int $user_id
  * @property User $user
- * @property Collection<array-key, Playable> $playables
  * @property ?SmartPlaylistRuleGroupCollection $rule_groups
  * @property ?SmartPlaylistRuleGroupCollection $rules
  * @property Carbon $created_at
+ * @property EloquentCollection<array-key, Playable> $playables
+ * @property EloquentCollection<array-key, User> $collaborators
  * @property bool $own_songs_only
- * @property Collection<array-key, User> $collaborators
- * @property-read bool $is_collaborative
  * @property-read ?string $cover The playlist cover's URL
  * @property-read ?string $cover_path
- * @property-read Collection<array-key, PlaylistFolder> $folders
+ * @property-read EloquentCollection<array-key, PlaylistFolder> $folders
+ * @property-read bool $is_collaborative
  */
 class Playlist extends Model
 {
     use Searchable;
     use HasFactory;
+    use HasUuids;
 
     protected $hidden = ['user_id', 'created_at', 'updated_at'];
     protected $guarded = [];
@@ -48,17 +50,8 @@ class Playlist extends Model
         'own_songs_only' => 'bool',
     ];
 
-    public $incrementing = false;
-    protected $keyType = 'string';
     protected $appends = ['is_smart'];
     protected $with = ['user', 'collaborators', 'folders'];
-
-    protected static function booted(): void
-    {
-        static::creating(static function (Playlist $playlist): void {
-            $playlist->id ??= Str::uuid()->toString();
-        });
-    }
 
     public function playables(): BelongsToMany
     {
@@ -90,7 +83,7 @@ class Playlist extends Model
 
     protected function isSmart(): Attribute
     {
-        return Attribute::get(fn (): bool => (bool) $this->rule_groups?->isNotEmpty());
+        return Attribute::get(fn (): bool => (bool) $this->rule_groups?->isNotEmpty())->shouldCache();
     }
 
     protected function ruleGroups(): Attribute
@@ -101,7 +94,7 @@ class Playlist extends Model
 
     protected function cover(): Attribute
     {
-        return Attribute::get(static fn (?string $value): ?string => playlist_cover_url($value));
+        return Attribute::get(static fn (?string $value): ?string => playlist_cover_url($value))->shouldCache();
     }
 
     protected function coverPath(): Attribute
@@ -110,12 +103,12 @@ class Playlist extends Model
             $cover = Arr::get($this->attributes, 'cover');
 
             return $cover ? playlist_cover_path($cover) : null;
-        });
+        })->shouldCache();
     }
 
     public function ownedBy(User $user): bool
     {
-        return $this->user_id === $user->id;
+        return $this->user->is($user);
     }
 
     public function inFolder(PlaylistFolder $folder): bool
@@ -185,9 +178,9 @@ class Playlist extends Model
 
     protected function isCollaborative(): Attribute
     {
-        return Attribute::get(fn (): bool => !$this->is_smart
-            && LicenseFacade::isPlus()
-            && $this->collaborators->isNotEmpty());
+        return Attribute::get(
+            fn (): bool => !$this->is_smart && LicenseFacade::isPlus() && $this->collaborators->isNotEmpty()
+        )->shouldCache();
     }
 
     /** @inheritdoc */

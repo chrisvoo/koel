@@ -1,15 +1,15 @@
 <template>
   <nav
-    :class="{ collapsed: !expanded, 'tmp-showing': tmpShowing, showing: mobileShowing }"
+    :class="{ 'collapsed': !expanded, 'tmp-showing': tmpShowing, 'showing': mobileShowing }"
     class="group left-0 top-0 flex flex-col fixed h-full w-full md:relative md:w-k-sidebar-width z-[999] md:z-10"
     @mouseenter="onMouseEnter"
     @mouseleave="onMouseLeave"
   >
     <section class="btn-collapse-block flex md:hidden items-center border-b border-b-white/5 h-k-header-height px-6">
       <div class="bg-white/5 rounded-full">
-        <ExtraDrawerButton @click.prevent="collapseSidebar">
+        <SideSheetButton @click.prevent="collapseSidebar">
           <Icon :icon="faTimes" fixed-width />
-        </ExtraDrawerButton>
+        </SideSheetButton>
       </div>
     </section>
 
@@ -29,8 +29,8 @@
     </section>
 
     <SidebarToggleButton
-      class="opacity-0 no-hover:hidden group-hover:opacity-100 transition"
       v-model="expanded"
+      class="opacity-0 no-hover:hidden group-hover:opacity-100 transition"
       :class="expanded || 'opacity-100'"
     />
   </nav>
@@ -39,13 +39,17 @@
 <script lang="ts" setup>
 import { faTimes } from '@fortawesome/free-solid-svg-icons'
 import { computed, ref, watch } from 'vue'
-import { eventBus } from '@/utils'
-import { useAuthorization, useKoelPlus, useLocalStorage, useRouter, useUpload } from '@/composables'
+import { eventBus } from '@/utils/eventBus'
+import { useAuthorization } from '@/composables/useAuthorization'
+import { useKoelPlus } from '@/composables/useKoelPlus'
+import { useLocalStorage } from '@/composables/useLocalStorage'
+import { useUpload } from '@/composables/useUpload'
+import { useRouter } from '@/composables/useRouter'
 
 import BtnUpgradeToPlus from '@/components/koel-plus/BtnUpgradeToPlus.vue'
-import ExtraDrawerButton from '@/components/layout/main-wrapper/extra-drawer/ExtraDrawerButton.vue'
 import HomeButton from '@/components/layout/main-wrapper/sidebar/HomeButton.vue'
 import SearchForm from '@/components/ui/SearchForm.vue'
+import SideSheetButton from '@/components/layout/main-wrapper/side-sheet/SideSheetButton.vue'
 import SidebarManageSection from './SidebarManageSection.vue'
 import SidebarPlaylistsSection from './SidebarPlaylistsSection.vue'
 import SidebarToggleButton from '@/components/layout/main-wrapper/sidebar/SidebarToggleButton.vue'
@@ -68,10 +72,14 @@ let tmpShowingHandler: number | undefined
 const tmpShowing = ref(false)
 
 const onMouseEnter = () => {
-  if (expanded.value) return;
+  if (expanded.value) {
+    return
+  }
 
   tmpShowingHandler = window.setTimeout(() => {
-    if (expanded.value) return
+    if (expanded.value) {
+      return
+    }
     tmpShowing.value = true
   }, 500)
 }
@@ -132,7 +140,7 @@ nav {
     @mixin themed-background;
 
     transform: translateX(-100vw);
-    transition: transform .2s ease-in-out;
+    transition: transform 0.2s ease-in-out;
 
     &.showing {
       transform: translateX(0);

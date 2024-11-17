@@ -39,7 +39,7 @@
 
     <ScreenEmptyState v-if="!songs.length && !loading">
       <template #icon>
-        <Icon :icon="faTags" />
+        <GuitarIcon size="96" />
       </template>
 
       No songs in this genre.
@@ -49,11 +49,16 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import { faTags } from '@fortawesome/free-solid-svg-icons'
-import { eventBus, pluralize, secondsToHumanReadable } from '@/utils'
-import { playbackService } from '@/services'
-import { genreStore, songStore } from '@/stores'
-import { useErrorHandler, useRouter, useSongList, useSongListControls } from '@/composables'
+import { GuitarIcon } from 'lucide-vue-next'
+import { pluralize, secondsToHumanReadable } from '@/utils/formatters'
+import { eventBus } from '@/utils/eventBus'
+import { playbackService } from '@/services/playbackService'
+import { genreStore } from '@/stores/genreStore'
+import { songStore } from '@/stores/songStore'
+import { useRouter } from '@/composables/useRouter'
+import { useErrorHandler } from '@/composables/useErrorHandler'
+import { useSongList } from '@/composables/useSongList'
+import { useSongListControls } from '@/composables/useSongListControls'
 
 import ScreenHeader from '@/components/ui/ScreenHeader.vue'
 import ScreenEmptyState from '@/components/ui/ScreenEmptyState.vue'
@@ -73,12 +78,12 @@ const {
   isPhone,
   onPressEnter,
   playSelected,
-  onScrollBreakpoint
+  onScrollBreakpoint,
 } = useSongList(ref<Song[]>([]), { type: 'Genre' }, { sortable: true, filterable: false })
 
 const { SongListControls, config } = useSongListControls('Genre')
 
-const { getRouteParam, go, onRouteChanged } = useRouter()
+const { getRouteParam, go, onRouteChanged, url } = useRouter()
 
 let sortField: MaybeArray<PlayableListSortField> = 'title'
 let sortOrder: SortOrder = 'asc'
@@ -93,22 +98,15 @@ const moreSongsAvailable = computed(() => page.value !== null)
 const showSkeletons = computed(() => loading.value && songs.value.length === 0)
 const duration = computed(() => secondsToHumanReadable(genre.value?.length ?? 0))
 
-const fetchWithSort = async (field: MaybeArray<PlayableListSortField>, order: SortOrder) => {
-  page.value = 1
-  songs.value = []
-  sortField = field
-  sortOrder = order
-
-  await fetch()
-}
-
 const fetch = async () => {
-  if (!moreSongsAvailable.value || loading.value) return
+  if (!moreSongsAvailable.value || loading.value) {
+    return
+  }
 
   loading.value = true
 
   try {
-    let fetched: { songs: Playable[]; nextPage: number | null }
+    let fetched: { songs: Playable[], nextPage: number | null }
 
     [genre.value, fetched] = await Promise.all([
       genreStore.fetchOne(name.value!),
@@ -116,7 +114,7 @@ const fetch = async () => {
         sort: sortField,
         order: sortOrder,
         page: page.value!,
-      })
+      }),
     ])
 
     page.value = fetched.nextPage
@@ -136,15 +134,28 @@ const refresh = async () => {
   await fetch()
 }
 
+const fetchWithSort = async (field: MaybeArray<PlayableListSortField>, order: SortOrder) => {
+  page.value = 1
+  songs.value = []
+  sortField = field
+  sortOrder = order
+
+  await fetch()
+}
+
 const getNameFromRoute = () => getRouteParam('name') ?? null
 
 onRouteChanged(route => {
-  if (route.screen !== 'Genre') return
+  if (route.screen !== 'Genre') {
+    return
+  }
   name.value = getNameFromRoute()
 })
 
 const playAll = async () => {
-  if (!genre.value) return
+  if (!genre.value) {
+    return
+  }
 
   // we ignore the queueAndPlay's await to avoid blocking the UI
   if (genre.value!.song_count <= randomSongCount) {
@@ -153,7 +164,7 @@ const playAll = async () => {
     playbackService.queueAndPlay(await songStore.fetchRandomForGenre(genre.value!, randomSongCount))
   }
 
-  go('queue')
+  go(url('queue'))
 }
 
 onMounted(() => (name.value = getNameFromRoute()))

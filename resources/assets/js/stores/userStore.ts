@@ -1,7 +1,7 @@
-import { differenceBy, merge } from 'lodash'
-import { http } from '@/services'
 import { reactive } from 'vue'
-import { arrayify } from '@/utils'
+import { differenceBy, merge } from 'lodash'
+import { http } from '@/services/http'
+import { arrayify } from '@/utils/helpers'
 
 interface UserFormData {
   name: string
@@ -22,7 +22,7 @@ export const userStore = {
 
   state: reactive({
     users: [] as User[],
-    current: null! as User
+    current: null! as User,
   }),
 
   syncWithVault (users: MaybeArray<User>) {
@@ -93,5 +93,5 @@ export const userStore = {
   remove (user: User) {
     this.state.users = differenceBy(this.state.users, [user], 'id')
     this.vault.delete(user.id)
-  }
+  },
 }

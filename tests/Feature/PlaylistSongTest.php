@@ -5,24 +5,26 @@ namespace Tests\Feature;
 use App\Http\Resources\SongResource;
 use App\Models\Playlist;
 use App\Models\Song;
-use Illuminate\Support\Collection;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 use function Tests\create_user;
 
 class PlaylistSongTest extends TestCase
 {
-    public function testGetNormalPlaylist(): void
+    #[Test]
+    public function getNormalPlaylist(): void
     {
         /** @var Playlist $playlist */
         $playlist = Playlist::factory()->create();
         $playlist->addPlayables(Song::factory(5)->create());
 
-        $this->getAs("api/playlists/$playlist->id/songs", $playlist->user)
+        $this->getAs("api/playlists/{$playlist->id}/songs", $playlist->user)
             ->assertJsonStructure(['*' => SongResource::JSON_STRUCTURE]);
     }
 
-    public function testGetSmartPlaylist(): void
+    #[Test]
+    public function getSmartPlaylist(): void
     {
         Song::factory()->create(['title' => 'A foo song']);
 
@@ -43,42 +45,43 @@ class PlaylistSongTest extends TestCase
             ],
         ]);
 
-        $this->getAs("api/playlists/$playlist->id/songs", $playlist->user)
+        $this->getAs("api/playlists/{$playlist->id}/songs", $playlist->user)
             ->assertJsonStructure(['*' => SongResource::JSON_STRUCTURE]);
     }
 
-    public function testNonOwnerCannotAccessPlaylist(): void
+    #[Test]
+    public function nonOwnerCannotAccessPlaylist(): void
     {
         /** @var Playlist $playlist */
         $playlist = Playlist::factory()->for(create_user())->create();
         $playlist->addPlayables(Song::factory(5)->create());
 
-        $this->getAs("api/playlists/$playlist->id/songs")
+        $this->getAs("api/playlists/{$playlist->id}/songs")
             ->assertForbidden();
     }
 
-    public function testAddSongsToPlaylist(): void
+    #[Test]
+    public function addSongsToPlaylist(): void
     {
         /** @var Playlist $playlist */
         $playlist = Playlist::factory()->create();
 
-        /** @var Collection<array-key, Song> $songs */
         $songs = Song::factory(2)->create();
 
-        $this->postAs("api/playlists/$playlist->id/songs", ['songs' => $songs->pluck('id')->all()], $playlist->user)
+        $this->postAs("api/playlists/{$playlist->id}/songs", ['songs' => $songs->modelKeys()], $playlist->user)
             ->assertSuccessful();
 
-        self::assertEqualsCanonicalizing($songs->pluck('id')->all(), $playlist->playables->pluck('id')->all());
+        self::assertEqualsCanonicalizing($songs->modelKeys(), $playlist->playables->modelKeys());
     }
 
-    public function testRemoveSongsFromPlaylist(): void
+    #[Test]
+    public function removeSongsFromPlaylist(): void
     {
         /** @var Playlist $playlist */
         $playlist = Playlist::factory()->create();
 
         $toRemainSongs = Song::factory(5)->create();
 
-        /** @var Collection<array-key, Song> $toBeRemovedSongs */
         $toBeRemovedSongs = Song::factory(2)->create();
 
         $playlist->addPlayables($toRemainSongs->merge($toBeRemovedSongs));
@@ -86,18 +89,19 @@ class PlaylistSongTest extends TestCase
         self::assertCount(7, $playlist->playables);
 
         $this->deleteAs(
-            "api/playlists/$playlist->id/songs",
-            ['songs' => $toBeRemovedSongs->pluck('id')->all()],
+            "api/playlists/{$playlist->id}/songs",
+            ['songs' => $toBeRemovedSongs->modelKeys()],
             $playlist->user
         )
             ->assertNoContent();
 
         $playlist->refresh();
 
-        self::assertEqualsCanonicalizing($toRemainSongs->pluck('id')->all(), $playlist->playables->pluck('id')->all());
+        self::assertEqualsCanonicalizing($toRemainSongs->modelKeys(), $playlist->playables->modelKeys());
     }
 
-    public function testNonOwnerCannotModifyPlaylist(): void
+    #[Test]
+    public function nonOwnerCannotModifyPlaylist(): void
     {
         /** @var Playlist $playlist */
         $playlist = Playlist::factory()->for(create_user())->create();
@@ -105,14 +109,15 @@ class PlaylistSongTest extends TestCase
         /** @var Song $song */
         $song = Song::factory()->create();
 
-        $this->postAs("api/playlists/$playlist->id/songs", ['songs' => [$song->id]])
+        $this->postAs("api/playlists/{$playlist->id}/songs", ['songs' => [$song->id]])
             ->assertForbidden();
 
-        $this->deleteAs("api/playlists/$playlist->id/songs", ['songs' => [$song->id]])
+        $this->deleteAs("api/playlists/{$playlist->id}/songs", ['songs' => [$song->id]])
             ->assertForbidden();
     }
 
-    public function testSmartPlaylistContentCannotBeModified(): void
+    #[Test]
+    public function smartPlaylistContentCannotBeModified(): void
     {
         /** @var Playlist $playlist */
         $playlist = Playlist::factory()->create([
@@ -131,12 +136,12 @@ class PlaylistSongTest extends TestCase
             ],
         ]);
 
-        $songs = Song::factory(2)->create()->pluck('id')->all();
+        $songs = Song::factory(2)->create()->modelKeys();
 
-        $this->postAs("api/playlists/$playlist->id/songs", ['songs' => $songs], $playlist->user)
+        $this->postAs("api/playlists/{$playlist->id}/songs", ['songs' => $songs], $playlist->user)
             ->assertForbidden();
 
-        $this->deleteAs("api/playlists/$playlist->id/songs", ['songs' => $songs], $playlist->user)
+        $this->deleteAs("api/playlists/{$playlist->id}/songs", ['songs' => $songs], $playlist->user)
             ->assertForbidden();
     }
 }

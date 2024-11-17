@@ -55,8 +55,13 @@
 <script lang="ts" setup>
 import { isEqual } from 'lodash'
 import { reactive, watch } from 'vue'
-import { UpdateUserData, userStore } from '@/stores'
-import { useDialogBox, useErrorHandler, useMessageToaster, useModal, useOverlay } from '@/composables'
+import type { UpdateUserData } from '@/stores/userStore'
+import { userStore } from '@/stores/userStore'
+import { useDialogBox } from '@/composables/useDialogBox'
+import { useErrorHandler } from '@/composables/useErrorHandler'
+import { useMessageToaster } from '@/composables/useMessageToaster'
+import { useModal } from '@/composables/useModal'
+import { useOverlay } from '@/composables/useOverlay'
 
 import Btn from '@/components/ui/form/Btn.vue'
 import TooltipIcon from '@/components/ui/TooltipIcon.vue'
@@ -64,6 +69,8 @@ import CheckBox from '@/components/ui/form/CheckBox.vue'
 import AlertBox from '@/components/ui/AlertBox.vue'
 import TextInput from '@/components/ui/form/TextInput.vue'
 import FormRow from '@/components/ui/form/FormRow.vue'
+
+const emit = defineEmits<{ (e: 'close'): void }>()
 
 const { showOverlay, hideOverlay } = useOverlay()
 const { toastSuccess } = useMessageToaster()
@@ -78,11 +85,13 @@ watch(user, () => {
   originalData = {
     name: user.name,
     email: user.email,
-    is_admin: user.is_admin
+    is_admin: user.is_admin,
   }
 
   updateData = reactive(Object.assign({}, originalData))
 }, { immediate: true })
+
+const close = () => emit('close')
 
 const submit = async () => {
   showOverlay()
@@ -97,9 +106,6 @@ const submit = async () => {
     hideOverlay()
   }
 }
-
-const emit = defineEmits<{ (e: 'close'): void }>()
-const close = () => emit('close')
 
 const maybeClose = async () => {
   if (isEqual(originalData, updateData)) {

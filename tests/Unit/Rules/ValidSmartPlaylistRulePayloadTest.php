@@ -3,8 +3,10 @@
 namespace Tests\Unit\Rules;
 
 use App\Rules\ValidSmartPlaylistRulePayload;
+use Exception;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
-use Throwable;
 
 class ValidSmartPlaylistRulePayloadTest extends TestCase
 {
@@ -91,12 +93,14 @@ class ValidSmartPlaylistRulePayloadTest extends TestCase
         ];
     }
 
-    /** @dataProvider provideInvalidPayloads */
-    public function testInvalidCases($value): void
+    #[DataProvider('provideInvalidPayloads')]
+    #[Test]
+    public function invalidCases($value): void
     {
-        $this->expectException(Throwable::class);
-        (new ValidSmartPlaylistRulePayload())->validate('rules', $value, static fn ($foo) => $foo);
-        self::addToAssertionCount(1);
+        $this->expectExceptionMessage('Invalid smart playlist rules');
+
+        $fail = static fn (string $message) => throw new Exception($message);
+        (new ValidSmartPlaylistRulePayload())->validate('rules', $value, $fail);
     }
 
     /** @return array<mixed> */
@@ -180,8 +184,9 @@ class ValidSmartPlaylistRulePayloadTest extends TestCase
         ];
     }
 
-    /** @dataProvider provideValidPayloads */
-    public function testValidCases($value): void
+    #[DataProvider('provideValidPayloads')]
+    #[Test]
+    public function validCases($value): void
     {
         (new ValidSmartPlaylistRulePayload())->validate('rules', $value, static fn ($foo) => $foo);
         self::addToAssertionCount(1);

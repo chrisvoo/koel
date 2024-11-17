@@ -13,20 +13,20 @@
 
     <p v-if="somethingWrong">
       Failed to load videos.
-      <a @click.prevent="loadMore" href="#">Try again</a>
+      <a href="#" @click.prevent="loadMore">Try again</a>
     </p>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed, defineAsyncComponent, ref, toRefs, watch } from 'vue'
-import { youTubeService } from '@/services'
-import { useErrorHandler } from '@/composables'
+import { youTubeService } from '@/services/youTubeService'
+import { useErrorHandler } from '@/composables/useErrorHandler'
 
+const props = defineProps<{ song: Song }>()
 const Btn = defineAsyncComponent(() => import('@/components/ui/form/Btn.vue'))
 const YouTubeVideo = defineAsyncComponent(() => import('@/components/ui/youtube/YouTubeVideoItem.vue'))
 
-const props = defineProps<{ song: Song }>()
 const { song } = toRefs(props)
 
 const loading = ref(false)

@@ -6,10 +6,10 @@
 
     <ScreenEmptyState v-if="libraryEmpty">
       <template #icon>
-        <Icon :icon="faTags" />
+        <GuitarIcon size="96" />
       </template>
       No genres found.
-      <span class="secondary d-block">
+      <span class="secondary block">
         {{ isAdmin ? 'Have you set up your library yet?' : 'Contact your administrator to set up your library.' }}
       </span>
     </ScreenEmptyState>
@@ -23,15 +23,15 @@
           class="rounded-[0.5em] inline-block m-1.5 align-middle overflow-hidden"
         >
           <a
-            :href="`/#/genres/${encodeURIComponent(genre.name)}`"
+            :href="url('genres.show', { name: encodeURIComponent(genre.name) })"
             :title="`${genre.name}: ${pluralize(genre.song_count, 'song')}`"
             class="bg-white/15 inline-flex items-center justify-center !text-k-text-secondary
           transition-colors duration-200 ease-in-out hover:!text-k-text-primary hover:bg-k-highlight"
           >
             <span class="name bg-white/5 px-[0.5em] py-[0.2em] leading-normal">{{ genre.name }}</span>
             <span class="count items-center px-[0.5em] py-[0.2em]">
-            {{ genre.song_count }}
-          </span>
+              {{ genre.song_count }}
+            </span>
           </a>
         </li>
       </ul>
@@ -45,12 +45,15 @@
 </template>
 
 <script lang="ts" setup>
-import { faTags } from '@fortawesome/free-solid-svg-icons'
+import { GuitarIcon } from 'lucide-vue-next'
 import { maxBy, minBy } from 'lodash'
 import { computed, onMounted, ref } from 'vue'
-import { commonStore, genreStore } from '@/stores'
-import { pluralize } from '@/utils'
-import { useAuthorization, useErrorHandler } from '@/composables'
+import { commonStore } from '@/stores/commonStore'
+import { genreStore } from '@/stores/genreStore'
+import { pluralize } from '@/utils/formatters'
+import { useAuthorization } from '@/composables/useAuthorization'
+import { useErrorHandler } from '@/composables/useErrorHandler'
+import { useRouter } from '@/composables/useRouter'
 
 import ScreenHeader from '@/components/ui/ScreenHeader.vue'
 import GenreItemSkeleton from '@/components/ui/skeletons/GenreItemSkeleton.vue'
@@ -59,6 +62,7 @@ import ScreenBase from '@/components/screens/ScreenBase.vue'
 
 const { isAdmin } = useAuthorization()
 const { handleHttpError } = useErrorHandler()
+const { url } = useRouter()
 
 const genres = ref<Genre[]>()
 
@@ -76,7 +80,7 @@ const levels = computed(() => {
 })
 
 const getLevel = (genre: Genre) => {
-  const index = levels.value.findIndex((level) => genre.song_count <= level)
+  const index = levels.value.findIndex(level => genre.song_count <= level)
   return index === -1 ? 5 : index
 }
 
@@ -89,7 +93,9 @@ const fetchGenres = async () => {
 }
 
 onMounted(async () => {
-  if (libraryEmpty.value) return
+  if (libraryEmpty.value) {
+    return
+  }
   await fetchGenres()
 })
 </script>

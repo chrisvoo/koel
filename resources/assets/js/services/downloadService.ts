@@ -1,6 +1,6 @@
-// import { favoriteStore } from '@/stores'
-import { authService } from '@/services'
-import { arrayify } from '@/utils'
+//import { favoriteStore } from '@/stores/favoriteStore'
+import { authService } from '@/services/authService'
+import { arrayify } from '@/utils/helpers'
 
 export const downloadService = {
   fromPlayables (playables: MaybeArray<Playable>) {
@@ -37,5 +37,5 @@ export const downloadService = {
     const url = `${window.BASE_URL}download/${uri}${sep}t=${authService.getAudioToken()}`
 
     open(url)
-  }
+  },
 }

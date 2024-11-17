@@ -4,13 +4,15 @@ namespace Tests\Feature\KoelPlus;
 
 use App\Models\Playlist;
 use App\Models\PlaylistFolder;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\PlusTestCase;
 
 use function Tests\create_user;
 
 class PlaylistFolderTest extends PlusTestCase
 {
-    public function testCollaboratorPuttingPlaylistIntoTheirFolder(): void
+    #[Test]
+    public function collaboratorPuttingPlaylistIntoTheirFolder(): void
     {
         $collaborator = create_user();
 
@@ -20,7 +22,7 @@ class PlaylistFolderTest extends PlusTestCase
 
         /** @var PlaylistFolder $ownerFolder */
         $ownerFolder = PlaylistFolder::factory()->for($playlist->user)->create();
-        $ownerFolder->playlists()->attach($playlist->id);
+        $ownerFolder->playlists()->attach($playlist);
         self::assertTrue($playlist->refresh()->getFolder($playlist->user)?->is($ownerFolder));
 
         /** @var PlaylistFolder $collaboratorFolder */
@@ -28,7 +30,7 @@ class PlaylistFolderTest extends PlusTestCase
         self::assertNull($playlist->getFolder($collaborator));
 
         $this->postAs(
-            "api/playlist-folders/$collaboratorFolder->id/playlists",
+            "api/playlist-folders/{$collaboratorFolder->id}/playlists",
             ['playlists' => [$playlist->id]],
             $collaborator
         )
@@ -40,7 +42,8 @@ class PlaylistFolderTest extends PlusTestCase
         self::assertTrue($playlist->fresh()->getFolder($playlist->user)?->is($ownerFolder));
     }
 
-    public function testCollaboratorMovingPlaylistToRootLevel(): void
+    #[Test]
+    public function collaboratorMovingPlaylistToRootLevel(): void
     {
         $collaborator = create_user();
 
@@ -51,17 +54,17 @@ class PlaylistFolderTest extends PlusTestCase
 
         /** @var PlaylistFolder $ownerFolder */
         $ownerFolder = PlaylistFolder::factory()->for($playlist->user)->create();
-        $ownerFolder->playlists()->attach($playlist->id);
+        $ownerFolder->playlists()->attach($playlist);
         self::assertTrue($playlist->refresh()->getFolder($playlist->user)?->is($ownerFolder));
 
         /** @var PlaylistFolder $collaboratorFolder */
         $collaboratorFolder = PlaylistFolder::factory()->for($collaborator)->create();
 
-        $collaboratorFolder->playlists()->attach($playlist->id);
+        $collaboratorFolder->playlists()->attach($playlist);
         self::assertTrue($playlist->refresh()->getFolder($collaborator)?->is($collaboratorFolder));
 
         $this->deleteAs(
-            "api/playlist-folders/$collaboratorFolder->id/playlists",
+            "api/playlist-folders/{$collaboratorFolder->id}/playlists",
             ['playlists' => [$playlist->id]],
             $collaborator
         )

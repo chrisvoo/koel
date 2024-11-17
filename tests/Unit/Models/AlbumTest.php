@@ -4,11 +4,14 @@ namespace Tests\Unit\Models;
 
 use App\Models\Album;
 use App\Models\Artist;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class AlbumTest extends TestCase
 {
-    public function testExistingAlbumCanBeRetrievedUsingArtistAndName(): void
+    #[Test]
+    public function existingAlbumCanBeRetrievedUsingArtistAndName(): void
     {
         /** @var Album $album */
         $album = Album::factory()->create();
@@ -16,13 +19,14 @@ class AlbumTest extends TestCase
         self::assertTrue(Album::getOrCreate($album->artist, $album->name)->is($album));
     }
 
-    public function testNewAlbumIsAutomaticallyCreatedWithArtistAndName(): void
+    #[Test]
+    public function newAlbumIsAutomaticallyCreatedWithArtistAndName(): void
     {
         /** @var Artist $artist */
         $artist = Artist::factory()->create();
         $name = 'Foo';
 
-        self::assertNull(Album::query()->where('artist_id', $artist->id)->where('name', $name)->first());
+        self::assertNull(Album::query()->whereBelongsTo($artist)->where('name', $name)->first());
 
         $album = Album::getOrCreate($artist, $name);
         self::assertSame('Foo', $album->name);
@@ -40,8 +44,9 @@ class AlbumTest extends TestCase
         ];
     }
 
-    /** @dataProvider provideEmptyAlbumNames */
-    public function testNewAlbumWithoutNameIsCreatedAsUnknownAlbum($name): void
+    #[DataProvider('provideEmptyAlbumNames')]
+    #[Test]
+    public function newAlbumWithoutNameIsCreatedAsUnknownAlbum($name): void
     {
         /** @var Artist $artist */
         $artist = Artist::factory()->create();

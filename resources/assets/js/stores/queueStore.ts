@@ -1,12 +1,14 @@
 import { reactive } from 'vue'
 import { differenceBy, unionBy } from 'lodash'
-import { arrayify, isSong, logger, moveItemsInList } from '@/utils'
-import { http } from '@/services'
-import { songStore } from '@/stores'
+import { arrayify, moveItemsInList } from '@/utils/helpers'
+import { logger } from '@/utils/logger'
+import { isSong } from '@/utils/typeGuards'
+import { http } from '@/services/http'
+import { songStore } from '@/stores/songStore'
 
 export const queueStore = {
   state: reactive<{ playables: Playable[] }>({
-    playables: []
+    playables: [],
   }),
 
   init (savedState: QueueState) {
@@ -151,5 +153,5 @@ export const queueStore = {
     } catch (error: unknown) {
       logger.error(error)
     }
-  }
+  },
 }

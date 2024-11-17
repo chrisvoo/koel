@@ -27,9 +27,9 @@
 import { faRefresh, faTimes, faUpload } from '@fortawesome/free-solid-svg-icons'
 import { computed, ref, toRefs } from 'vue'
 import { useFileDialog } from '@vueuse/core'
-import { userStore } from '@/stores'
-import { useFileReader } from '@/composables'
-import { gravatar } from '@/utils'
+import { userStore } from '@/stores/userStore'
+import { useFileReader } from '@/composables/useFileReader'
+import { gravatar } from '@/utils/helpers'
 
 import UserAvatar from '@/components/user/UserAvatar.vue'
 import ImageCropper from '@/components/utils/ImageCropper.vue'
@@ -40,7 +40,7 @@ const { profile } = toRefs(props)
 const { open, onChange } = useFileDialog({
   accept: 'image/*',
   multiple: false,
-  reset: true
+  reset: true,
 })
 
 const openFileDialog = () => open()
@@ -85,7 +85,7 @@ const onCancel = () => (cropperSource.value = null)
   }
 
   .avatar-width {
-    @apply w-[105px]
+    @apply w-[105px];
   }
 }
 </style>

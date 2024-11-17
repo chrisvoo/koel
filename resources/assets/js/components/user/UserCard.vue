@@ -48,10 +48,14 @@
 import googleLogo from '@/../img/logos/google.svg'
 import { faCircleCheck, faShield } from '@fortawesome/free-solid-svg-icons'
 import { computed, toRefs } from 'vue'
-import { userStore } from '@/stores'
-import { invitationService } from '@/services'
-import { useAuthorization, useDialogBox, useErrorHandler, useMessageToaster, useRouter } from '@/composables'
-import { eventBus } from '@/utils'
+import { userStore } from '@/stores/userStore'
+import { invitationService } from '@/services/invitationService'
+import { eventBus } from '@/utils/eventBus'
+import { useRouter } from '@/composables/useRouter'
+import { useAuthorization } from '@/composables/useAuthorization'
+import { useErrorHandler } from '@/composables/useErrorHandler'
+import { useMessageToaster } from '@/composables/useMessageToaster'
+import { useDialogBox } from '@/composables/useDialogBox'
 
 import Btn from '@/components/ui/form/Btn.vue'
 import UserAvatar from '@/components/user/UserAvatar.vue'
@@ -61,30 +65,34 @@ const { user } = toRefs(props)
 
 const { toastSuccess } = useMessageToaster()
 const { showConfirmDialog } = useDialogBox()
-const { go } = useRouter()
+const { go, url } = useRouter()
 
 const { currentUser } = useAuthorization()
 
 const isCurrentUser = computed(() => user.value.id === currentUser.value.id)
 
-const edit = () => isCurrentUser.value ? go('profile') : eventBus.emit('MODAL_SHOW_EDIT_USER_FORM', user.value)
+const edit = () => isCurrentUser.value ? go(url('profile')) : eventBus.emit('MODAL_SHOW_EDIT_USER_FORM', user.value)
 
 const destroy = async () => {
-  if (!await showConfirmDialog(`Unperson ${user.value.name}?`)) return
+  if (!await showConfirmDialog(`Unperson ${user.value.name}?`)) {
+    return
+  }
 
   await userStore.destroy(user.value)
   toastSuccess(`User "${user.value.name}" deleted.`)
 }
 
 const revokeInvite = async () => {
-  if (!await showConfirmDialog(`Revoke the invite for ${user.value.email}?`)) return
+  if (!await showConfirmDialog(`Revoke the invite for ${user.value.email}?`)) {
+    return
+  }
 
   try {
     await invitationService.revoke(user.value)
     toastSuccess(`Invitation for ${user.value.email} revoked.`)
   } catch (error: unknown) {
     useErrorHandler('dialog').handleHttpError(error, {
-      404: 'Cannot revoke the invite. Maybe it has been accepted?'
+      404: 'Cannot revoke the invite. Maybe it has been accepted?',
     })
   }
 }

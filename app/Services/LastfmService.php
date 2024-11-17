@@ -48,9 +48,9 @@ class LastfmService implements MusicEncyclopedia
             return null;
         }
 
-        return attempt_if(static::enabled(), function () use ($artist): ?ArtistInformation {
+        return rescue_if(static::enabled(), function () use ($artist): ?ArtistInformation {
             return Cache::remember(
-                "lastfm.artist.$artist->id",
+                "lastfm.artist.{$artist->id}",
                 now()->addWeek(),
                 fn () => $this->connector->send(new GetArtistInfoRequest($artist))->dto()
             );
@@ -63,9 +63,9 @@ class LastfmService implements MusicEncyclopedia
             return null;
         }
 
-        return attempt_if(static::enabled(), function () use ($album): ?AlbumInformation {
+        return rescue_if(static::enabled(), function () use ($album): ?AlbumInformation {
             return Cache::remember(
-                "lastfm.album.$album->id",
+                "lastfm.album.{$album->id}",
                 now()->addWeek(),
                 fn () => $this->connector->send(new GetAlbumInfoRequest($album))->dto()
             );
@@ -74,12 +74,12 @@ class LastfmService implements MusicEncyclopedia
 
     public function scrobble(Song $song, User $user, int $timestamp): void
     {
-        attempt(fn () => $this->connector->send(new ScrobbleRequest($song, $user, $timestamp)));
+        rescue(fn () => $this->connector->send(new ScrobbleRequest($song, $user, $timestamp)));
     }
 
     public function toggleLoveTrack(Song $song, User $user, bool $love): void
     {
-        attempt(fn () => $this->connector->send(new ToggleLoveTrackRequest($song, $user, $love)));
+        rescue(fn () => $this->connector->send(new ToggleLoveTrackRequest($song, $user, $love)));
     }
 
     /**
@@ -101,7 +101,7 @@ class LastfmService implements MusicEncyclopedia
 
     public function updateNowPlaying(Song $song, User $user): void
     {
-        attempt(fn () => $this->connector->send(new UpdateNowPlayingRequest($song, $user)));
+        rescue(fn () => $this->connector->send(new UpdateNowPlayingRequest($song, $user)));
     }
 
     public function getSessionKey(string $token): ?string

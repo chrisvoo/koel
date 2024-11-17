@@ -1,5 +1,5 @@
-import { preferenceStore as preferences } from '@/stores'
-import { equalizerPresets as presets } from '@/config'
+import { preferenceStore as preferences } from '@/stores/preferenceStore'
+import { equalizerPresets as presets } from '@/config/audio'
 
 export const equalizerStore = {
   getPresetByName (name: string) {
@@ -12,7 +12,9 @@ export const equalizerStore = {
   getConfig () {
     let config: EqualizerPreset | undefined
 
-    if (this.isCustom(preferences.equalizer)) return preferences.equalizer
+    if (this.isCustom(preferences.equalizer)) {
+      return preferences.equalizer
+    }
 
     if (preferences.equalizer.name !== null) {
       config = this.getPresetByName(preferences.equalizer.name)
@@ -40,7 +42,7 @@ export const equalizerStore = {
     preferences.equalizer = preset || {
       preamp,
       gains,
-      name: null
+      name: null,
     }
-  }
+  },
 }

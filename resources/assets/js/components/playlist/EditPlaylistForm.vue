@@ -36,13 +36,20 @@
 
 <script lang="ts" setup>
 import { ref, toRef } from 'vue'
-import { playlistFolderStore, playlistStore } from '@/stores'
-import { useDialogBox, useErrorHandler, useMessageToaster, useModal, useOverlay } from '@/composables'
+import { playlistFolderStore } from '@/stores/playlistFolderStore'
+import { playlistStore } from '@/stores/playlistStore'
+import { useDialogBox } from '@/composables/useDialogBox'
+import { useErrorHandler } from '@/composables/useErrorHandler'
+import { useMessageToaster } from '@/composables/useMessageToaster'
+import { useOverlay } from '@/composables/useOverlay'
+import { useModal } from '@/composables/useModal'
 
 import Btn from '@/components/ui/form/Btn.vue'
 import TextInput from '@/components/ui/form/TextInput.vue'
 import FormRow from '@/components/ui/form/FormRow.vue'
 import SelectBox from '@/components/ui/form/SelectBox.vue'
+
+const emit = defineEmits<{ (e: 'close'): void }>()
 
 const { showOverlay, hideOverlay } = useOverlay()
 const { toastSuccess } = useMessageToaster()
@@ -53,7 +60,6 @@ const name = ref(playlist.name)
 const folderId = ref(playlist.folder_id)
 const folders = toRef(playlistFolderStore.state, 'folders')
 
-const emit = defineEmits<{ (e: 'close'): void }>()
 const close = () => emit('close')
 
 const submit = async () => {
@@ -62,7 +68,7 @@ const submit = async () => {
   try {
     await playlistStore.update(playlist, {
       name: name.value,
-      folder_id: folderId.value
+      folder_id: folderId.value,
     })
 
     toastSuccess('Playlist updated.')
@@ -92,6 +98,6 @@ form {
 }
 
 label.folder {
-  flex: .6;
+  flex: 0.6;
 }
 </style>

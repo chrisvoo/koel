@@ -49,7 +49,7 @@
         Your library is empty.
         <a
           v-if="isPlus && ownSongsOnly"
-          class="d-block secondary"
+          class="block secondary"
           role="button"
           @click.prevent="showSongsFromOthers"
         >
@@ -63,17 +63,17 @@
 <script lang="ts" setup>
 import { faVolumeOff } from '@fortawesome/free-solid-svg-icons'
 import { computed, ref, toRef, watch } from 'vue'
-import { pluralize, secondsToHumanReadable } from '@/utils'
-import { commonStore, queueStore, songStore } from '@/stores'
-import { playbackService } from '@/services'
-import {
-  useErrorHandler,
-  useKoelPlus,
-  useLocalStorage,
-  useRouter,
-  useSongList,
-  useSongListControls
-} from '@/composables'
+import { pluralize, secondsToHumanReadable } from '@/utils/formatters'
+import { commonStore } from '@/stores/commonStore'
+import { queueStore } from '@/stores/queueStore'
+import { songStore } from '@/stores/songStore'
+import { playbackService } from '@/services/playbackService'
+import { useRouter } from '@/composables/useRouter'
+import { useErrorHandler } from '@/composables/useErrorHandler'
+import { useKoelPlus } from '@/composables/useKoelPlus'
+import { useLocalStorage } from '@/composables/useLocalStorage'
+import { useSongList } from '@/composables/useSongList'
+import { useSongListControls } from '@/composables/useSongListControls'
 
 import ScreenHeader from '@/components/ui/ScreenHeader.vue'
 import SongListSkeleton from '@/components/ui/skeletons/SongListSkeleton.vue'
@@ -96,12 +96,12 @@ const {
   isPhone,
   onPressEnter,
   playSelected,
-  onScrollBreakpoint
+  onScrollBreakpoint,
 } = useSongList(toRef(songStore.state, 'songs'), { type: 'Songs' }, { filterable: false, sortable: true })
 
 const { SongListControls, config } = useSongListControls('Songs')
 
-const { go, onScreenActivated } = useRouter()
+const { go, onScreenActivated, url } = useRouter()
 const { isPlus } = useKoelPlus()
 const { get: lsGet, set: lsSet } = useLocalStorage()
 
@@ -116,30 +116,10 @@ const showSkeletons = computed(() => loading.value && songs.value.length === 0)
 
 const ownSongsOnly = ref(isPlus.value ? Boolean(lsGet('own-songs-only')) : false)
 
-watch(ownSongsOnly, async value => {
-  lsSet('own-songs-only', value)
-  page.value = 1
-  songStore.state.songs = []
-
-  await fetchSongs()
-})
-
-const sort = async (field: MaybeArray<PlayableListSortField>, order: SortOrder) => {
-  page.value = 1
-  songStore.state.songs = []
-  sortField = field
-  sortOrder = order
-
-  await fetchSongs()
-}
-
-const showSongsFromOthers = async () => {
-  ownSongsOnly.value = false
-  await fetchSongs()
-}
-
 const fetchSongs = async () => {
-  if (!moreSongsAvailable.value || loading.value) return
+  if (!moreSongsAvailable.value || loading.value) {
+    return
+  }
 
   loading.value = true
 
@@ -148,7 +128,7 @@ const fetchSongs = async () => {
       sort: sortField,
       order: sortOrder,
       page: page.value!,
-      own_songs_only: ownSongsOnly.value
+      own_songs_only: ownSongsOnly.value,
     })
   } catch (error: any) {
     useErrorHandler().handleHttpError(error)
@@ -164,8 +144,30 @@ const playAll = async (shuffle: boolean) => {
     await queueStore.fetchInOrder(sortField, sortOrder)
   }
 
-  go('queue')
+  go(url('queue'))
   await playbackService.playFirstInQueue()
+}
+
+const sort = async (field: MaybeArray<PlayableListSortField>, order: SortOrder) => {
+  page.value = 1
+  songStore.state.songs = []
+  sortField = field
+  sortOrder = order
+
+  await fetchSongs()
+}
+
+watch(ownSongsOnly, async value => {
+  lsSet('own-songs-only', value)
+  page.value = 1
+  songStore.state.songs = []
+
+  await fetchSongs()
+})
+
+const showSongsFromOthers = async () => {
+  ownSongsOnly.value = false
+  await fetchSongs()
 }
 
 onScreenActivated('Songs', async () => {

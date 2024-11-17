@@ -44,15 +44,21 @@
 <script lang="ts" setup>
 import { isEqual } from 'lodash'
 import { reactive } from 'vue'
-import { CreateUserData, userStore } from '@/stores'
-import { useDialogBox, useErrorHandler, useMessageToaster, useOverlay } from '@/composables'
+import type { CreateUserData } from '@/stores/userStore'
+import { userStore } from '@/stores/userStore'
+import { useDialogBox } from '@/composables/useDialogBox'
+import { useErrorHandler } from '@/composables/useErrorHandler'
+import { useMessageToaster } from '@/composables/useMessageToaster'
+import { useOverlay } from '@/composables/useOverlay'
 
 import Btn from '@/components/ui/form/Btn.vue'
+
 import TooltipIcon from '@/components/ui/TooltipIcon.vue'
 import CheckBox from '@/components/ui/form/CheckBox.vue'
 import TextInput from '@/components/ui/form/TextInput.vue'
 import FormRow from '@/components/ui/form/FormRow.vue'
 
+const emit = defineEmits<{ (e: 'close'): void }>()
 const { showOverlay, hideOverlay } = useOverlay()
 const { toastSuccess } = useMessageToaster()
 const { showConfirmDialog } = useDialogBox()
@@ -61,10 +67,12 @@ const emptyUserData: CreateUserData = {
   name: '',
   email: '',
   password: '',
-  is_admin: false
+  is_admin: false,
 }
 
 const newUser = reactive<CreateUserData>(Object.assign({}, emptyUserData))
+
+const close = () => emit('close')
 
 const submit = async () => {
   showOverlay()
@@ -79,9 +87,6 @@ const submit = async () => {
     hideOverlay()
   }
 }
-
-const emit = defineEmits<{ (e: 'close'): void }>()
-const close = () => emit('close')
 
 const maybeClose = async () => {
   if (isEqual(newUser, emptyUserData)) {

@@ -11,7 +11,7 @@
         <Icon :icon="faVolumeOff" />
       </template>
       No songs found.
-      <span class="secondary d-block">
+      <span class="secondary block">
         {{ isAdmin ? 'Have you set up your library yet?' : 'Contact your administrator to set up your library.' }}
       </span>
     </ScreenEmptyState>
@@ -38,9 +38,12 @@
 <script lang="ts" setup>
 import { faVolumeOff } from '@fortawesome/free-solid-svg-icons'
 import { computed, ref } from 'vue'
-import { eventBus } from '@/utils'
-import { commonStore, overviewStore, userStore, systemStore } from '@/stores'
-import { useAuthorization, useErrorHandler, useRouter } from '@/composables'
+import { eventBus } from '@/utils/eventBus'
+import { commonStore } from '@/stores/commonStore'
+import { overviewStore } from '@/stores/overviewStore'
+import { useRouter } from '@/composables/useRouter'
+import { useAuthorization } from '@/composables/useAuthorization'
+import { useErrorHandler } from '@/composables/useErrorHandler'
 
 import MostPlayedSongs from '@/components/screens/home/MostPlayedSongs.vue'
 import RecentlyPlayedSongs from '@/components/screens/home/RecentlyPlayedSongs.vue'
@@ -71,26 +74,25 @@ let initialized = false
  *
  * @return Formatted string.
  */
-function humanFileSize(bytes, si=false, dp=1) {
-  const thresh = si ? 1000 : 1024;
+function humanFileSize (bytes, si = false, dp = 1) {
+  const thresh = si ? 1000 : 1024
 
   if (Math.abs(bytes) < thresh) {
-    return bytes + ' B';
+    return `${bytes} B`
   }
 
   const units = si
     ? ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-    : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
-  let u = -1;
-  const r = 10**dp;
+    : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']
+  let u = -1
+  const r = 10 ** dp
 
   do {
-    bytes /= thresh;
-    ++u;
-  } while (Math.round(Math.abs(bytes) * r) / r >= thresh && u < units.length - 1);
+    bytes /= thresh
+    ++u
+  } while (Math.round(Math.abs(bytes) * r) / r >= thresh && u < units.length - 1)
 
-
-  return bytes.toFixed(dp) + ' ' + units[u];
+  return `${bytes.toFixed(dp)} ${units[u]}`
 }
 
 eventBus.on('SONGS_DELETED', () => {

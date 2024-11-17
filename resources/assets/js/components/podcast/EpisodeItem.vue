@@ -3,11 +3,11 @@
     data-testid="episode-item"
     class="group relative flex flex-col md:flex-row gap-4 px-6 py-5 !text-k-text-primary hover:bg-white/10 duration-200"
     :class="isCurrentEpisode && 'current'"
-    :href="`/#/episodes/${episode.id}`"
+    :href="url('episodes.show', { id: episode.id })"
     @contextmenu.prevent="requestContextMenu"
     @dragstart="onDragStart"
   >
-    <Icon :icon="faBookmark" size="xl" class="absolute -top-1 right-3 text-k-accent" v-if="isCurrentEpisode" />
+    <Icon v-if="isCurrentEpisode" :icon="faBookmark" size="xl" class="absolute -top-1 right-3 text-k-accent" />
     <button
       class="hidden md:block md:flex-[0_0_128px] relative overflow-hidden rounded-lg active:scale-95"
       role="button"
@@ -18,7 +18,7 @@
         alt="Episode thumbnail"
         class="w-[128px] aspect-square object-cover"
         loading="lazy"
-      />
+      >
       <span class="absolute top-0 left-0 w-full h-full group-hover:bg-black/40 z-10" />
       <span
         class="absolute flex opacity-0 items-center justify-center w-[48px] aspect-square rounded-full top-1/2
@@ -54,18 +54,24 @@ import DOMPurify from 'dompurify'
 import { orderBy } from 'lodash'
 import { faBookmark, faPause, faPlay } from '@fortawesome/free-solid-svg-icons'
 import { computed, defineAsyncComponent, toRefs } from 'vue'
-import { eventBus, secondsToHumanReadable } from '@/utils'
-import { useDraggable } from '@/composables'
+import { eventBus } from '@/utils/eventBus'
+import { secondsToHumanReadable } from '@/utils/formatters'
+import { useDraggable } from '@/composables/useDragAndDrop'
 import { formatTimeAgo } from '@vueuse/core'
-import { playbackService } from '@/services'
-import { preferenceStore as preferences, queueStore, songStore as episodeStore } from '@/stores'
+import { playbackService } from '@/services/playbackService'
+import { songStore as episodeStore } from '@/stores/songStore'
+import { queueStore } from '@/stores/queueStore'
+import { preferenceStore as preferences } from '@/stores/preferenceStore'
+import { useRouter } from '@/composables/useRouter'
+
+const props = defineProps<{ episode: Episode, podcast: Podcast }>()
 
 const EpisodeProgress = defineAsyncComponent(() => import('@/components/podcast/EpisodeProgress.vue'))
 
-const props = defineProps<{ episode: Episode, podcast: Podcast }>()
 const { episode, podcast } = toRefs(props)
 
 const { startDragging } = useDraggable('playables')
+const { url } = useRouter()
 
 const publicationDateForHumans = computed(() => {
   const publishedAt = new Date(episode.value.created_at)
@@ -77,14 +83,16 @@ const publicationDateForHumans = computed(() => {
   return publishedAt.toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
   })
 })
 
 const currentPosition = computed(() => podcast.value.state.progresses[episode.value.id] || 0)
 
 const timeLeft = computed(() => {
-  if (currentPosition.value === 0) return secondsToHumanReadable(episode.value.length)
+  if (currentPosition.value === 0) {
+    return secondsToHumanReadable(episode.value.length)
+  }
   const secondsLeft = episode.value.length - currentPosition.value
   return secondsLeft === 0 ? 0 : `${secondsToHumanReadable(secondsLeft)} left`
 })

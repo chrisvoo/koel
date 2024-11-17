@@ -1,15 +1,17 @@
 import { reactive } from 'vue'
-import { http } from '@/services'
-import { albumStore, artistStore, songStore } from '@/stores'
+import { http } from '@/services/http'
+import { albumStore } from '@/stores/albumStore'
+import { artistStore } from '@/stores/artistStore'
+import { songStore } from '@/stores/songStore'
 
-type ExcerptState = {
+interface ExcerptState {
   playables: Playable[]
   albums: Album[]
   artists: Artist[]
   podcasts: Podcast[]
 }
 
-export type ExcerptSearchResult = {
+export interface ExcerptSearchResult {
   songs: Playable[] // backward compatibility
   albums: Album[]
   artists: Artist[]
@@ -22,9 +24,9 @@ export const searchStore = {
       playables: [],
       albums: [],
       artists: [],
-      podcasts: []
+      podcasts: [],
     } as ExcerptState,
-    playables: [] as Playable[]
+    playables: [] as Playable[],
   }),
 
   async excerptSearch (q: string) {
@@ -42,5 +44,5 @@ export const searchStore = {
 
   resetPlayableResultState () {
     this.state.playables = []
-  }
+  },
 }

@@ -1,7 +1,7 @@
 import { merge } from 'lodash'
-import { http } from '@/services'
-import { userStore } from '@/stores'
-import { useLocalStorage } from '@/composables'
+import { http } from '@/services/http'
+import { userStore } from '@/stores/userStore'
+import { useLocalStorage } from '@/composables/useLocalStorage'
 
 export interface UpdateCurrentProfileData {
   current_password: string | null
@@ -63,5 +63,5 @@ export const authService = {
     return await http.post('reset-password', { email, password, token })
   },
 
-  getOneTimeToken: async () => (await http.get<{ token: string }>('one-time-token')).token
+  getOneTimeToken: async () => (await http.get<{ token: string }>('one-time-token')).token,
 }

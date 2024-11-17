@@ -6,6 +6,7 @@ use App\Models\Album;
 use App\Services\MediaMetadataService;
 use Mockery;
 use Mockery\MockInterface;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 use function Tests\create_admin;
@@ -22,7 +23,8 @@ class AlbumCoverTest extends TestCase
         $this->mediaMetadataService = self::mock(MediaMetadataService::class);
     }
 
-    public function testUpdate(): void
+    #[Test]
+    public function update(): void
     {
         $album = Album::factory()->create();
 
@@ -31,17 +33,18 @@ class AlbumCoverTest extends TestCase
             ->once()
             ->with(Mockery::on(static fn (Album $target) => $target->is($album)), 'data:image/jpeg;base64,Rm9v');
 
-        $this->putAs("api/album/$album->id/cover", ['cover' => 'data:image/jpeg;base64,Rm9v'], create_admin())
+        $this->putAs("api/album/{$album->id}/cover", ['cover' => 'data:image/jpeg;base64,Rm9v'], create_admin())
             ->assertOk();
     }
 
-    public function testUpdateNotAllowedForNormalUsers(): void
+    #[Test]
+    public function updateNotAllowedForNormalUsers(): void
     {
         $album = Album::factory()->create();
 
         $this->mediaMetadataService->shouldNotReceive('writeAlbumCover');
 
-        $this->putAs('api/album/' . $album->id . '/cover', ['cover' => 'data:image/jpeg;base64,Rm9v'], create_user())
+        $this->putAs("api/album/{$album->id}/cover", ['cover' => 'data:image/jpeg;base64,Rm9v'], create_user())
             ->assertForbidden();
     }
 }

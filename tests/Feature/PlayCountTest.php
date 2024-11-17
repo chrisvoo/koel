@@ -6,13 +6,15 @@ use App\Events\PlaybackStarted;
 use App\Models\Interaction;
 use App\Models\Song;
 use Illuminate\Support\Facades\Event;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 use function Tests\create_user;
 
 class PlayCountTest extends TestCase
 {
-    public function testStoreExistingEntry(): void
+    #[Test]
+    public function storeExistingEntry(): void
     {
         Event::fake(PlaybackStarted::class);
 
@@ -20,7 +22,7 @@ class PlayCountTest extends TestCase
             'play_count' => 10,
         ]);
 
-        $this->postAs('/api/interaction/play', ['song' => $interaction->song->id], $interaction->user)
+        $this->postAs('/api/interaction/play', ['song' => $interaction->song_id], $interaction->user)
             ->assertJsonStructure([
                 'type',
                 'id',
@@ -32,7 +34,8 @@ class PlayCountTest extends TestCase
         Event::assertDispatched(PlaybackStarted::class);
     }
 
-    public function testStoreNewEntry(): void
+    #[Test]
+    public function storeNewEntry(): void
     {
         Event::fake(PlaybackStarted::class);
 
@@ -48,8 +51,8 @@ class PlayCountTest extends TestCase
             ]);
 
         $interaction = Interaction::query()
-            ->where('song_id', $song->id)
-            ->where('user_id', $user->id)
+            ->whereBelongsTo($song)
+            ->whereBelongsTo($user)
             ->first();
 
         self::assertSame(1, $interaction->play_count);

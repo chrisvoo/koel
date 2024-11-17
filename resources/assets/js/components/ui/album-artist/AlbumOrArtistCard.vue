@@ -10,7 +10,7 @@
     @contextmenu.prevent="onContextMenu"
   >
     <slot name="thumbnail">
-      <Thumbnail v-if="!isPodcast" :entity="entity as Album|Artist" />
+      <Thumbnail v-if="!isPodcast" :entity="entity" />
     </slot>
 
     <footer class="flex flex-1 flex-col gap-1.5 overflow-hidden">
@@ -25,22 +25,23 @@
 </template>
 
 <script lang="ts" setup>
-import Thumbnail from '@/components/ui/album-artist/AlbumOrArtistThumbnail.vue'
 import { computed, toRefs } from 'vue'
 
+import Thumbnail from '@/components/ui/album-artist/AlbumOrArtistThumbnail.vue'
+
 const props = withDefaults(defineProps<{ layout?: ArtistAlbumCardLayout, entity: Artist | Album | Podcast }>(), {
-  layout: 'full'
+  layout: 'full',
 })
+
+const emit = defineEmits<{
+  (e: 'dblclick'): void
+  (e: 'dragstart', event: DragEvent): void
+  (e: 'contextmenu', event: MouseEvent): void
+}>()
 
 const isPodcast = computed(() => props.entity.type === 'podcasts')
 
 const { layout } = toRefs(props)
-
-const emit = defineEmits<{
-  (e: 'dblclick'): void,
-  (e: 'dragstart', event: DragEvent): void,
-  (e: 'contextmenu', event: MouseEvent): void
-}>()
 
 const onDblClick = () => emit('dblclick')
 const onDragStart = (e: DragEvent) => emit('dragstart', e)
@@ -67,7 +68,8 @@ article {
     }
   }
 
-  &:focus, &:focus-within {
+  &:focus,
+  &:focus-within {
     @apply ring-1 ring-k-accent;
   }
 

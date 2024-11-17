@@ -6,11 +6,13 @@ use App\Models\Song;
 use App\Values\Podcast\EpisodePlayable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class EpisodePlayableTest extends TestCase
 {
-    public function testCreateAndRetrieved(): void
+    #[Test]
+    public function createAndRetrieved(): void
     {
         Http::fake([
             'https://example.com/episode.mp3' => Http::response('foo'),
@@ -26,7 +28,7 @@ class EpisodePlayableTest extends TestCase
         Http::assertSentCount(1);
         self::assertSame('acbd18db4cc2f85cedef654fccc4a4d8', $playable->checksum);
 
-        self::assertTrue(Cache::has("episode-playable.$episode->id"));
+        self::assertTrue(Cache::has("episode-playable.{$episode->id}"));
 
         $retrieved = EpisodePlayable::getForEpisode($episode);
 

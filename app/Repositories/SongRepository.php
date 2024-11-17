@@ -13,7 +13,7 @@ use App\Models\Song;
 use App\Models\User;
 use App\Values\Genre;
 use Illuminate\Contracts\Pagination\Paginator;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use stdClass;
 
@@ -80,7 +80,10 @@ class SongRepository extends Repository
         return Song::query(type: PlayableType::SONG, user: $scopedUser)
             ->accessible()
             ->withMeta()
-            ->when($ownSongsOnly, static fn (SongBuilder $query) => $query->where('songs.owner_id', $scopedUser->id))
+            ->when(
+                $ownSongsOnly,
+                static fn (SongBuilder $query) => $query->where('songs.owner_id', $scopedUser->id)
+            )
             ->sort($sortColumns, $sortDirection)
             ->simplePaginate($perPage);
     }
@@ -131,7 +134,7 @@ class SongRepository extends Repository
         return Song::query(user: $scopedUser ?? $this->auth->user())
             ->accessible()
             ->withMeta()
-            ->where('album_id', $album->id)
+            ->whereBelongsTo($album)
             ->orderBy('songs.disc')
             ->orderBy('songs.track')
             ->orderBy('songs.title')
@@ -197,7 +200,7 @@ class SongRepository extends Repository
             ->whereIn('songs.id', $ids)
             ->get();
 
-        return $preserveOrder ? $songs->orderByArray($ids) : $songs;
+        return $preserveOrder ? $songs->orderByArray($ids) : $songs; // @phpstan-ignore-line
     }
 
     /**

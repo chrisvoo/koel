@@ -8,17 +8,19 @@
 
 <script lang="ts" setup>
 import { ref, toRefs, watchEffect } from 'vue'
-import { albumStore } from '@/stores'
+import { albumStore } from '@/stores/albumStore'
+import { logger } from '@/utils/logger'
 
 const props = defineProps<{ album: number }>()
 const { album } = toRefs(props)
 
-const thumbnailUrl = ref<String | null>(null)
+const thumbnailUrl = ref<string | null>(null)
 
 watchEffect(async () => {
   try {
     thumbnailUrl.value = await albumStore.fetchThumbnail(album.value)
   } catch (error: unknown) {
+    logger.error(error)
     thumbnailUrl.value = null
   }
 })

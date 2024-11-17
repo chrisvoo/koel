@@ -53,22 +53,23 @@
 <script lang="ts" setup>
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import { ref, toRef } from 'vue'
-import { playlistFolderStore, playlistStore } from '@/stores'
-import {
-  useDialogBox,
-  useErrorHandler,
-  useKoelPlus,
-  useMessageToaster,
-  useModal,
-  useOverlay,
-  useRouter,
-  useSmartPlaylistForm
-} from '@/composables'
+import { playlistFolderStore } from '@/stores/playlistFolderStore'
+import { playlistStore } from '@/stores/playlistStore'
+import { useDialogBox } from '@/composables/useDialogBox'
+import { useErrorHandler } from '@/composables/useErrorHandler'
+import { useMessageToaster } from '@/composables/useMessageToaster'
+import { useModal } from '@/composables/useModal'
+import { useOverlay } from '@/composables/useOverlay'
+import { useSmartPlaylistForm } from '@/composables/useSmartPlaylistForm'
+import { useRouter } from '@/composables/useRouter'
+import { useKoelPlus } from '@/composables/useKoelPlus'
 
 import CheckBox from '@/components/ui/form/CheckBox.vue'
 import TextInput from '@/components/ui/form/TextInput.vue'
 import FormRow from '@/components/ui/form/FormRow.vue'
 import SelectBox from '@/components/ui/form/SelectBox.vue'
+
+const emit = defineEmits<{ (e: 'close'): void }>()
 
 const {
   Btn,
@@ -76,13 +77,13 @@ const {
   RuleGroup,
   collectedRuleGroups,
   addGroup,
-  onGroupChanged
+  onGroupChanged,
 } = useSmartPlaylistForm()
 
 const { showOverlay, hideOverlay } = useOverlay()
 const { toastSuccess } = useMessageToaster()
 const { showConfirmDialog } = useDialogBox()
-const { go } = useRouter()
+const { go, url } = useRouter()
 const { isPlus } = useKoelPlus()
 
 const targetFolder = useModal().getFromContext<PlaylistFolder | null>('folder')
@@ -92,7 +93,6 @@ const folderId = ref(targetFolder?.id)
 const folders = toRef(playlistFolderStore.state, 'folders')
 const ownSongsOnly = ref(false)
 
-const emit = defineEmits<{ (e: 'close'): void }>()
 const close = () => emit('close')
 
 const isPristine = () => name.value === ''
@@ -115,12 +115,12 @@ const submit = async () => {
     const playlist = await playlistStore.store(name.value, {
       rules: collectedRuleGroups.value,
       folder_id: folderId.value,
-      own_songs_only: ownSongsOnly.value
+      own_songs_only: ownSongsOnly.value,
     })
 
     close()
     toastSuccess(`Playlist "${playlist.name}" created.`)
-    go(`playlist/${playlist.id}`)
+    go(url('playlists.show', { id: playlist.id }))
   } catch (error: unknown) {
     useErrorHandler('dialog').handleHttpError(error)
   } finally {

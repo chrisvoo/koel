@@ -1,5 +1,7 @@
-import { authService, CompositeToken, http } from '@/services'
-import { userStore } from '@/stores'
+import type { CompositeToken } from '@/services/authService'
+import { authService } from '@/services/authService'
+import { http } from '@/services/http'
+import { userStore } from '@/stores/userStore'
 
 export const invitationService = {
   getUserProspect: async (token: string) => await http.get<User>(`invitations?token=${token}`),
@@ -19,5 +21,5 @@ export const invitationService = {
   revoke: async (user: User) => {
     await http.delete(`invitations`, { email: user.email })
     userStore.remove(user)
-  }
+  },
 }

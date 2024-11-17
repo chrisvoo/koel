@@ -28,8 +28,11 @@
 
 <script lang="ts" setup>
 import { ref, watch } from 'vue'
-import { useDialogBox, useErrorHandler, useMessageToaster, useOverlay } from '@/composables'
-import { invitationService } from '@/services'
+import { invitationService } from '@/services/invitationService'
+import { useDialogBox } from '@/composables/useDialogBox'
+import { useErrorHandler } from '@/composables/useErrorHandler'
+import { useMessageToaster } from '@/composables/useMessageToaster'
+import { useOverlay } from '@/composables/useOverlay'
 
 import Btn from '@/components/ui/form/Btn.vue'
 import TooltipIcon from '@/components/ui/TooltipIcon.vue'
@@ -37,6 +40,7 @@ import CheckBox from '@/components/ui/form/CheckBox.vue'
 import TextArea from '@/components/ui/form/TextArea.vue'
 import FormRow from '@/components/ui/form/FormRow.vue'
 
+const emit = defineEmits<{ (e: 'close'): void }>()
 const { showOverlay, hideOverlay } = useOverlay()
 const { toastSuccess } = useMessageToaster()
 const { showConfirmDialog } = useDialogBox()
@@ -51,6 +55,8 @@ watch(rawEmails, val => {
   emailEntries = val.trim().split('\n').map(email => email.trim()).filter(Boolean)
   emailEntries = [...new Set(emailEntries)]
 })
+
+const close = () => emit('close')
 
 const submit = async () => {
   const validEmails: string[] = []
@@ -86,9 +92,6 @@ const submit = async () => {
     hideOverlay()
   }
 }
-
-const emit = defineEmits<{ (e: 'close'): void }>()
-const close = () => emit('close')
 
 const maybeClose = async () => {
   if (emailEntries.length === 0 && !isAdmin.value) {

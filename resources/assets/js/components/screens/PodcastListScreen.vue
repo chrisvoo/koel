@@ -5,11 +5,11 @@
         Podcasts
 
         <template #controls>
-          <div class="flex gap-2" v-if="!loading">
+          <div v-if="!loading" class="flex gap-2">
             <PodcastListSorter :field="sortParams.field" :order="sortParams.order" @sort="sort" />
             <ListFilter @change="onFilterChanged" />
             <BtnGroup uppercase>
-              <Btn @click.prevent="requestAddPodcastForm" highlight>
+              <Btn highlight @click.prevent="requestAddPodcastForm">
                 <Icon :icon="faAdd" fixed-width />
               </Btn>
             </BtnGroup>
@@ -23,7 +23,7 @@
         <Icon :icon="faPodcast" />
       </template>
       No podcasts found.
-      <span class="secondary d-block">Add a podcast to get started.</span>
+      <span class="secondary block">Add a podcast to get started.</span>
     </ScreenEmptyState>
 
     <div v-else v-koel-overflow-fade class="-m-6 p-6 overflow-auto space-y-3 min-h-full">
@@ -31,7 +31,7 @@
         <PodcastItemSkeleton v-for="i in 5" :key="i" />
       </template>
       <template v-else>
-        <PodcastItem v-for="podcast in podcasts" :podcast="podcast" :key="podcast.id" />
+        <PodcastItem v-for="podcast in podcasts" :key="podcast.id" :podcast="podcast" />
       </template>
     </div>
   </ScreenBase>
@@ -41,13 +41,15 @@
 import { faAdd, faPodcast } from '@fortawesome/free-solid-svg-icons'
 import { orderBy } from 'lodash'
 import { computed, reactive, ref } from 'vue'
-import { eventBus } from '@/utils'
-import { useErrorHandler, useFuzzySearch, useRouter } from '@/composables'
-import { podcastStore } from '@/stores'
+import { eventBus } from '@/utils/eventBus'
+import { podcastStore } from '@/stores/podcastStore'
+import { useRouter } from '@/composables/useRouter'
+import { useErrorHandler } from '@/composables/useErrorHandler'
+import { useFuzzySearch } from '@/composables/useFuzzySearch'
 
 import Btn from '@/components/ui/form/Btn.vue'
 import BtnGroup from '@/components/ui/form/BtnGroup.vue'
-import ListFilter from '@/components/song/SongListFilter.vue'
+import ListFilter from '@/components/song/song-list/SongListFilter.vue'
 import PodcastItem from '@/components/podcast/PodcastItem.vue'
 import PodcastItemSkeleton from '@/components/ui/skeletons/PodcastItemSkeleton.vue'
 import PodcastListSorter from '@/components/podcast/PodcastListSorter.vue'
@@ -64,13 +66,21 @@ const keywords = ref('')
 
 const sortParams = reactive<{ field: PodcastListSortField, order: SortOrder }>({
   field: 'last_played_at',
-  order: 'desc'
+  order: 'desc',
 })
+
+const podcasts = computed(() => orderBy(
+  keywords.value ? fuzzy.search(keywords.value) : podcastStore.state.podcasts,
+  sortParams.field,
+  sortParams.order,
+))
 
 const noPodcasts = computed(() => !loading.value && podcasts.value.length === 0)
 
 const init = async () => {
-  if (loading.value) return
+  if (loading.value) {
+    return
+  }
 
   loading.value = true
 
@@ -82,12 +92,6 @@ const init = async () => {
     loading.value = false
   }
 }
-
-const podcasts = computed(() => orderBy(
-  keywords.value ? fuzzy.search(keywords.value) : podcastStore.state.podcasts,
-  sortParams.field,
-  sortParams.order
-))
 
 const onFilterChanged = (q: string) => (keywords.value = q)
 

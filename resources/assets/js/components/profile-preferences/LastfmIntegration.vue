@@ -44,9 +44,12 @@
 <script lang="ts" setup>
 import { faLastfm } from '@fortawesome/free-brands-svg-icons'
 import { computed, defineAsyncComponent } from 'vue'
-import { authService, http } from '@/services'
-import { forceReloadWindow } from '@/utils'
-import { useAuthorization, useThirdPartyServices } from '@/composables'
+import { authService } from '@/services/authService'
+import { http } from '@/services/http'
+
+import { useAuthorization } from '@/composables/useAuthorization'
+import { useThirdPartyServices } from '@/composables/useThirdPartyServices'
+import { forceReloadWindow } from '@/utils/helpers'
 
 const Btn = defineAsyncComponent(() => import('@/components/ui/form/Btn.vue'))
 
@@ -63,7 +66,7 @@ const connected = computed(() => Boolean(currentUser.value.preferences!.lastfm_s
 const connect = () => window.open(
   `${window.BASE_URL}lastfm/connect?api_token=${authService.getApiToken()}`,
   '_blank',
-  'toolbar=no,titlebar=no,location=no,width=1024,height=640'
+  'toolbar=no,titlebar=no,location=no,width=1024,height=640',
 )
 
 const disconnect = async () => {

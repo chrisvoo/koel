@@ -1,7 +1,8 @@
-import { Ref } from 'vue'
-import { queueStore } from '@/stores'
-import { usePlaylistManagement } from '@/composables'
-import { eventBus } from '@/utils'
+import type { Ref } from 'vue'
+// import { favoriteStore } from '@/stores/favoriteStore'
+import { queueStore } from '@/stores/queueStore'
+import { eventBus } from '@/utils/eventBus'
+import { usePlaylistManagement } from '@/composables/usePlaylistManagement'
 
 export const usePlayableMenuMethods = (playables: Ref<Playable[]>, close: Closure) => {
   const { addToPlaylist } = usePlaylistManagement()
@@ -17,6 +18,6 @@ export const usePlayableMenuMethods = (playables: Ref<Playable[]>, close: Closur
     queueToTop: () => trigger(() => queueStore.queueToTop(playables.value)),
     // addToFavorites: () => trigger(() => favoriteStore.like(playables.value)),
     addToExistingPlaylist: (playlist: Playlist) => trigger(() => addToPlaylist(playlist, playables.value)),
-    addToNewPlaylist: () => trigger(() => eventBus.emit('MODAL_SHOW_CREATE_PLAYLIST_FORM', null, playables.value))
+    addToNewPlaylist: () => trigger(() => eventBus.emit('MODAL_SHOW_CREATE_PLAYLIST_FORM', null, playables.value)),
   }
 }

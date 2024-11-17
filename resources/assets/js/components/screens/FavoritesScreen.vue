@@ -51,7 +51,7 @@
         <Icon :icon="faHeartBroken" />
       </template>
       No favorites yet.
-      <span class="secondary d-block">
+      <span class="secondary block">
         Click the&nbsp;
         <Icon :icon="faHeart" />&nbsp;
         icon to mark a song as favorite.
@@ -63,11 +63,13 @@
 <script lang="ts" setup>
 import { faHeartBroken } from '@fortawesome/free-solid-svg-icons'
 import { faHeart } from '@fortawesome/free-regular-svg-icons'
-import { pluralize } from '@/utils'
-import { favoriteStore } from '@/stores'
-import { downloadService } from '@/services'
-import { useRouter, useSongList, useSongListControls } from '@/composables'
 import { ref, toRef } from 'vue'
+import { pluralize } from '@/utils/formatters'
+import { favoriteStore } from '@/stores/favoriteStore'
+import { downloadService } from '@/services/downloadService'
+import { useRouter } from '@/composables/useRouter'
+import { useSongList } from '@/composables/useSongList'
+import { useSongListControls } from '@/composables/useSongListControls'
 
 import ScreenHeader from '@/components/ui/ScreenHeader.vue'
 import ScreenEmptyState from '@/components/ui/ScreenEmptyState.vue'
@@ -91,7 +93,7 @@ const {
   playAll,
   playSelected,
   applyFilter,
-  onScrollBreakpoint
+  onScrollBreakpoint,
 } = useSongList(toRef(favoriteStore.state, 'playables'), { type: 'Favorites' })
 
 const { SongListControls, config } = useSongListControls('Favorites')

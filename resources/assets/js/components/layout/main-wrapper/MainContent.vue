@@ -29,7 +29,7 @@
     <ArtistScreen v-if="screen === 'Artist'" />
     <SettingsScreen v-if="screen === 'Settings'" />
     <ProfileScreen v-if="screen === 'Profile'" />
-    <PodcastScreen v-if="screen ==='Podcast'" />
+    <PodcastScreen v-if="screen === 'Podcast'" />
     <EpisodeScreen v-if="screen === 'Episode'" />
     <UserListScreen v-if="screen === 'Users'" />
     <YouTubeScreen v-if="useYouTube" v-show="screen === 'YouTube'" />
@@ -38,10 +38,12 @@
 </template>
 
 <script lang="ts" setup>
-import { defineAsyncComponent, onMounted, ref, toRef } from 'vue'
-import { isSong, requireInjection } from '@/utils'
-import { preferenceStore } from '@/stores'
-import { useRouter, useThirdPartyServices } from '@/composables'
+import { onMounted, ref, toRef } from 'vue'
+import { isSong } from '@/utils/typeGuards'
+import { defineAsyncComponent, requireInjection } from '@/utils/helpers'
+import { preferenceStore } from '@/stores/preferenceStore'
+import { useRouter } from '@/composables/useRouter'
+import { useThirdPartyServices } from '@/composables/useThirdPartyServices'
 import { CurrentPlayableKey } from '@/symbols'
 
 import HomeScreen from '@/components/screens/HomeScreen.vue'

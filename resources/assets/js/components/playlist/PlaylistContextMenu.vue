@@ -17,13 +17,18 @@
 
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
-import { eventBus } from '@/utils'
-import { useContextMenu, useKoelPlus, useMessageToaster, usePolicies, useRouter } from '@/composables'
-import { playbackService } from '@/services'
-import { queueStore, songStore } from '@/stores'
+import { eventBus } from '@/utils/eventBus'
+import { useRouter } from '@/composables/useRouter'
+import { useContextMenu } from '@/composables/useContextMenu'
+import { useMessageToaster } from '@/composables/useMessageToaster'
+import { usePolicies } from '@/composables/usePolicies'
+import { useKoelPlus } from '@/composables/useKoelPlus'
+import { playbackService } from '@/services/playbackService'
+import { queueStore } from '@/stores/queueStore'
+import { songStore } from '@/stores/songStore'
 
 const { base, ContextMenu, open, trigger } = useContextMenu()
-const { go } = useRouter()
+const { go, url } = useRouter()
 const { toastWarning, toastSuccess } = useMessageToaster()
 const { isPlus } = useKoelPlus()
 const { currentUserCan } = usePolicies()
@@ -41,7 +46,7 @@ const play = () => trigger(async () => {
 
   if (songs.length) {
     playbackService.queueAndPlay(songs)
-    go('queue')
+    go(url('queue'))
   } else {
     toastWarning('The playlist is empty.')
   }
@@ -52,7 +57,7 @@ const shuffle = () => trigger(async () => {
 
   if (songs.length) {
     playbackService.queueAndPlay(songs, true)
-    go('queue')
+    go(url('queue'))
   } else {
     toastWarning('The playlist is empty.')
   }

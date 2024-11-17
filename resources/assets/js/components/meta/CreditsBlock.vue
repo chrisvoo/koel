@@ -12,9 +12,9 @@
 <script lang="ts" setup>
 import { orderBy } from 'lodash'
 import { onMounted, ref } from 'vue'
-import { http } from '@/services'
+import { http } from '@/services/http'
 
-type DemoCredits = {
+interface DemoCredits {
   name: string
   url: string
 }
@@ -29,7 +29,7 @@ onMounted(async () => {
 <style lang="postcss" scoped>
 li&:last-child {
   &::before {
-    content: ', and '
+    content: ', and ';
   }
 
   &::after {

@@ -11,14 +11,14 @@
 
 <script lang="ts" setup>
 import { faCirclePlus } from '@fortawesome/free-solid-svg-icons'
-import { eventBus } from '@/utils'
+import { eventBus } from '@/utils/eventBus'
 
 const requestContextMenu = (e: MouseEvent) => {
   const { bottom, right } = (e.currentTarget as HTMLButtonElement).getBoundingClientRect()
 
   eventBus.emit('CREATE_NEW_PLAYLIST_CONTEXT_MENU_REQUESTED', {
     top: bottom,
-    left: right
+    left: right,
   })
 }
 </script>

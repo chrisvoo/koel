@@ -1,5 +1,11 @@
-import { arrayify, getPlayableProp, logger, pluralize } from '@/utils'
-import { albumStore, artistStore, playlistFolderStore, playlistStore, songStore } from '@/stores'
+import { pluralize } from '@/utils/formatters'
+import { arrayify, getPlayableProp } from '@/utils/helpers'
+import { logger } from '@/utils/logger'
+import { albumStore } from '@/stores/albumStore'
+import { artistStore } from '@/stores/artistStore'
+import { playlistStore } from '@/stores/playlistStore'
+import { playlistFolderStore } from '@/stores/playlistFolderStore'
+import { songStore } from '@/stores/songStore'
 
 type Draggable = MaybeArray<Playable> | Album | Artist | Playlist | PlaylistFolder
 const draggableTypes = <const>['playables', 'album', 'artist', 'playlist', 'playlist-folder']
@@ -19,7 +25,7 @@ const createGhostDragImage = (event: DragEvent, text: string): void => {
     document.body.appendChild(dragGhost)
   }
 
-  dragGhost.innerText = text
+  dragGhost.textContent = text
   event.dataTransfer.setDragImage(dragGhost, 0, 0)
 }
 
@@ -82,7 +88,7 @@ export const useDraggable = (type: DraggableType) => {
   }
 
   return {
-    startDragging
+    startDragging,
   }
 }
 
@@ -95,10 +101,12 @@ export const useDroppable = (acceptedTypes: DraggableType[]) => {
   const getDroppedData = (event: DragEvent) => {
     const type = getDragType(event)
 
-    if (!type) return null
+    if (!type) {
+      return null
+    }
 
     try {
-      return JSON.parse(event.dataTransfer?.getData(`application/x-koel.${type}`)!)
+      return JSON.parse(event.dataTransfer!.getData(`application/x-koel.${type}`)!)
     } catch (error: unknown) {
       logger.warn('Failed to parse dropped data', error)
       return null
@@ -112,7 +120,6 @@ export const useDroppable = (acceptedTypes: DraggableType[]) => {
           const id = String(JSON.parse(event.dataTransfer!.getData('application/x-koel.playlist')))
           return playlistStore.byId(id) as T | undefined
         default:
-          return
       }
     } catch (error: unknown) {
       logger.error(error, event)
@@ -122,7 +129,9 @@ export const useDroppable = (acceptedTypes: DraggableType[]) => {
   const resolveDroppedItems = async (event: DragEvent) => {
     try {
       const type = getDragType(event)
-      if (!type) return <Playable[]>[]
+      if (!type) {
+        return <Playable[]>[]
+      }
 
       const data = getDroppedData(event)
       switch (type) {
@@ -141,7 +150,7 @@ export const useDroppable = (acceptedTypes: DraggableType[]) => {
           const folder = playlistFolderStore.byId(<string>data)
           return folder ? await songStore.fetchForPlaylistFolder(folder) : <Song[]>[]
         default:
-          throw `Unknown drag type: ${type}`
+          throw new Error(`Unknown drag type: ${type}`)
       }
     } catch (error: unknown) {
       logger.error(error, event)
@@ -153,6 +162,6 @@ export const useDroppable = (acceptedTypes: DraggableType[]) => {
     acceptsDrop,
     getDroppedData,
     resolveDroppedValue,
-    resolveDroppedItems
+    resolveDroppedItems,
   }
 }

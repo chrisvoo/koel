@@ -20,26 +20,36 @@
 
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
-import { defaultCover, getPlayableProp, isSong, requireInjection } from '@/utils'
+import defaultCover from '@/../img/covers/default.svg'
+import { getPlayableProp, requireInjection } from '@/utils/helpers'
+import { isSong } from '@/utils/typeGuards'
 import { CurrentPlayableKey } from '@/symbols'
-import { useDraggable } from '@/composables'
+import { useDraggable } from '@/composables/useDragAndDrop'
+import { useRouter } from '@/composables/useRouter'
 
 const { startDragging } = useDraggable('playables')
+const { url } = useRouter()
 
 const song = requireInjection(CurrentPlayableKey, ref())
 
 const cover = computed(() => {
-  if (!song.value) return defaultCover
-  return getPlayableProp(song.value, 'album_cover', 'episode_image')
+  return song.value ? getPlayableProp(song.value, 'album_cover', 'episode_image') : defaultCover
 })
 
 const artistOrPodcastUri = computed(() => {
-  if (!song.value) return ''
-  return isSong(song.value) ? `#/artist/${song.value?.artist_id}` : `#/podcasts/${song.value.podcast_id}`
+  if (!song.value) {
+    return ''
+  }
+
+  return isSong(song.value)
+    ? url('artists.show', { id: song.value?.artist_id })
+    : url('podcasts.show', { id: song.value?.podcast_id })
 })
 
 const artistOrPodcastName = computed(() => {
-  if (!song.value) return ''
+  if (!song.value) {
+    return ''
+  }
   return getPlayableProp(song.value, 'artist_name', 'podcast_title')
 })
 

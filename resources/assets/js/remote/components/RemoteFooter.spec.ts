@@ -2,7 +2,7 @@ import { screen } from '@testing-library/vue'
 import { expect, it } from 'vitest'
 import UnitTestCase from '@/__tests__/UnitTestCase'
 import factory from '@/__tests__/factory'
-import { socketService } from '@/services'
+import { socketService } from '@/services/socketService'
 import Component from './RemoteFooter.vue'
 
 new class extends UnitTestCase {
@@ -11,20 +11,20 @@ new class extends UnitTestCase {
 
     this.render(Component, {
       props: {
-        playable
+        playable,
       },
       global: {
         components: {
           Icon: this.stub('Icon'),
-          VolumeControl: this.stub('volume-control')
+          VolumeControl: this.stub('volume-control'),
         },
         provide: {
           state: {
             playable,
-            volume: 7
-          }
-        }
-      }
+            volume: 7,
+          },
+        },
+      },
     })
   }
 
@@ -58,7 +58,7 @@ new class extends UnitTestCase {
     it.each<[string, PlaybackState, PlaybackState]>([
       ['pauses', 'Playing', 'Paused'],
       ['resumes', 'Paused', 'Playing'],
-      ['starts', 'Stopped', 'Playing']
+      ['starts', 'Stopped', 'Playing'],
     ])('%s playback', async (_, currentState, newState) => {
       const broadcastMock = this.mock(socketService, 'broadcast')
       const playable = factory('episode', { playback_state: currentState })

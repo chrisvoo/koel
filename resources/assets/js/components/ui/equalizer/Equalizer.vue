@@ -40,9 +40,10 @@
 
 <script lang="ts" setup>
 import { nextTick, onMounted, ref, watch } from 'vue'
-import { equalizerStore } from '@/stores'
-import { audioService, Band } from '@/services'
-import { equalizerPresets as presets } from '@/config'
+import { equalizerStore } from '@/stores/equalizerStore'
+import type { Band } from '@/services/audioService'
+import { audioService } from '@/services/audioService'
+import { equalizerPresets as presets } from '@/config/audio'
 
 import Btn from '@/components/ui/form/Btn.vue'
 import SelectBox from '@/components/ui/form/SelectBox.vue'
@@ -61,24 +62,6 @@ const filterBandEls = ref<InstanceType<typeof EqualizerBand>[]>()
 // be set to null (customized).
 let applyingPreset = false
 
-watch(preampGain, value => {
-  audioService.changePreampGain(value)
-  if (!applyingPreset) selectedPresetName.value = null
-})
-
-const changeFilterGain = (band: Band) => {
-  audioService.changeFilterGain(band.node, band.db)
-  if (!applyingPreset) selectedPresetName.value = null
-}
-
-watch(selectedPresetName, value => {
-  if (value !== null) {
-    loadPreset(equalizerStore.getPresetByName(value) || presets[0])
-  }
-
-  save()
-})
-
 const loadPreset = async (preset: EqualizerPreset) => {
   applyingPreset = true
   preampGain.value = preset.preamp
@@ -96,6 +79,28 @@ const loadPreset = async (preset: EqualizerPreset) => {
 
 const save = () => equalizerStore.saveConfig(selectedPresetName.value, preampGain.value, bands.map(band => band.db))
 const close = () => emit('close')
+
+watch(preampGain, value => {
+  audioService.changePreampGain(value)
+  if (!applyingPreset) {
+    selectedPresetName.value = null
+  }
+})
+
+const changeFilterGain = (band: Band) => {
+  audioService.changeFilterGain(band.node, band.db)
+  if (!applyingPreset) {
+    selectedPresetName.value = null
+  }
+}
+
+watch(selectedPresetName, value => {
+  if (value !== null) {
+    loadPreset(equalizerStore.getPresetByName(value) || presets[0])
+  }
+
+  save()
+})
 
 onMounted(() => {
   const { name, preamp } = equalizerStore.getConfig()

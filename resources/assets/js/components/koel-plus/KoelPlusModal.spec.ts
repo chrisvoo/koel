@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/vue'
-import { commonStore } from '@/stores'
 import { expect, it } from 'vitest'
 import UnitTestCase from '@/__tests__/UnitTestCase'
+import { commonStore } from '@/stores/commonStore'
 import Modal from './KoelPlusModal.vue'
 
 new class extends UnitTestCase {
@@ -13,8 +13,8 @@ new class extends UnitTestCase {
       screen.getByTestId('buttons')
       expect(screen.queryByTestId('activateForm')).toBeNull()
       await this.user.click(screen.getByText('Purchase Koel Plus'))
-      expect(global.LemonSqueezy.Url.Open).toHaveBeenCalledWith(
-        'https://store.koel.dev/checkout/buy/42?embed=1&media=0&desc=0'
+      expect(globalThis.LemonSqueezy.Url.Open).toHaveBeenCalledWith(
+        'https://store.koel.dev/checkout/buy/42?embed=1&media=0&desc=0',
       )
     })
 

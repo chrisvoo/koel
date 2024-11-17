@@ -16,15 +16,15 @@
 <script lang="ts" setup>
 import { Repeat, Repeat1 } from 'lucide-vue-next'
 import { computed, toRef } from 'vue'
-import { playbackService } from '@/services'
-import { preferenceStore } from '@/stores'
+import { playbackService } from '@/services/playbackService'
+import { preferenceStore } from '@/stores/preferenceStore'
 
 const mode = toRef(preferenceStore.state, 'repeat_mode')
 
 const readableMode = computed(() => mode.value
   .split('_')
   .map(part => part[0].toUpperCase() + part.substring(1).toLowerCase())
-  .join(' ')
+  .join(' '),
 )
 
 const changeMode = () => playbackService.rotateRepeatMode()

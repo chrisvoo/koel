@@ -1,6 +1,9 @@
-import axios, { AxiosResponse } from 'axios'
-import { logger, parseValidationError } from '@/utils'
-import { useDialogBox, useMessageToaster } from '@/composables'
+import type { AxiosResponse } from 'axios'
+import axios from 'axios'
+import { logger } from '@/utils/logger'
+import { parseValidationError } from '@/utils/formatters'
+import { useDialogBox } from '@/composables/useDialogBox'
+import { useMessageToaster } from '@/composables/useMessageToaster'
 
 export interface StatusMessageMap {
   [key: AxiosResponse['status']]: string | Closure
@@ -45,6 +48,6 @@ export const useErrorHandler = (driver: ErrorMessageDriver = 'toast') => {
 
   return {
     handleHttpError,
-    showGenericError
+    showGenericError,
   }
 }

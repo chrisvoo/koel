@@ -32,17 +32,19 @@
 </template>
 
 <script lang="ts" setup>
-import { defineAsyncComponent, ref, toRefs, watch } from 'vue'
-import { mediaInfoService } from '@/services'
-import { useThirdPartyServices } from '@/composables'
+import { ref, toRefs, watch } from 'vue'
+import { mediaInfoService } from '@/services/mediaInfoService'
+import { useThirdPartyServices } from '@/composables/useThirdPartyServices'
+import { defineAsyncComponent } from '@/utils/helpers'
 
 import AlbumThumbnail from '@/components/ui/album-artist/AlbumOrArtistThumbnail.vue'
 import AlbumArtistInfo from '@/components/ui/album-artist/AlbumOrArtistInfo.vue'
 import ExpandableContentBlock from '@/components/ui/album-artist/ExpandableContentBlock.vue'
 
+const props = withDefaults(defineProps<{ album: Album, mode?: MediaInfoDisplayMode }>(), { mode: 'aside' })
+
 const TrackList = defineAsyncComponent(() => import('@/components/album/AlbumTrackList.vue'))
 
-const props = withDefaults(defineProps<{ album: Album, mode?: MediaInfoDisplayMode }>(), { mode: 'aside' })
 const { album, mode } = toRefs(props)
 
 const { useLastfm, useSpotify } = useThirdPartyServices()

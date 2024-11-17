@@ -37,7 +37,7 @@
           :disabled="!preferences.transcode_on_mobile"
           class="appearance-auto rounded"
         >
-          <option v-for="quality in [64, 96, 128, 192, 256, 320]" :value="quality" :key="quality">{{ quality }}</option>
+          <option v-for="quality in [64, 96, 128, 192, 256, 320]" :key="quality" :value="quality">{{ quality }}</option>
         </select>
         kbps on mobile
       </div>
@@ -54,8 +54,9 @@
 <script lang="ts" setup>
 import isMobile from 'ismobilejs'
 import { toRef } from 'vue'
-import { commonStore, preferenceStore as preferences } from '@/stores'
-import { useKoelPlus } from '@/composables'
+import { commonStore } from '@/stores/commonStore'
+import { preferenceStore as preferences } from '@/stores/preferenceStore'
+import { useKoelPlus } from '@/composables/useKoelPlus'
 
 import CheckBox from '@/components/ui/form/CheckBox.vue'
 import FormRow from '@/components/ui/form/FormRow.vue'

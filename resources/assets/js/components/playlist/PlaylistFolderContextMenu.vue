@@ -17,13 +17,16 @@
 
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
-import { eventBus } from '@/utils'
-import { playlistStore, songStore } from '@/stores'
-import { playbackService } from '@/services'
-import { useContextMenu, useMessageToaster, useRouter } from '@/composables'
+import { eventBus } from '@/utils/eventBus'
+import { playlistStore } from '@/stores/playlistStore'
+import { playbackService } from '@/services/playbackService'
+import { useRouter } from '@/composables/useRouter'
+import { useContextMenu } from '@/composables/useContextMenu'
+import { useMessageToaster } from '@/composables/useMessageToaster'
+import { songStore } from '@/stores/songStore'
 
 const { base, ContextMenu, open, trigger } = useContextMenu()
-const { go } = useRouter()
+const { go, url } = useRouter()
 const { toastWarning } = useMessageToaster()
 
 const folder = ref<PlaylistFolder>()
@@ -36,7 +39,7 @@ const play = () => trigger(async () => {
 
   if (songs.length) {
     playbackService.queueAndPlay(songs)
-    go('queue')
+    go(url('queue'))
   } else {
     toastWarning('No songs available.')
   }
@@ -47,7 +50,7 @@ const shuffle = () => trigger(async () => {
 
   if (songs.length) {
     playbackService.queueAndPlay(songs, true)
-    go('queue')
+    go(url('queue'))
   } else {
     toastWarning('No songs available.')
   }
