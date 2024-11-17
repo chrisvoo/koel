@@ -11,47 +11,45 @@
         </template>
         Current queue
       </SidebarItem>
-      <SidebarItem href="#/songs" screen="Songs">
-        <SidebarItem :href="url('songs.index')" screen="Songs">
-          <template #icon>
-            <Icon :icon="faMusic" fixed-width />
-          </template>
-          All Songs
-        </SidebarItem>
-        <SidebarItem :href="url('albums.index')" screen="Albums">
-          <template #icon>
-            <Icon :icon="faCompactDisc" fixed-width />
-          </template>
-          Albums
-        </SidebarItem>
-        <SidebarItem :href="url('artists.index')" screen="Artists">
-          <template #icon>
-            <MicVocalIcon size="16" />
-          </template>
-          Artists
-        </SidebarItem>
-        <SidebarItem :href="url('genres.index')" screen="Genres">
-          <template #icon>
-            <GuitarIcon size="16" />
-          </template>
-          Genres
-        </SidebarItem>
-        <YouTubeSidebarItem v-if="youtubeVideoTitle" data-testid="youtube">
-          {{ youtubeVideoTitle }}
-        </YouTubeSidebarItem>
-        <SidebarItem :href="url('podcasts.index')" screen="Podcasts">
-          <template #icon>
-            <Icon :icon="faPodcast" fixed-width />
-          </template>
-          Podcasts
-        </SidebarItem>
-      </sidebaritem>
+      <SidebarItem :href="url('songs.index')" screen="Songs">
+        <template #icon>
+          <Icon :icon="faMusic" fixed-width />
+        </template>
+        All Songs
+      </SidebarItem>
+      <SidebarItem :href="url('albums.index')" screen="Albums">
+        <template #icon>
+          <Icon :icon="faCompactDisc" fixed-width />
+        </template>
+        Albums
+      </SidebarItem>
+      <SidebarItem :href="url('artists.index')" screen="Artists">
+        <template #icon>
+          <MicVocalIcon size="16" />
+        </template>
+        Artists
+      </SidebarItem>
+      <SidebarItem :href="url('genres.index')" screen="Genres">
+        <template #icon>
+          <GuitarIcon size="16" />
+        </template>
+        Genres
+      </SidebarItem>
+      <YouTubeSidebarItem v-if="youtubeVideoTitle" data-testid="youtube">
+        {{ youtubeVideoTitle }}
+      </YouTubeSidebarItem>
+      <SidebarItem :href="url('podcasts.index')" screen="Podcasts">
+        <template #icon>
+          <Icon :icon="faPodcast" fixed-width />
+        </template>
+        Podcasts
+      </SidebarItem>
     </ul>
   </SidebarSection>
 </template>
 
 <script lang="ts" setup>
-import { faCompactDisc, faMusic, faPodcast } from '@fortawesome/free-solid-svg-icons'
+import { faCompactDisc, faList, faMusic, faPodcast } from '@fortawesome/free-solid-svg-icons'
 import { GuitarIcon, MicVocalIcon } from 'lucide-vue-next'
 import { unescape } from 'lodash'
 import { ref } from 'vue'

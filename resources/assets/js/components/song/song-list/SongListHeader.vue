@@ -65,6 +65,14 @@
         <Icon v-if="sortField === 'length' && sortOrder === 'desc'" :icon="faCaretDown" class="text-k-highlight" />
       </template>
     </span>
+    <span
+      class="play-count"
+      data-testid="header-play-count"
+      role="button"
+      title="How many time it was played"
+    >
+      Played
+    </span>
     <span class="extra">
       <ActionMenu
         :sortable="config.sortable"

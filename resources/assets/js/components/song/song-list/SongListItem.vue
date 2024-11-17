@@ -43,8 +43,8 @@
         <span :title="playable.collaboration.added_at" class="added-at">{{ playable.collaboration.fmt_added_at }}</span>
       </template>
       <span v-if="shouldShowColumn('duration')" class="time">{{ fmtLength }}</span>
-      <span class="extra">
-        <LikeButton :playable="playable" />
+      <span class="title-artist flex flex-col gap-2 overflow-hidden">
+        <span class="artist">{{ playable.play_count }}</span>
       </span>
     </article>
   </div>
@@ -61,7 +61,7 @@ import { useKoelPlus } from '@/composables/useKoelPlus'
 import { usePlayableListColumnVisibility } from '@/composables/usePlayableListColumnVisibility'
 import { PlayableListConfigKey } from '@/symbols'
 
-import LikeButton from '@/components/song/SongLikeButton.vue'
+// import LikeButton from '@/components/song/SongLikeButton.vue'
 import SoundBars from '@/components/ui/SoundBars.vue'
 import SongThumbnail from '@/components/song/SongThumbnail.vue'
 import UserAvatar from '@/components/user/UserAvatar.vue'

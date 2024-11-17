@@ -384,11 +384,11 @@ onMounted(() => render())
     }
 
     &.title-artist {
-      @apply flex-1;
+      flex: 1 1 5%;
     }
 
     &.play-count {
-      flex-basis: 86px;
+      @apply flex-1;
     }
   }
 
