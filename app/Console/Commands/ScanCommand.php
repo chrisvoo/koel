@@ -109,10 +109,15 @@ class ScanCommand extends Command
                 static fn (ScanResult $result) => $result->type !== ScanResultType::SKIPPED
             );
 
+            $rows =  array_map(
+                static fn ($scanResult) => [$scanResult->path, $scanResult->type->value, $scanResult->error],
+                $filteredErrors
+            );
+
             if (count($filteredErrors) > 0) {
                 $this->table(
                     ['Path', 'Type', 'Message'],
-                    $filteredErrors
+                    $rows
                 );
             }
         } else {
