@@ -384,10 +384,6 @@ onMounted(() => render())
     }
 
     &.title-artist {
-      flex: 1 1 5%;
-    }
-
-    &.play-count {
       @apply flex-1;
     }
   }
@@ -436,14 +432,6 @@ onMounted(() => render())
       &.thumbnail {
         display: block;
         padding-right: 12px;
-      }
-
-      &.time {
-        padding-left: 50px;
-      }
-
-      &.play-count {
-        padding-left: 50px;
       }
     }
   }

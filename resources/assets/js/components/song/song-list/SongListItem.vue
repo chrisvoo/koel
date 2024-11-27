@@ -43,8 +43,8 @@
         <span :title="playable.collaboration.added_at" class="added-at">{{ playable.collaboration.fmt_added_at }}</span>
       </template>
       <span v-if="shouldShowColumn('duration')" class="time">{{ fmtLength }}</span>
-      <span class="title-artist flex flex-col gap-2 overflow-hidden">
-        <span class="artist">{{ playable.play_count }}</span>
+      <span class="extra">
+        {{ playable.play_count }}
       </span>
     </article>
   </div>
