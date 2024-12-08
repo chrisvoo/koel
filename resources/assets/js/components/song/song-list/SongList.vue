@@ -20,15 +20,10 @@
       <SongListItem
         :key="item.playable.id"
         :item="item"
-        draggable="true"
+        draggable="false"
         :show-disc="showDiscLabel(item.playable)"
         @click="onClick(item, $event)"
-        @dragleave="onDragLeave"
-        @dragstart="onDragStart(item, $event)"
         @play="onPlay(item.playable)"
-        @dragover.prevent="onDragOver"
-        @drop.prevent="onDrop(item, $event)"
-        @dragend.prevent="onDragEnd"
         @contextmenu.prevent="openContextMenu(item, $event)"
       />
     </VirtualScroller>
