@@ -46,8 +46,11 @@ class MediaScanner
         foreach ($songPaths as $path) {
             try {
                 $result = $this->fileScanner->setFile($path)->scan($config);
-            } catch (Throwable) {
-                $result = ScanResult::error($path, 'Possible invalid file');
+            } catch (Throwable $e) {
+                $result = ScanResult::error(
+                        $path,
+                        $e->getMessage() . ' at file ' . $e->getFile() . ', line: ' . $e->getLine()
+                );
             }
 
             $results->add($result);
@@ -172,8 +175,13 @@ class MediaScanner
         foreach ($this->gatherFiles($path) as $file) {
             try {
                 $scanResults->add($this->fileScanner->setFile($file)->scan($config));
-            } catch (Throwable) {
-                $scanResults->add(ScanResult::error($file->getRealPath(), 'Possible invalid file'));
+            } catch (Throwable $e) {
+                $scanResults->add(
+                        ScanResult::error(
+                                $file->getRealPath(),
+                                $e->getMessage() . ' at file ' . $e->getFile() . ', line: ' . $e->getLine()
+                        )
+                );
             }
         }
 
