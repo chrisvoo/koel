@@ -12,20 +12,15 @@ use App\Services\Streamer\Adapters\S3CompatibleStreamerAdapter;
 use App\Services\Streamer\Adapters\SftpStreamerAdapter;
 use App\Services\Streamer\Adapters\StreamerAdapter;
 use App\Services\Streamer\Adapters\TranscodingStreamerAdapter;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
+use App\Values\RequestedStreamingConfig;
 
 class Streamer
 {
     public function __construct(
         private readonly Song $song,
         private ?StreamerAdapter $adapter = null,
-        private readonly array $config = []
+        private readonly ?RequestedStreamingConfig $config = null
     ) {
-        // Turn off error reporting to make sure our stream isn't interfered.
-        @error_reporting(0);
-
         $this->adapter ??= $this->resolveAdapter();
     }
 
@@ -37,7 +32,7 @@ class Streamer
             return app(PodcastStreamerAdapter::class);
         }
 
-        if ($this->shouldTranscode()) {
+        if ($this->config?->transcode || self::shouldTranscode($this->song)) {
             return app(TranscodingStreamerAdapter::class);
         }
 
@@ -51,27 +46,42 @@ class Streamer
 
     public function stream(): mixed
     {
+        // Turn off error reporting to make sure our stream isn't interfered.
+        @error_reporting(0);
+
         return $this->adapter->stream($this->song, $this->config);
-    }
-
-    private function shouldTranscode(): bool
-    {
-        // We only transcode local files. "Remote" transcoding (e.g., from Dropbox) is not supported.
-        if ($this->song->storage !== SongStorageType::LOCAL) {
-            return false;
-        }
-
-        if (Arr::get($this->config, 'transcode', false)) {
-            return true;
-        }
-
-        return Str::endsWith(File::mimeType($this->song->storage_metadata->getPath()), 'flac')
-            && config('koel.streaming.transcode_flac')
-            && is_executable(config('koel.streaming.ffmpeg_path'));
     }
 
     public function getAdapter(): StreamerAdapter
     {
         return $this->adapter;
+    }
+
+    /**
+     * Determine if the given song should be transcoded based on its format and the server's FFmpeg installation.
+     */
+    private static function shouldTranscode(Song $song): bool
+    {
+        if ($song->isEpisode()) {
+            return false;
+        }
+
+        if (!self::hasValidFfmpegInstallation()) {
+            return false;
+        }
+
+        if (
+            in_array($song->mime_type, ['audio/flac', 'audio/x-flac'], true)
+            && config('koel.streaming.transcode_flac')
+        ) {
+            return true;
+        }
+
+        return in_array($song->mime_type, config('koel.streaming.transcode_required_mime_types', []), true);
+    }
+
+    private static function hasValidFfmpegInstallation(): bool
+    {
+        return app()->runningUnitTests() || is_executable(config('koel.streaming.ffmpeg_path'));
     }
 }

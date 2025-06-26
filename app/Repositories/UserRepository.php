@@ -5,16 +5,16 @@
 namespace App\Repositories;
 
 use App\Models\User;
-use App\Values\SSOUser;
+use App\Values\SsoUser;
 
 /**
  * @extends Repository<User>
  */
 class UserRepository extends Repository
 {
-    public function getDefaultAdminUser(): User
+    public function getFirstAdminUser(): User
     {
-        return User::query()->where('is_admin', true)->oldest()->firstOrFail();
+        return User::firstAdmin();
     }
 
     public function findOneByEmail(string $email): ?User
@@ -22,12 +22,17 @@ class UserRepository extends Repository
         return User::query()->firstWhere('email', $email);
     }
 
-    public function findOneBySSO(SSOUser $ssoUser): ?User
+    public function findOneBySso(SsoUser $ssoUser): ?User
     {
         // we prioritize the SSO ID over the email address, but still resort to the latter
         return User::query()->firstWhere([
             'sso_id' => $ssoUser->id,
             'sso_provider' => $ssoUser->provider,
         ]) ?? $this->findOneByEmail($ssoUser->email);
+    }
+
+    public function getOneByPublicId(string $publicId): User
+    {
+        return $this->getOneBy(['public_id' => $publicId]);
     }
 }

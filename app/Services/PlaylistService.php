@@ -10,7 +10,7 @@ use App\Models\PlaylistFolder as Folder;
 use App\Models\Song as Playable;
 use App\Models\User;
 use App\Repositories\SongRepository;
-use App\Values\SmartPlaylistRuleGroupCollection;
+use App\Values\SmartPlaylist\SmartPlaylistRuleGroupCollection;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -43,10 +43,15 @@ class PlaylistService
 
         return DB::transaction(
             static function () use ($name, $user, $playables, $folder, $ruleGroups, $ownSongsOnly): Playlist {
-                $playlist = $user->playlists()->create([
+                /** @var Playlist $playlist */
+                $playlist = Playlist::query()->create([
                     'name' => $name,
                     'rules' => $ruleGroups,
                     'own_songs_only' => $ownSongsOnly,
+                ]);
+
+                $user->ownedPlaylists()->attach($playlist, [
+                    'role' => 'owner',
                 ]);
 
                 $folder?->playlists()->attach($playlist);

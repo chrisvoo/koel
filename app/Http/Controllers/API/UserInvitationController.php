@@ -17,22 +17,21 @@ use Illuminate\Http\Response;
 
 class UserInvitationController extends Controller
 {
-    /** @param User $invitor */
     public function __construct(
         private readonly UserInvitationService $invitationService,
         private readonly AuthenticationService $auth,
-        private readonly ?Authenticatable $invitor
     ) {
     }
 
-    public function invite(InviteUserRequest $request)
+    /** @param User $invitor */
+    public function invite(InviteUserRequest $request, Authenticatable $invitor)
     {
-        $this->authorize('admin', $this->invitor);
+        $this->authorize('admin', $invitor);
 
         $invitees = $this->invitationService->invite(
             $request->emails,
             $request->get('is_admin') ?: false,
-            $this->invitor
+            $invitor
         );
 
         return UserProspectResource::collection($invitees);
@@ -58,9 +57,9 @@ class UserInvitationController extends Controller
         }
     }
 
-    public function revoke(RevokeUserInvitationRequest $request)
+    public function revoke(RevokeUserInvitationRequest $request, Authenticatable $invitor)
     {
-        $this->authorize('admin', $this->invitor);
+        $this->authorize('admin', $invitor);
 
         try {
             $this->invitationService->revokeByEmail($request->email);

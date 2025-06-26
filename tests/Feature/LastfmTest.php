@@ -7,6 +7,7 @@ use App\Services\TokenManager;
 use Laravel\Sanctum\NewAccessToken;
 use Laravel\Sanctum\PersonalAccessToken;
 use Mockery;
+use Mockery\MockInterface;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -30,10 +31,11 @@ class LastfmTest extends TestCase
         $user = create_user();
         $token = $user->createToken('Koel')->plainTextToken;
 
+        /** @var NewAccessToken|MockInterface $temporaryToken */
         $temporaryToken = Mockery::mock(NewAccessToken::class);
         $temporaryToken->plainTextToken = 'tmp-token';
 
-        $tokenManager = self::mock(TokenManager::class);
+        $tokenManager = $this->mock(TokenManager::class);
 
         $tokenManager->shouldReceive('getUserFromPlainTextToken')
             ->with($token)
@@ -89,12 +91,15 @@ class LastfmTest extends TestCase
 
         app()->instance(LastfmService::class, $lastfm);
 
-        $tokenManager = self::mock(TokenManager::class);
+        $tokenManager = $this->mock(TokenManager::class);
 
         $tokenManager->shouldReceive('getUserFromPlainTextToken')
             ->once()
             ->with('my-token')
             ->andReturn($user);
+
+        $tokenManager->shouldReceive('deleteTokenByPlainTextToken')
+            ->once();
 
         $this->get('lastfm/callback?token=foo&api_token=my-token');
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Facades\YouTube;
+use App\Helpers\Uuid;
 use App\Http\Controllers\API\ActivateLicenseController;
 use App\Http\Controllers\API\AlbumController;
 use App\Http\Controllers\API\AlbumSongController;
@@ -8,6 +9,7 @@ use App\Http\Controllers\API\ArtistAlbumController;
 use App\Http\Controllers\API\ArtistController;
 use App\Http\Controllers\API\ArtistSongController;
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\CheckResourcePermissionController;
 use App\Http\Controllers\API\DisconnectFromLastfmController;
 use App\Http\Controllers\API\ExcerptSearchController;
 use App\Http\Controllers\API\FetchAlbumInformationController;
@@ -26,6 +28,10 @@ use App\Http\Controllers\API\GenreSongController;
 use App\Http\Controllers\API\GetOneTimeTokenController;
 use App\Http\Controllers\API\LambdaSongController as S3SongController;
 use App\Http\Controllers\API\LikeMultipleSongsController;
+use App\Http\Controllers\API\MediaBrowser\FetchFolderSongsController;
+use App\Http\Controllers\API\MediaBrowser\FetchRecursiveFolderSongsController;
+use App\Http\Controllers\API\MediaBrowser\FetchSubfoldersController;
+use App\Http\Controllers\API\MediaBrowser\PaginateFolderSongsController;
 use App\Http\Controllers\API\MovePlaylistSongsController;
 use App\Http\Controllers\API\PlaylistCollaboration\AcceptPlaylistCollaborationInviteController;
 use App\Http\Controllers\API\PlaylistCollaboration\CreatePlaylistCollaborationTokenController;
@@ -60,7 +66,6 @@ use App\Http\Controllers\API\UploadArtistImageController;
 use App\Http\Controllers\API\UploadController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\UserInvitationController;
-use App\Models\Song;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Pusher\Pusher;
@@ -92,7 +97,7 @@ Route::prefix('api')->middleware('api')->group(static function (): void {
                 ]
             );
 
-            return $pusher->socket_auth($request->channel_name, $request->socket_id);
+            return $pusher->authorizeChannel($request->input('channel_name'), $request->input('socket_id'));
         })->name('broadcasting.auth');
 
         Route::get('overview', FetchOverviewController::class);
@@ -112,14 +117,21 @@ Route::prefix('api')->middleware('api')->group(static function (): void {
         Route::apiResource('artists.albums', ArtistAlbumController::class);
         Route::apiResource('artists.songs', ArtistSongController::class);
 
-        Route::post('songs/{song}/scrobble', ScrobbleController::class)->where(['song' => Song::ID_REGEX]);
+        Route::post('songs/{song}/scrobble', ScrobbleController::class)->where(['song' => Uuid::REGEX]);
 
         Route::apiResource('songs', SongController::class)
             ->except('update', 'destroy')
-            ->where(['song' => Song::ID_REGEX]);
+            ->where(['song' => Uuid::REGEX]);
 
         Route::put('songs', [SongController::class, 'update']);
         Route::delete('songs', [SongController::class, 'destroy']);
+
+        // Fetch songs under several folder paths (may include multiple nested levels).
+        // This is a POST request because the folder paths may be long.
+        Route::post('songs/by-folders', FetchRecursiveFolderSongsController::class);
+
+        // Fetch songs **directly** in a specific folder path (or the media root if no path is specified)
+        Route::get('songs/in-folder', FetchFolderSongsController::class);
 
         Route::post('upload', UploadController::class);
 
@@ -176,6 +188,7 @@ Route::prefix('api')->middleware('api')->group(static function (): void {
         Route::put('artists/{artist}/image', UploadArtistImageController::class);
         Route::put('playlists/{playlist}/cover', [PlaylistCoverController::class, 'update']);
         Route::delete('playlists/{playlist}/cover', [PlaylistCoverController::class, 'destroy']);
+
         // deprecated routes
         Route::put('album/{album}/cover', UploadAlbumCoverController::class);
         Route::get('album/{album}/thumbnail', FetchAlbumThumbnailController::class);
@@ -204,6 +217,13 @@ Route::prefix('api')->middleware('api')->group(static function (): void {
         Route::get('episodes/{episode}', FetchEpisodeController::class);
         Route::apiResource('podcasts.episodes', PodcastEpisodeController::class);
         Route::delete('podcasts/{podcast}/subscriptions', UnsubscribeFromPodcastController::class);
+
+        // Resource permission routes
+        Route::get('permissions/{type}/{id}/{action}', CheckResourcePermissionController::class);
+
+        // Media browser routes
+        Route::get('browse/folders', FetchSubfoldersController::class);
+        Route::get('browse/songs', PaginateFolderSongsController::class);
     });
 
     // Object-storage (S3) routes

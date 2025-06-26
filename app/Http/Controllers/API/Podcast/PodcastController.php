@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\API\Podcast;
 
 use App\Attributes\DisabledInDemo;
-use App\Exceptions\UserAlreadySubscribedToPodcast;
+use App\Exceptions\UserAlreadySubscribedToPodcastException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\API\Podcast\PodcastStoreRequest;
 use App\Http\Resources\PodcastResource;
@@ -21,7 +21,7 @@ class PodcastController extends Controller
     public function __construct(
         private readonly PodcastService $podcastService,
         private readonly PodcastRepository $podcastRepository,
-        private readonly ?Authenticatable $user
+        private readonly Authenticatable $user
     ) {
     }
 
@@ -35,7 +35,7 @@ class PodcastController extends Controller
     {
         try {
             return PodcastResource::make($this->podcastService->addPodcast($request->url, $this->user));
-        } catch (UserAlreadySubscribedToPodcast) {
+        } catch (UserAlreadySubscribedToPodcastException) {
             abort(Response::HTTP_CONFLICT, 'You have already subscribed to this podcast.');
         }
     }

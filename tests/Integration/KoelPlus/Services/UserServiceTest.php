@@ -4,7 +4,7 @@ namespace Tests\Integration\KoelPlus\Services;
 
 use App\Models\User;
 use App\Services\UserService;
-use App\Values\SSOUser;
+use App\Values\SsoUser;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Socialite\Two\User as SocialiteUser;
 use Mockery;
@@ -25,7 +25,7 @@ class UserServiceTest extends PlusTestCase
     }
 
     #[Test]
-    public function createUserViaSSOProvider(): void
+    public function createUserViaSsoProvider(): void
     {
         $user = $this->service->createUser(
             name: 'Bruce Dickinson',
@@ -37,16 +37,16 @@ class UserServiceTest extends PlusTestCase
             ssoProvider: 'Google'
         );
 
-        self::assertModelExists($user);
+        $this->assertModelExists($user);
         self::assertSame('Google', $user->sso_provider);
         self::assertSame('123', $user->sso_id);
         self::assertSame('https://lh3.googleusercontent.com/a/vatar', $user->avatar);
     }
 
     #[Test]
-    public function createUserFromSSO(): void
+    public function createUserFromSso(): void
     {
-        self::assertDatabaseMissing(User::class, ['email' => 'bruce@iron.com']);
+        $this->assertDatabaseMissing(User::class, ['email' => 'bruce@iron.com']);
 
         $socialiteUser = Mockery::mock(SocialiteUser::class, [
             'getId' => '123',
@@ -55,9 +55,9 @@ class UserServiceTest extends PlusTestCase
             'getAvatar' => 'https://lh3.googleusercontent.com/a/vatar',
         ]);
 
-        $user = $this->service->createOrUpdateUserFromSSO(SSOUser::fromSocialite($socialiteUser, 'Google'));
+        $user = $this->service->createOrUpdateUserFromSso(SsoUser::fromSocialite($socialiteUser, 'Google'));
 
-        self::assertModelExists($user);
+        $this->assertModelExists($user);
 
         self::assertSame('Google', $user->sso_provider);
         self::assertSame('Bruce Dickinson', $user->name);
@@ -67,7 +67,7 @@ class UserServiceTest extends PlusTestCase
     }
 
     #[Test]
-    public function updateUserFromSSOId(): void
+    public function updateUserFromSsoId(): void
     {
         $user = create_user([
             'email' => 'bruce@iron.com',
@@ -83,7 +83,7 @@ class UserServiceTest extends PlusTestCase
             'getAvatar' => 'https://lh3.googleusercontent.com/a/vatar',
         ]);
 
-        $this->service->createOrUpdateUserFromSSO(SSOUser::fromSocialite($socialiteUser, 'Google'));
+        $this->service->createOrUpdateUserFromSso(SsoUser::fromSocialite($socialiteUser, 'Google'));
         $user->refresh();
 
         self::assertSame('Bruce Dickinson', $user->name); // Name should not be updated
@@ -93,7 +93,7 @@ class UserServiceTest extends PlusTestCase
     }
 
     #[Test]
-    public function updateUserFromSSOEmail(): void
+    public function updateUserFromSsoEmail(): void
     {
         $user = create_user([
             'email' => 'bruce@iron.com',
@@ -105,10 +105,9 @@ class UserServiceTest extends PlusTestCase
             'getEmail' => 'bruce@iron.com',
             'getName' => 'Steve Harris',
             'getAvatar' => 'https://lh3.googleusercontent.com/a/vatar',
-
         ]);
 
-        $this->service->createOrUpdateUserFromSSO(SSOUser::fromSocialite($socialiteUser, 'Google'));
+        $this->service->createOrUpdateUserFromSso(SsoUser::fromSocialite($socialiteUser, 'Google'));
         $user->refresh();
 
         self::assertSame('Bruce Dickinson', $user->name); // Name should not be updated
@@ -117,7 +116,7 @@ class UserServiceTest extends PlusTestCase
     }
 
     #[Test]
-    public function updateSSOUserCannotChangeProfileDetails(): void
+    public function updateSsoUserCannotChangeProfileDetails(): void
     {
         $user = create_user([
             'email' => 'bruce@iron.com',

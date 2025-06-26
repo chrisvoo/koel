@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Repositories\AlbumRepository;
 use App\Repositories\SongRepository;
 use App\Services\SongStorages\SongStorage;
+use App\Services\UploadService;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Response;
 
@@ -20,16 +21,17 @@ class UploadController extends Controller
     /** @param User $user */
     public function __invoke(
         SongStorage $storage,
+        UploadService $uploadService,
         AlbumRepository $albumRepository,
         SongRepository $songRepository,
         UploadRequest $request,
         Authenticatable $user
     ) {
         $this->authorize('upload', User::class);
+        $storage->assertSupported();
 
         try {
-            // @todo decouple Song from storage, as storages should not be responsible for creating a song.
-            $song = $songRepository->getOne($storage->storeUploadedFile($request->file, $user)->id, $user);
+            $song = $songRepository->getOne($uploadService->handleUpload($request->file, $user)->id);
 
             return response()->json([
                 'song' => SongResource::make($song),

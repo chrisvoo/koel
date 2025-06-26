@@ -5,8 +5,14 @@ import { http } from '@/services/http'
 import { arrayify } from '@/utils/helpers'
 import { logger } from '@/utils/logger'
 
-const UNKNOWN_ARTIST_ID = 1
-const VARIOUS_ARTISTS_ID = 2
+const UNKNOWN_ARTIST_NAME = 'Unknown Artist'
+const VARIOUS_ARTISTS_NAME = 'Various Artists'
+
+interface ArtistListPaginateParams extends Record<string, any> {
+  sort: ArtistListSortField
+  order: SortOrder
+  page: number
+}
 
 export const artistStore = {
   vault: new Map<Artist['id'], Artist>(),
@@ -24,15 +30,15 @@ export const artistStore = {
     ids.forEach(id => this.vault.delete(id))
   },
 
-  isVarious: (artist: Artist | Artist['id']) => (typeof artist === 'number')
-    ? artist === VARIOUS_ARTISTS_ID
-    : artist.id === VARIOUS_ARTISTS_ID,
+  isVarious: (artist: Artist | Artist['name']) => typeof artist === 'string'
+    ? artist === VARIOUS_ARTISTS_NAME
+    : artist.name === VARIOUS_ARTISTS_NAME,
 
-  isUnknown: (artist: Artist | Artist['id']) => (typeof artist === 'number')
-    ? artist === UNKNOWN_ARTIST_ID
-    : artist.id === UNKNOWN_ARTIST_ID,
+  isUnknown: (artist: Artist | Artist['name']) => typeof artist === 'string'
+    ? artist === UNKNOWN_ARTIST_NAME
+    : artist.name === UNKNOWN_ARTIST_NAME,
 
-  isStandard (artist: Artist | Artist['id']) {
+  isStandard (artist: Artist | Artist['name']) {
     return !this.isVarious(artist) && !this.isUnknown(artist)
   },
 
@@ -71,10 +77,15 @@ export const artistStore = {
     return artist
   },
 
-  async paginate (page: number) {
-    const resource = await http.get<PaginatorResource<Artist>>(`artists?page=${page}`)
+  async paginate (params: ArtistListPaginateParams) {
+    const resource = await http.get<PaginatorResource<Artist>>(`artists?${new URLSearchParams(params).toString()}`)
     this.state.artists = unionBy(this.state.artists, this.syncWithVault(resource.data), 'id')
 
     return resource.links.next ? ++resource.meta.current_page : null
+  },
+
+  reset () {
+    this.vault.clear()
+    this.state.artists = []
   },
 }

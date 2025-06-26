@@ -4,20 +4,35 @@ namespace App\Services\Streamer\Adapters;
 
 use App\Models\Song;
 use App\Services\Streamer\Adapters\Concerns\StreamsLocalPath;
-use App\Values\TranscodeResult;
-use Illuminate\Support\Arr;
+use App\Services\Transcoding\TranscodeStrategyFactory;
+use App\Values\RequestedStreamingConfig;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
+use Illuminate\Support\Str;
 
 class TranscodingStreamerAdapter implements StreamerAdapter
 {
     use StreamsLocalPath;
 
-    public function stream(Song $song, array $config = []): void
+    /**
+     * @return RedirectResponse|void
+     */
+    public function stream(Song $song, ?RequestedStreamingConfig $config = null): mixed
     {
-        abort_unless(is_executable(config('koel.streaming.ffmpeg_path')), 500, 'ffmpeg not found or not executable.');
+        abort_unless(
+            is_executable(config('koel.streaming.ffmpeg_path')),
+            Response::HTTP_INTERNAL_SERVER_ERROR,
+            'ffmpeg not found or not executable.'
+        );
 
-        $bitRate = filter_var(Arr::get($config, 'bit_rate'), FILTER_SANITIZE_NUMBER_INT)
-            ?: config('koel.streaming.bitrate');
+        $bitRate = $config?->bitRate ?: config('koel.streaming.bitrate');
 
-        $this->streamLocalPath(TranscodeResult::getForSong($song, $bitRate)->path);
+        $transcodePath = TranscodeStrategyFactory::make($song->storage)->getTranscodeLocation($song, $bitRate);
+
+        if (Str::startsWith($transcodePath, ['http://', 'https://'])) {
+            return response()->redirectTo($transcodePath);
+        }
+
+        $this->streamLocalPath($transcodePath);
     }
 }

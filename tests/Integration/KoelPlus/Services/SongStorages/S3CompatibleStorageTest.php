@@ -2,10 +2,13 @@
 
 namespace Tests\Integration\KoelPlus\Services\SongStorages;
 
-use App\Models\Song;
+use App\Helpers\Ulid;
 use App\Services\SongStorages\S3CompatibleStorage;
+use App\Values\UploadReference;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\PlusTestCase;
 
@@ -21,6 +24,7 @@ class S3CompatibleStorageTest extends PlusTestCase
     {
         parent::setUp();
 
+        Storage::fake('s3');
         $this->service = app(S3CompatibleStorage::class);
         $this->file = UploadedFile::fromFile(test_path('songs/full.mp3'), 'song.mp3'); //@phpstan-ignore-line
     }
@@ -28,52 +32,58 @@ class S3CompatibleStorageTest extends PlusTestCase
     #[Test]
     public function storeUploadedFile(): void
     {
-        self::assertEquals(0, Song::query()->where('storage', 's3')->count());
-
-        Storage::fake('s3');
-        $song = $this->service->storeUploadedFile($this->file, create_user());
-
-        Storage::disk('s3')->assertExists($song->storage_metadata->getPath());
-        self::assertEquals(1, Song::query()->where('storage', 's3')->count());
-    }
-
-    #[Test]
-    public function storingWithVisibilityPreference(): void
-    {
+        Ulid::freeze('random');
         $user = create_user();
+        $reference = $this->service->storeUploadedFile($this->file, $user);
 
-        $user->preferences->makeUploadsPublic = true;
-        $user->save();
+        Storage::disk('s3')->assertExists(Str::after($reference->location, 's3://koel/')); // 'koel' is the bucket name
 
-        self::assertTrue($this->service->storeUploadedFile($this->file, $user)->is_public);
-
-        $user->preferences->makeUploadsPublic = false;
-        $user->save();
-
-        $privateFile = UploadedFile::fromFile(test_path('songs/full.mp3'), 'song.mp3'); //@phpstan-ignore-line
-        self::assertFalse($this->service->storeUploadedFile($privateFile, $user)->is_public);
+        self::assertSame("s3://koel/{$user->id}__random__song.mp3", $reference->location);
+        self::assertSame(artifact_path('tmp/random/song.mp3'), $reference->localPath);
     }
 
     #[Test]
-    public function deleteSong(): void
+    public function undoUpload(): void
     {
-        Storage::fake('s3');
+        Storage::disk('s3')->put('123__random__song.mp3', 'fake content');
+        File::shouldReceive('delete')->once()->with('/tmp/random/song.mp3');
 
-        $song = $this->service->storeUploadedFile($this->file, create_user());
-        Storage::disk('s3')->assertExists($song->storage_metadata->getPath());
+        $reference = UploadReference::make(
+            location: 's3://koel/123__random__song.mp3', // 'koel' is the bucket name
+            localPath: '/tmp/random/song.mp3',
+        );
 
-        $this->service->delete($song);
-        Storage::disk('s3')->assertMissing($song->storage_metadata->getPath());
+        $this->service->undoUpload($reference);
+        Storage::disk('s3')->assertMissing('123__random__song.mp3');
+    }
+
+    #[Test]
+    public function deleteWithNoBackup(): void
+    {
+        Storage::disk('s3')->put('full.mp3', 'fake content');
+
+        $this->service->delete('full.mp3');
+
+        Storage::disk('s3')->assertMissing('full.mp3');
+    }
+
+    #[Test]
+    public function deleteWithBackup(): void
+    {
+        Storage::disk('s3')->put('full.mp3', 'fake content');
+
+        $this->service->delete(location: 'full.mp3', backup: true);
+
+        Storage::disk('s3')->assertMissing('full.mp3');
+        Storage::disk('s3')->assertExists('backup/full.mp3.bak');
     }
 
     #[Test]
     public function getPresignedUrl(): void
     {
-        Storage::fake('s3');
+        $reference = $this->service->storeUploadedFile($this->file, create_user());
+        $url = $this->service->getPresignedUrl(Str::after($reference->location, 's3://koel/'));
 
-        $song = $this->service->storeUploadedFile($this->file, create_user());
-        $url = $this->service->getSongPresignedUrl($song);
-
-        self::assertStringContainsString($song->storage_metadata->getPath(), $url);
+        self::assertStringContainsString(Str::after($reference->location, 's3://koel/'), $url);
     }
 }

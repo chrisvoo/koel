@@ -2,13 +2,27 @@
 
 namespace Tests\Integration\Services;
 
+use App\Events\SongFolderStructureExtractionRequested;
+use App\Jobs\DeleteSongFiles;
+use App\Jobs\DeleteTranscodeFiles;
+use App\Models\Album;
+use App\Models\Artist;
+use App\Models\Setting;
 use App\Models\Song;
+use App\Models\Transcode;
+use App\Services\Scanners\FileScanner;
 use App\Services\SongService;
+use App\Values\Scanning\ScanConfiguration;
 use App\Values\SongUpdateData;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
+use function Tests\create_admin;
 use function Tests\create_user;
+use function Tests\test_path;
 
 class SongServiceTest extends TestCase
 {
@@ -22,6 +36,8 @@ class SongServiceTest extends TestCase
 
         $user = create_user();
         $this->actingAs($user);
+
+        Setting::set('media_path', $this->mediaPath);
     }
 
     public function testUpdateSingleSong(): void
@@ -166,5 +182,145 @@ class SongServiceTest extends TestCase
         $this->assertEquals($expectedData2['track'], $updatedSongs[1]->track);
         $this->assertEquals($expectedData2['lyrics'], $updatedSongs[1]->lyrics);
         $this->assertEquals($expectedData2['genre'], $updatedSongs[1]->genre);
+    }
+
+    #[Test]
+    public function deleteSongs(): void
+    {
+        Bus::fake();
+        $songs = Song::factory()->count(3)->create();
+
+        $this->service->deleteSongs($songs->pluck('id')->toArray());
+
+        $songs->each(fn (Song $song) => $this->assertDatabaseMissing(Song::class, ['id' => $song->id]));
+
+        Bus::assertDispatched(
+            DeleteSongFiles::class,
+            static function (DeleteSongFiles $job) use ($songs) {
+                self::assertEqualsCanonicalizing(
+                    $job->files->pluck('location')->toArray(),
+                    $songs->pluck('path')->toArray(),
+                );
+
+                return true;
+            }
+        );
+
+        Bus::assertNotDispatched(DeleteTranscodeFiles::class);
+    }
+
+    #[Test]
+    public function deleteSongsWithTranscodes(): void
+    {
+        Bus::fake();
+        $transcodes = Transcode::factory()->count(3)->create();
+        $songs = $transcodes->map(static fn (Transcode $transcode) => $transcode->song); // @phpstan-ignore-line
+
+        $this->service->deleteSongs($transcodes->pluck('song_id')->toArray());
+
+        $transcodes->each(function (Transcode $transcode): void {
+            $this->assertDatabaseMissing(Song::class, ['id' => $transcode->song_id]);
+            $this->assertDatabaseMissing(Transcode::class, ['id' => $transcode->id]);
+        });
+
+        Bus::assertDispatched(
+            DeleteSongFiles::class,
+            static function (DeleteSongFiles $job) use ($songs) {
+                self::assertEqualsCanonicalizing(
+                    $job->files->pluck('location')->toArray(),
+                    $songs->pluck('path')->toArray(),
+                );
+
+                return true;
+            }
+        );
+
+        Bus::assertDispatched(
+            DeleteTranscodeFiles::class,
+            static function (DeleteTranscodeFiles $job) use ($transcodes) {
+                self::assertEqualsCanonicalizing(
+                    $job->files->pluck('location')->toArray(),
+                    $transcodes->pluck('location')->toArray(),
+                );
+
+                return true;
+            }
+        );
+    }
+
+    #[Test]
+    public function createOrUpdateFromScan(): void
+    {
+        Event::fake(SongFolderStructureExtractionRequested::class);
+        $info = app(FileScanner::class)->scan(test_path('songs/full.mp3'));
+        $song = $this->service->createOrUpdateSongFromScan($info, ScanConfiguration::make(owner: create_admin()));
+
+        self::assertArraySubset([
+            'title' => 'Amet',
+            'track' => 5,
+            'disc' => 3,
+            'lyrics' => "Foo\rbar",
+            'mtime' => filemtime(test_path('songs/full.mp3')),
+            'year' => 2015,
+            'is_public' => false,
+        ], $song->getAttributes());
+
+        self::assertSame(2015, $song->album->year);
+
+        Event::assertDispatched(
+            SongFolderStructureExtractionRequested::class,
+            static fn (SongFolderStructureExtractionRequested $event) => $event->song->is($song),
+        );
+    }
+
+    #[Test]
+    public function creatingOrUpdatingFromScanSetsAlbumReleaseYearIfApplicable(): void
+    {
+        Event::fake(SongFolderStructureExtractionRequested::class);
+        $owner = create_admin();
+
+        /** @var Artist $artist */
+        $artist = Artist::factory(['name' => 'Koel'])->for($owner)->create();
+
+        /** @var Album $album */
+        $album = Album::factory([
+            'name' => 'Koel Testing Vol. 1',
+            'year' => null,
+        ])
+            ->for($owner)
+            ->for($artist)
+            ->create();
+
+        self::assertNull($album->year);
+
+        $info = app(FileScanner::class)->scan(test_path('songs/full.mp3'));
+        $this->service->createOrUpdateSongFromScan($info, ScanConfiguration::make(owner: $owner));
+
+        self::assertSame(2015, $album->refresh()->year);
+    }
+
+    #[Test]
+    public function creatingOrUpdatingFromScanSetsAlbumReleaseYearIfItAlreadyExists(): void
+    {
+        $owner = create_admin();
+
+        /** @var Artist $artist */
+        $artist = Artist::factory(['name' => 'Koel'])->for($owner)->create();
+
+        /** @var Album $album */
+        $album = Album::factory([
+            'name' => 'Koel Testing Vol. 1',
+            'year' => 2018,
+        ])
+            ->for($owner)
+            ->for($artist)
+            ->create();
+
+        $info = app(FileScanner::class)->scan(test_path('songs/full.mp3'));
+        $song = $this->service->createOrUpdateSongFromScan($info, ScanConfiguration::make(owner: $owner));
+
+        self::assertTrue($song->album->is($album));
+
+        self::assertSame(2018, $album->refresh()->year);
     }
 }

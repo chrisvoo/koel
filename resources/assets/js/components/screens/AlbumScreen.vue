@@ -12,22 +12,23 @@
         </template>
 
         <template #meta>
-          <a v-if="isNormalArtist" :href="url('artists.show', { id: album.artist_id })" class="artist">
-            {{ album.artist_name }}
-          </a>
-          <span v-else class="nope">{{ album.artist_name }}</span>
-          <span>{{ pluralize(songs, 'item') }}</span>
-          <span>{{ duration }}</span>
+          <span class="flex meta-content">
+            <a v-if="isStandardArtist" :href="url('artists.show', { id: album.artist_id })" class="artist">
+              {{ album.artist_name }}
+            </a>
+            <span v-else class="text-k-text-primary">{{ album.artist_name }}</span>
+            <span v-if="album.year">{{ album.year }}</span>
+            <span>{{ pluralize(songs, 'song') }}</span>
+            <span>{{ duration }}</span>
 
-          <a
-            v-if="downloadable"
-            class="download"
-            role="button"
-            title="Download all songs in album"
-            @click.prevent="download"
-          >
-            Download All
-          </a>
+            <span v-if="downloadable">
+              <a role="button" title="Download all songs in album" @click.prevent="download">Download All</a>
+            </span>
+
+            <span v-if="editable">
+              <a role="button" title="Edit album" @click.prevent="edit">Edit</a>
+            </span>
+          </span>
         </template>
 
         <template #controls>
@@ -99,6 +100,7 @@ import { commonStore } from '@/stores/commonStore'
 import { songStore } from '@/stores/songStore'
 import { downloadService } from '@/services/downloadService'
 import { useErrorHandler } from '@/composables/useErrorHandler'
+import { usePolicies } from '@/composables/usePolicies'
 import { useSongList } from '@/composables/useSongList'
 import { useSongListControls } from '@/composables/useSongListControls'
 import { useRouter } from '@/composables/useRouter'
@@ -119,13 +121,15 @@ const AlbumCard = defineAsyncComponent(() => import('@/components/album/AlbumCar
 const AlbumCardSkeleton = defineAsyncComponent(() => import('@/components/ui/skeletons/ArtistAlbumCardSkeleton.vue'))
 
 const { getRouteParam, go, onScreenActivated, url } = useRouter()
+const { currentUserCan } = usePolicies()
 
-const albumId = ref<number>()
+const albumId = ref<Album['id']>()
 const album = ref<Album | undefined>()
 const songs = ref<Song[]>([])
 const loading = ref(false)
 const otherAlbums = ref<Album[] | undefined>()
 const info = ref<ArtistInfo | undefined>()
+const editable = ref(false)
 
 const {
   SongList,
@@ -149,14 +153,17 @@ const { SongListControls, config } = useSongListControls('Album')
 
 const useLastfm = toRef(commonStore.state, 'uses_last_fm')
 
-const isNormalArtist = computed(() => {
+const isStandardArtist = computed(() => {
   if (!album.value) {
     return true
   }
-  return !artistStore.isVarious(album.value.artist_id) && !artistStore.isUnknown(album.value.artist_id)
+
+  return !artistStore.isVarious(album.value.artist_name) && !artistStore.isUnknown(album.value.artist_name)
 })
 
 const download = () => downloadService.fromAlbum(album.value!)
+
+const edit = () => eventBus.emit('MODAL_SHOW_EDIT_ALBUM_FORM', album.value!)
 
 watch(activeTab, async tab => {
   if (tab === 'OtherAlbums' && !otherAlbums.value) {
@@ -186,6 +193,8 @@ watch(albumId, async id => {
     context.entity = album.value
 
     sort('track')
+
+    editable.value = await currentUserCan.editAlbum(album.value!)
   } catch (error: unknown) {
     useErrorHandler('dialog').handleHttpError(error)
   } finally {
@@ -193,8 +202,15 @@ watch(albumId, async id => {
   }
 })
 
-onScreenActivated('Album', () => (albumId.value = Number.parseInt(getRouteParam('id')!)))
+onScreenActivated('Album', () => (albumId.value = getRouteParam('id')))
 
 // if the current album has been deleted, go back to the list
 eventBus.on('SONGS_UPDATED', () => albumStore.byId(albumId.value!) || go(url('albums.index')))
 </script>
+
+<style lang="postcss" scoped>
+.meta-content > *:not(:first-child)::before {
+  content: '•';
+  margin: 0 0.25em;
+}
+</style>

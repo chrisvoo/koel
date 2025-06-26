@@ -8,7 +8,7 @@ use App\Http\Integrations\LemonSqueezy\Requests\DeactivateLicenseRequest;
 use App\Http\Integrations\LemonSqueezy\Requests\ValidateLicenseRequest;
 use App\Models\License;
 use App\Services\LicenseService;
-use App\Values\LicenseStatus;
+use App\Values\License\LicenseStatus;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
@@ -114,7 +114,7 @@ class LicenseServiceTest extends TestCase
 
         $this->service->deactivate($license);
 
-        self::assertModelMissing($license);
+        $this->assertModelMissing($license);
         self::assertFalse(Cache::has('license_status'));
 
         Saloon::assertSent(static function (DeactivateLicenseRequest $request) use ($license): bool {
@@ -136,7 +136,7 @@ class LicenseServiceTest extends TestCase
 
         $this->service->deactivate($license);
 
-        self::assertModelMissing($license);
+        $this->assertModelMissing($license);
     }
 
     #[Test]

@@ -10,13 +10,14 @@ use DaveRandom\Resume\ResourceServlet;
 use DaveRandom\Resume\SendFileFailureException;
 use DaveRandom\Resume\UnreadableFileException;
 use DaveRandom\Resume\UnsatisfiableRangeException;
+use Illuminate\Support\Facades\File;
 use Symfony\Component\HttpFoundation\Response;
 
 use function DaveRandom\Resume\get_request_header;
 
 trait StreamsLocalPath
 {
-    private function streamLocalPath(string $path): never
+    private function streamLocalPath(string $path): void
     {
         try {
             $rangeHeader = get_request_header('Range');
@@ -25,7 +26,7 @@ trait StreamsLocalPath
             $rangeHeader = $rangeHeader === 'bytes=0-1' ? 'bytes=0-' : $rangeHeader;
 
             $rangeSet = RangeSet::createFromHeader($rangeHeader);
-            $resource = new FileResource($path, mime_content_type($path));
+            $resource = new FileResource($path, File::mimeType($path));
             (new ResourceServlet($resource))->sendResource($rangeSet);
         } catch (InvalidRangeHeaderException) {
             abort(Response::HTTP_BAD_REQUEST);
@@ -39,7 +40,5 @@ trait StreamsLocalPath
             abort_unless(headers_sent(), Response::HTTP_INTERNAL_SERVER_ERROR);
             echo "An error occurred while attempting to send the requested resource: {$e->getMessage()}";
         }
-
-        exit;
     }
 }

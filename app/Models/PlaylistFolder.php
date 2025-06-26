@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * @property string $name
@@ -16,9 +18,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property Collection<array-key, Playlist> $playlists
  * @property int $user_id
  * @property Carbon $created_at
+ * @property ?string $id
  */
-class PlaylistFolder extends Model
+class PlaylistFolder extends Model implements AuditableContract
 {
+    use Auditable;
     use HasFactory;
     use HasUuids;
 

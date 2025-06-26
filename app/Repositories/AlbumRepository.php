@@ -2,14 +2,13 @@
 
 namespace App\Repositories;
 
-use App\Builders\AlbumBuilder;
-use App\Facades\License;
 use App\Models\Album;
 use App\Models\Artist;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Query\JoinClause;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @extends Repository<Album>
@@ -22,7 +21,6 @@ class AlbumRepository extends Repository
         return Album::query()
             ->isStandard()
             ->accessibleBy($user ?? $this->auth->user())
-            ->groupBy('albums.id')
             ->distinct()
             ->latest('albums.created_at')
             ->limit($count)
@@ -37,18 +35,15 @@ class AlbumRepository extends Repository
         return Album::query()
             ->isStandard()
             ->accessibleBy($user)
-            ->unless(
-                License::isPlus(), // if the license is Plus, accessibleBy() would have already joined with `songs`
-                static fn (AlbumBuilder $query) => $query->leftJoin('songs', 'albums.id', 'songs.album_id')
-            )
+            ->leftJoin('songs', 'albums.id', 'songs.album_id')
             ->join('interactions', static function (JoinClause $join) use ($user): void {
                 $join->on('songs.id', 'interactions.song_id')->where('interactions.user_id', $user->id);
             })
-            ->groupBy('albums.id', 'play_count')
-            ->distinct()
+            ->select('albums.*', DB::raw('SUM(interactions.play_count) as play_count'))
+            ->groupBy('albums.id')
             ->orderByDesc('play_count')
             ->limit($count)
-            ->get(['albums.*', 'play_count']);
+            ->get();
     }
 
     /** @return Collection|array<array-key, Album> */
@@ -58,7 +53,6 @@ class AlbumRepository extends Repository
             ->isStandard()
             ->accessibleBy($user ?? auth()->user())
             ->whereIn('albums.id', $ids)
-            ->groupBy('albums.id')
             ->distinct()
             ->get('albums.*');
 
@@ -73,20 +67,18 @@ class AlbumRepository extends Repository
             ->where('albums.artist_id', $artist->id)
             ->orWhereIn('albums.id', $artist->songs()->pluck('album_id'))
             ->orderBy('albums.name')
-            ->groupBy('albums.id')
             ->distinct()
             ->get('albums.*');
     }
 
-    public function paginate(?User $user = null): Paginator
+    public function getForListing(string $sortColumn, string $sortDirection, ?User $user = null): Paginator
     {
         return Album::query()
             ->accessibleBy($user ?? $this->auth->user())
             ->isStandard()
-            ->orderBy('albums.name')
-            ->groupBy('albums.id')
+            ->sort($sortColumn, $sortDirection)
             ->distinct()
-            ->select('albums.*')
+            ->select('albums.*', 'artists.name as artist_name')
             ->simplePaginate(21);
     }
 }

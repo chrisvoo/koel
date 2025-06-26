@@ -2,7 +2,6 @@
 
 namespace Tests\Integration\Services;
 
-use App\Exceptions\KoelPlusRequiredException;
 use App\Exceptions\UserProspectUpdateDeniedException;
 use App\Services\UserService;
 use Illuminate\Support\Facades\Hash;
@@ -37,7 +36,7 @@ class UserServiceTest extends TestCase
             avatar: read_as_data_url(test_path('blobs/cover.png')),
         );
 
-        self::assertModelExists($user);
+        $this->assertModelExists($user);
         self::assertTrue(Hash::check('FearOfTheDark', $user->password));
         self::assertTrue($user->is_admin);
         self::assertFileExists(user_avatar_path($user->getRawOriginal('avatar')));
@@ -53,7 +52,7 @@ class UserServiceTest extends TestCase
             isAdmin: false
         );
 
-        self::assertModelExists($user);
+        $this->assertModelExists($user);
         self::assertTrue(Hash::check('FearOfTheDark', $user->password));
         self::assertFalse($user->is_admin);
         self::assertStringStartsWith('https://www.gravatar.com/avatar/', $user->avatar);
@@ -69,22 +68,8 @@ class UserServiceTest extends TestCase
             isAdmin: false
         );
 
-        self::assertModelExists($user);
+        $this->assertModelExists($user);
         self::assertEmpty($user->password);
-    }
-
-    #[Test]
-    public function createSSOUserRequiresKoelPlus(): void
-    {
-        $this->expectException(KoelPlusRequiredException::class);
-
-        $this->service->createUser(
-            name: 'Bruce Dickinson',
-            email: 'bruce@dickison.com',
-            plainTextPassword: 'FearOfTheDark',
-            isAdmin: false,
-            ssoProvider: 'Google'
-        );
     }
 
     #[Test]

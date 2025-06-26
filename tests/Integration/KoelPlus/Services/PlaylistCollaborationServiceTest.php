@@ -7,13 +7,14 @@ use App\Exceptions\CannotRemoveOwnerFromPlaylistException;
 use App\Exceptions\NotAPlaylistCollaboratorException;
 use App\Exceptions\OperationNotApplicableForSmartPlaylistException;
 use App\Exceptions\PlaylistCollaborationTokenExpiredException;
-use App\Models\Playlist;
 use App\Models\PlaylistCollaborationToken;
 use App\Services\PlaylistCollaborationService;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\PlusTestCase;
 
+use function Tests\create_playlist;
 use function Tests\create_user;
 
 class PlaylistCollaborationServiceTest extends PlusTestCase
@@ -30,8 +31,7 @@ class PlaylistCollaborationServiceTest extends PlusTestCase
     #[Test]
     public function createToken(): void
     {
-        /** @var Playlist $playlist */
-        $playlist = Playlist::factory()->create();
+        $playlist = create_playlist();
 
         $token = $this->service->createToken($playlist);
 
@@ -45,10 +45,7 @@ class PlaylistCollaborationServiceTest extends PlusTestCase
     {
         $this->expectException(OperationNotApplicableForSmartPlaylistException::class);
 
-        /** @var Playlist $playlist */
-        $playlist = Playlist::factory()->smart()->create();
-
-        $this->service->createToken($playlist);
+        $this->service->createToken(create_playlist(smart: true));
     }
 
     #[Test]
@@ -86,23 +83,36 @@ class PlaylistCollaborationServiceTest extends PlusTestCase
     }
 
     #[Test]
-    public function getCollaborators(): void
+    public function getCollaboratorsExcludingOwner(): void
     {
-        /** @var Playlist $playlist */
-        $playlist = Playlist::factory()->create();
+        $playlist = create_playlist();
         $user = create_user();
         $playlist->addCollaborator($user);
 
-        $collaborators = $this->service->getCollaborators($playlist->refresh());
+        $collaborators = $this->service->getCollaborators(playlist: $playlist->refresh());
 
-        self::assertEqualsCanonicalizing([$playlist->user_id, $user->id], $collaborators->pluck('id')->toArray());
+        self::assertEqualsCanonicalizing([$user->public_id], Arr::pluck($collaborators->toArray(), 'id'));
+    }
+
+    #[Test]
+    public function getCollaboratorsIncludingOwner(): void
+    {
+        $playlist = create_playlist();
+        $user = create_user();
+        $playlist->addCollaborator($user);
+
+        $collaborators = $this->service->getCollaborators(playlist: $playlist->refresh(), includingOwner: true);
+
+        self::assertEqualsCanonicalizing(
+            [$playlist->owner->public_id, $user->public_id],
+            Arr::pluck($collaborators->toArray(), 'id')
+        );
     }
 
     #[Test]
     public function removeCollaborator(): void
     {
-        /** @var Playlist $playlist */
-        $playlist = Playlist::factory()->create();
+        $playlist = create_playlist();
         $user = create_user();
         $playlist->addCollaborator($user);
 
@@ -118,8 +128,7 @@ class PlaylistCollaborationServiceTest extends PlusTestCase
     {
         $this->expectException(NotAPlaylistCollaboratorException::class);
 
-        /** @var Playlist $playlist */
-        $playlist = Playlist::factory()->create();
+        $playlist = create_playlist();
         $user = create_user();
 
         $this->service->removeCollaborator($playlist, $user);
@@ -130,9 +139,8 @@ class PlaylistCollaborationServiceTest extends PlusTestCase
     {
         $this->expectException(CannotRemoveOwnerFromPlaylistException::class);
 
-        /** @var Playlist $playlist */
-        $playlist = Playlist::factory()->create();
+        $playlist = create_playlist();
 
-        $this->service->removeCollaborator($playlist, $playlist->user);
+        $this->service->removeCollaborator($playlist, $playlist->owner);
     }
 }

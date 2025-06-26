@@ -15,7 +15,7 @@ class LastfmController extends Controller
     public function __construct(
         private readonly LastfmService $lastfm,
         private readonly TokenManager $tokenManager,
-        private readonly ?Authenticatable $currentUser
+        private readonly Authenticatable $currentUser
     ) {
     }
 
@@ -34,7 +34,11 @@ class LastfmController extends Controller
             $this->tokenManager->createToken($this->currentUser)->plainTextToken
         ));
 
-        $url = sprintf('https://www.last.fm/api/auth/?api_key=%s&cb=%s', config('koel.lastfm.key'), $callbackUrl);
+        $url = sprintf(
+            'https://www.last.fm/api/auth/?api_key=%s&cb=%s',
+            config('koel.services.lastfm.key'),
+            $callbackUrl
+        );
 
         return redirect($url);
     }

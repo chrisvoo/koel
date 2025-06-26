@@ -8,7 +8,7 @@
     </h4>
 
     <article
-      :class="{ playing, external, selected: item.selected }"
+      :class="{ playing, selected: item.selected }"
       class="song-item group pl-5 text-k-text-secondary border-b border-k-border !max-w-full h-[64px] flex
         items-center transition-[background-color,_box-shadow] ease-in-out duration-200
         focus:rounded-md focus focus-within:rounded-md focus:ring-inset focus:ring-1 focus:!ring-k-accent
@@ -30,8 +30,8 @@
       </span>
       <span class="title-artist flex flex-col gap-2 overflow-hidden">
         <span class="title text-k-text-primary !flex gap-2 items-center">
-          <ExternalMark v-if="external" class="!inline-block" />
-          {{ playable.title }}
+          <ExternalMark v-if="external" />
+          <span class="flex-1">{{ playable.title }}</span>
         </span>
         <span class="artist">{{ artist }}</span>
       </span>
@@ -42,6 +42,8 @@
         </span>
         <span :title="playable.collaboration.added_at" class="added-at">{{ playable.collaboration.fmt_added_at }}</span>
       </template>
+      <span v-if="shouldShowColumn('genre')" class="genre">{{ playable.genre || '—' }}</span>
+      <span v-if="shouldShowColumn('year')" class="year">{{ playable.year || '—' }}</span>
       <span v-if="shouldShowColumn('duration')" class="time">{{ fmtLength }}</span>
       <span class="extra">
         <LikeButton :playable="playable" />
@@ -52,12 +54,10 @@
 
 <script lang="ts" setup>
 import { faPodcast } from '@fortawesome/free-solid-svg-icons'
-import { computed, toRefs, withDefaults } from 'vue'
+import { computed, toRefs } from 'vue'
 import { getPlayableProp, requireInjection } from '@/utils/helpers'
 import { isSong } from '@/utils/typeGuards'
 import { secondsToHis } from '@/utils/formatters'
-import { useAuthorization } from '@/composables/useAuthorization'
-import { useKoelPlus } from '@/composables/useKoelPlus'
 import { usePlayableListColumnVisibility } from '@/composables/usePlayableListColumnVisibility'
 import { PlayableListConfigKey } from '@/symbols'
 
@@ -75,21 +75,13 @@ const emit = defineEmits<{ (e: 'play', playable: Playable): void }>()
 
 const [config] = requireInjection<[Partial<PlayableListConfig>]>(PlayableListConfigKey, [{}])
 
-const { currentUser } = useAuthorization()
-const { isPlus } = useKoelPlus()
 const { shouldShowColumn } = usePlayableListColumnVisibility()
 
 const { item } = toRefs(props)
 
 const playable = computed<Playable | CollaborativeSong>(() => item.value.playable)
 const playing = computed(() => ['Playing', 'Paused'].includes(playable.value.playback_state!))
-
-const external = computed(() => {
-  if (!isSong(playable.value)) {
-    return false
-  }
-  return isPlus.value && playable.value.owner_id !== currentUser.value?.id
-})
+const external = computed(() => isSong(playable.value) && playable.value.is_external)
 
 const fmtLength = secondsToHis(playable.value.length)
 const artist = computed(() => getPlayableProp(playable.value, 'artist_name', 'podcast_author'))

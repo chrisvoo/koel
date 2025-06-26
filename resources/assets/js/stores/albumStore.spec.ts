@@ -37,7 +37,6 @@ new class extends UnitTestCase {
       const album = factory.states('unknown')('album')
 
       expect(albumStore.isUnknown(album)).toBe(true)
-      expect(albumStore.isUnknown(album.id)).toBe(true)
       expect(albumStore.isUnknown(factory('album'))).toBe(false)
     })
 
@@ -86,7 +85,7 @@ new class extends UnitTestCase {
       expect(await albumStore.resolve(album.id)).toEqual(album)
       expect(getMock).toHaveBeenCalledWith(`albums/${album.id}`)
 
-      // next call shouldn't make another request
+      // the next call shouldn't make another request
       expect(await albumStore.resolve(album.id)).toEqual(album)
       expect(getMock).toHaveBeenCalledOnce()
     })
@@ -104,9 +103,34 @@ new class extends UnitTestCase {
         },
       })
 
-      expect(await albumStore.paginate(1)).toEqual(2)
+      expect(await albumStore.paginate({
+        sort: 'name',
+        order: 'asc',
+        page: 1,
+      })).toEqual(2)
+
       expect(albumStore.state.albums).toEqual(albums)
       expect(albumStore.vault.size).toBe(3)
+    })
+
+    it('updates', async () => {
+      const album = factory('album', { name: 'IV' })
+      albumStore.syncWithVault(album)
+
+      const updateData = {
+        name: 'V',
+        year: 2010,
+      }
+
+      const putMock = this.mock(http, 'put').mockResolvedValueOnce({ ...album, ...updateData })
+      const updateAlbumNameMock = this.mock(songStore, 'updateAlbumName')
+
+      await albumStore.update(album, updateData)
+
+      expect(putMock).toHaveBeenCalledWith(`albums/${album.id}`, updateData)
+      expect(albumStore.vault.get(album.id)?.name).toBe(updateData.name)
+      expect(albumStore.vault.get(album.id)?.year).toBe(updateData.year)
+      expect(updateAlbumNameMock).toHaveBeenCalledWith(album, updateData.name)
     })
   }
 }

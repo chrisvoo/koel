@@ -1,8 +1,8 @@
-import type { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse, Method } from 'axios'
+import type { AxiosInstance, Method } from 'axios'
 import Axios from 'axios'
 import NProgress from 'nprogress'
-import { eventBus } from '@/utils/eventBus'
 import { authService } from '@/services/authService'
+import { eventBus } from '@/utils/eventBus'
 
 class Http {
   client: AxiosInstance
@@ -18,24 +18,24 @@ class Http {
     })
 
     // Intercept the request to make sure the token is injected into the header.
-    this.client.interceptors.request.use((config: AxiosRequestConfig) => {
+    this.client.interceptors.request.use(config => {
       this.silent || this.showLoadingIndicator()
       config.headers.Authorization = `Bearer ${authService.getApiToken()}`
       return config
     })
 
     // Intercept the response and…
-    this.client.interceptors.response.use((response: AxiosResponse) => {
+    this.client.interceptors.response.use(response => {
       this.silent || this.hideLoadingIndicator()
       this.silent = false
 
-      // …get the tokens from the header if exist, and save them
+      // …get the tokens from the header if exists, and save them
       // This occurs during user updating password.
       const token = response.headers.authorization
       token && authService.setApiToken(token)
 
       return response
-    }, (error: AxiosError) => {
+    }, error => {
       this.silent || this.hideLoadingIndicator()
       this.silent = false
 
@@ -43,7 +43,9 @@ class Http {
       if (error.response?.status === 400 || error.response?.status === 401) {
         // and we're not trying to log in
         if (!(error.config.method === 'post' && error.config.url === 'me')) {
-          // the token must have expired. Log out.
+          // the token must have expired.
+          // store the attempted URL so we can redirect the user to it after login.
+          authService.setRedirect()
           eventBus.emit('LOG_OUT')
         }
       }

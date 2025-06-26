@@ -13,7 +13,7 @@ use App\Models\User;
 use App\Repositories\PlaylistFolderRepository;
 use App\Repositories\PlaylistRepository;
 use App\Services\PlaylistService;
-use App\Values\SmartPlaylistRuleGroupCollection;
+use App\Values\SmartPlaylist\SmartPlaylistRuleGroupCollection;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
@@ -25,7 +25,7 @@ class PlaylistController extends Controller
         private readonly PlaylistService $playlistService,
         private readonly PlaylistRepository $playlistRepository,
         private readonly PlaylistFolderRepository $folderRepository,
-        private readonly ?Authenticatable $user
+        private readonly Authenticatable $user
     ) {
     }
 

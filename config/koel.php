@@ -5,6 +5,10 @@ return [
 
     'media_path' => env('MEDIA_PATH'),
 
+    // The absolute path to the directory to store artifacts, such as the transcoded audio files
+    // or downloaded podcast episodes. By default, it is set to the system's temporary directory.
+    'artifacts_path' => env('ARTIFACTS_PATH') ?: realpath(sys_get_temp_dir() . '/koel'),
+
     // The *relative* path to the directory to store album covers and thumbnails, *with* a trailing slash.
     'album_cover_dir' => 'img/covers/',
 
@@ -26,8 +30,9 @@ return [
     |
     */
 
-    'sync' => [
+    'scan' => [
         'timeout' => env('APP_MAX_SCAN_TIME', 600),
+        'memory_limit' => env('MEMORY_LIMIT'),
     ],
 
     /*
@@ -46,60 +51,99 @@ return [
         'method' => env('STREAMING_METHOD'),
         'ffmpeg_path' => env('FFMPEG_PATH'),
         'transcode_flac' => env('TRANSCODE_FLAC', true),
+        'supported_mime_types' => [
+            // Lossy formats
+            'audio/mpeg',            // MP3
+            'audio/mp4',             // AAC, M4A (MP4 audio)
+            'audio/aac',             // AAC
+            'audio/ogg',             // Ogg (Vorbis, Opus, Speex, FLAC)
+            'audio/vorbis',          // Ogg Vorbis
+            'audio/opus',            // Opus
+            'audio/flac',            // FLAC
+            'audio/x-flac',          // FLAC (alternate)
+            'audio/amr',             // AMR
+            'audio/ac3',             // Dolby AC-3
+            'audio/dts',             // DTS
+            'audio/vnd.rn-realaudio', // RealAudio
+            'audio/x-ms-wma',        // Windows Media Audio (WMA)
+            'audio/basic',           // µ-law
+
+            // Lossless and other audio formats
+            'audio/vnd.wave',        // WAV
+            'audio/x-wav',           // WAV (alternate)
+            'audio/aiff',            // AIFF
+            'audio/x-aiff',          // AIFF (alternate)
+            'audio/x-m4a',           // Apple MPEG-4 Audio
+            'audio/x-matroska',      // Matroska Audio
+            'audio/webm',            // WebM Audio
+            'audio/x-ape',           // Monkey’s Audio (APE)
+            'audio/tta',             // True Audio (TTA)
+            'audio/x-wavpack',       // WavPack
+            'audio/x-optimfrog',     // OptimFROG
+            'audio/x-shorten',       // Shorten
+            'audio/x-lpac',          // LPAC
+            'audio/x-dsd',           // DSD (DSF)
+            'audio/x-speex',         // Speex
+            'audio/x-dss',           // DSS (Digital Speech Standard)
+            'audio/x-audible',       // Audible
+            'audio/x-twinvq',        // TwinVQ
+            'audio/vqf',             // TwinVQ (alternate)
+            'audio/x-musepack',      // Musepack
+            'audio/x-monkeys-audio',// APE (alternate)
+            'audio/x-voc',           // Creative VOC
+        ],
+        'transcode_required_mime_types' => [
+            'audio/vorbis',
+            'audio/x-flac',
+            'audio/amr',
+            'audio/ac3',
+            'audio/dts',
+            'audio/vnd.rn-realaudio',
+            'audio/x-ms-wma',
+            'audio/basic',
+            'audio/vnd.wave',        // not always handled correctly
+            'audio/aiff',
+            'audio/x-aiff',
+            'audio/x-m4a',           // only if it contains ALAC (not AAC)
+            'audio/x-matroska',
+            'audio/x-ape',
+            'audio/tta',
+            'audio/x-wavpack',
+            'audio/x-optimfrog',
+            'audio/x-shorten',
+            'audio/x-lpac',
+            'audio/x-dsd',
+            'audio/x-speex',
+            'audio/x-dss',
+            'audio/x-audible',
+            'audio/x-twinvq',
+            'audio/vqf',
+            'audio/x-musepack',
+            'audio/x-monkeys-audio',
+            'audio/x-voc',
+        ],
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Youtube Integration
-    |--------------------------------------------------------------------------
-    |
-    | Youtube integration requires an youtube API key, see wiki for more
-    |
-    */
-
-    'youtube' => [
-        'key' => env('YOUTUBE_API_KEY'),
-        'endpoint' => 'https://www.googleapis.com/youtube/v3',
+    'services' => [
+        'youtube' => [
+            'key' => env('YOUTUBE_API_KEY'),
+            'endpoint' => 'https://www.googleapis.com/youtube/v3',
+        ],
+        'lastfm' => [
+            'key' => env('LASTFM_API_KEY'),
+            'secret' => env('LASTFM_API_SECRET'),
+            'endpoint' => 'https://ws.audioscrobbler.com/2.0',
+        ],
+        'spotify' => [
+            'client_id' => env('SPOTIFY_CLIENT_ID'),
+            'client_secret' => env('SPOTIFY_CLIENT_SECRET'),
+        ],
+        'itunes' => [
+            'enabled' => env('USE_ITUNES', true),
+            'affiliate_id' => '1000lsGu',
+            'endpoint' => 'https://itunes.apple.com/search',
+        ],
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Last.FM Integration
-    |--------------------------------------------------------------------------
-    |
-    | See wiki on how to integrate with Last.FM
-    |
-    */
-
-    'lastfm' => [
-        'key' => env('LASTFM_API_KEY'),
-        'secret' => env('LASTFM_API_SECRET'),
-        'endpoint' => 'https://ws.audioscrobbler.com/2.0',
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Spotify Integration
-    |--------------------------------------------------------------------------
-    |
-    | Spotify Integration requires client ID and secret.
-    |
-    */
-
-    'spotify' => [
-        'client_id' => env('SPOTIFY_CLIENT_ID'),
-        'client_secret' => env('SPOTIFY_CLIENT_SECRET'),
-    ],
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | CDN
-    |--------------------------------------------------------------------------
-    |
-    |
-    |
-    */
 
     'cdn' => [
         'url' => env('CDN_URL'),
@@ -115,7 +159,11 @@ return [
     */
 
     'download' => [
-        'allow' => env('allows_download', true),
+        'allow' => env('ALLOW_DOWNLOAD', true),
+    ],
+
+    'media_browser' => [
+        'enabled' => env('MEDIA_BROWSER_ENABLED', false),
     ],
 
     /*
@@ -128,14 +176,6 @@ return [
     */
     'ignore_dot_files' => env('IGNORE_DOT_FILES', true),
 
-    'itunes' => [
-        'enabled' => env('USE_ITUNES', true),
-        'affiliate_id' => '1000lsGu',
-        'endpoint' => 'https://itunes.apple.com/search',
-    ],
-
-    'cache_media' => env('CACHE_MEDIA', true),
-    'memory_limit' => env('MEMORY_LIMIT'),
     'force_https' => env('FORCE_HTTPS', false),
     'backup_on_delete' => env('BACKUP_ON_DELETE', true),
 

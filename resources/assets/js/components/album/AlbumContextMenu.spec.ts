@@ -9,6 +9,7 @@ import { playbackService } from '@/services/playbackService'
 import { commonStore } from '@/stores/commonStore'
 import { songStore } from '@/stores/songStore'
 import AlbumContextMenu from './AlbumContextMenu.vue'
+import { resourcePermissionService } from '@/services/resourcePermissionService'
 
 let album: Album
 
@@ -83,14 +84,28 @@ new class extends UnitTestCase {
 
       expect(mock).toHaveBeenCalledWith(`/#/artists/${album.artist_id}`)
     })
+
+    it('requests edit form', async () => {
+      await this.renderComponent()
+
+      // for the "Edit…" menu item to show up
+      await this.tick(2)
+
+      const emitMock = this.mock(eventBus, 'emit')
+      await this.user.click(screen.getByText('Edit…'))
+
+      expect(emitMock).toHaveBeenCalledWith('MODAL_SHOW_EDIT_ALBUM_FORM', album)
+    })
   }
 
   private async renderComponent (_album?: Album) {
+    this.mock(resourcePermissionService, 'check').mockReturnValue(true)
+
     album = _album || factory('album', {
       name: 'IV',
     })
 
-    const rendered = this.render(AlbumContextMenu)
+    const rendered = this.beAdmin().render(AlbumContextMenu)
     eventBus.emit('ALBUM_CONTEXT_MENU_REQUESTED', { pageX: 420, pageY: 42 } as MouseEvent, album)
     await this.tick(2)
 

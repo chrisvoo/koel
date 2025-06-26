@@ -15,6 +15,7 @@ export interface Events {
   CREATE_NEW_PLAYLIST_CONTEXT_MENU_REQUESTED: ({ top, left }: { top: number, left: number }) => void
   PLAYLIST_CONTEXT_MENU_REQUESTED: (event: MouseEvent, playlist: Playlist) => void
   PLAYLIST_FOLDER_CONTEXT_MENU_REQUESTED: (event: MouseEvent, playlistFolder: PlaylistFolder) => void
+  MEDIA_BROWSER_CONTEXT_MENU_REQUESTED: (event: MouseEvent, items: Array<Folder | Song>) => void
   CONTEXT_MENU_OPENED: (el: Ref<HTMLElement> | HTMLElement) => void
 
   FULLSCREEN_TOGGLE: () => void
@@ -25,6 +26,7 @@ export interface Events {
   MODAL_SHOW_EDIT_SONG_FORM: (songs: MaybeArray<Song>, initialTab?: EditSongFormTabName) => void
   MODAL_SHOW_CREATE_PLAYLIST_FORM: (folder?: PlaylistFolder | null, playables?: MaybeArray<Playable>) => void
   MODAL_SHOW_EDIT_PLAYLIST_FORM: (playlist: Playlist) => void
+  MODAL_SHOW_EDIT_ALBUM_FORM: (album: Album) => void
   MODAL_SHOW_CREATE_SMART_PLAYLIST_FORM: (folder?: PlaylistFolder | null) => void
   MODAL_SHOW_CREATE_PLAYLIST_FOLDER_FORM: () => void
   MODAL_SHOW_EDIT_PLAYLIST_FOLDER_FORM: (playlistFolder: PlaylistFolder) => void

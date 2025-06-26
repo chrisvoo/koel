@@ -7,6 +7,9 @@ use App\Services\LastfmService;
 use App\Services\License\Contracts\LicenseServiceInterface;
 use App\Services\LicenseService;
 use App\Services\NullMusicEncyclopedia;
+use App\Services\Scanners\Contracts\ScannerCacheStrategy as ScannerCacheStrategyContract;
+use App\Services\Scanners\ScannerCacheStrategy;
+use App\Services\Scanners\ScannerNoCacheStrategy;
 use App\Services\SpotifyService;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Eloquent\Model;
@@ -18,9 +21,6 @@ use SpotifyWebAPI\Session as SpotifySession;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(Builder $schema, DatabaseManager $db): void
     {
         // Fix utf8mb4-related error starting from Laravel 5.4
@@ -28,22 +28,22 @@ class AppServiceProvider extends ServiceProvider
 
         Model::preventLazyLoading(!app()->isProduction());
 
-        // Enable on delete cascade for sqlite connections
-        if ($db->connection() instanceof SQLiteConnection) {
-            $db->statement($db->raw('PRAGMA foreign_keys = ON')->getValue($db->getQueryGrammar()));
-        }
+        $this->enableOnDeleteCascadeForSqliteConnections($db);
 
         // disable wrapping JSON resource in a `data` key
         JsonResource::withoutWrapping();
 
         $this->app->bind(SpotifySession::class, static function () {
             return SpotifyService::enabled()
-                ? new SpotifySession(config('koel.spotify.client_id'), config('koel.spotify.client_secret'))
+                ? new SpotifySession(
+                    config('koel.services.spotify.client_id'),
+                    config('koel.services.spotify.client_secret'),
+                )
                 : null;
         });
 
-        $this->app->bind(MusicEncyclopedia::class, function () {
-            return $this->app->get(LastfmService::enabled() ? LastfmService::class : NullMusicEncyclopedia::class);
+        $this->app->bind(MusicEncyclopedia::class, static function () {
+            return app(LastfmService::enabled() ? LastfmService::class : NullMusicEncyclopedia::class);
         });
 
         $this->app->bind(LicenseServiceInterface::class, LicenseService::class);
@@ -51,15 +51,24 @@ class AppServiceProvider extends ServiceProvider
         $this->app->when(LicenseService::class)
             ->needs('$hashSalt')
             ->give(config('app.key'));
+
+        $this->app->bind(ScannerCacheStrategyContract::class, static function () {
+            // Use a no-cache strategy for unit tests to ensure consistent results
+            return app()->runningUnitTests() ? app(ScannerNoCacheStrategy::class) : app(ScannerCacheStrategy::class);
+        });
     }
 
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
-        if ($this->app->environment() !== 'production' && class_exists('Laravel\Tinker\TinkerServiceProvider')) {
+        if (class_exists('Laravel\Tinker\TinkerServiceProvider')) {
             $this->app->register('Laravel\Tinker\TinkerServiceProvider');
+        }
+    }
+
+    public function enableOnDeleteCascadeForSqliteConnections(DatabaseManager $db): void
+    {
+        if ($db->connection() instanceof SQLiteConnection) {
+            $db->statement($db->raw('PRAGMA foreign_keys = ON')->getValue($db->getQueryGrammar()));
         }
     }
 }

@@ -68,7 +68,13 @@
       <div v-show="activeTab === 'Albums'" class="albums-pane">
         <AlbumOrArtistGrid v-koel-overflow-fade view-mode="list">
           <template v-if="albums">
-            <AlbumCard v-for="album in albums" :key="album.id" :album="album" layout="compact" />
+            <AlbumCard
+              v-for="album in albums"
+              :key="album.id"
+              :album="album"
+              :show-release-year="true"
+              layout="compact"
+            />
           </template>
           <template v-else>
             <AlbumCardSkeleton v-for="i in 6" :key="i" layout="compact" />
@@ -114,7 +120,7 @@ const activeTab = ref<Tab>('Songs')
 
 const { getRouteParam, go, onScreenActivated, url } = useRouter()
 
-const artistId = ref<number>()
+const artistId = ref<Artist['id']>()
 const artist = ref<Artist>()
 const songs = ref<Song[]>([])
 const loading = ref(false)
@@ -176,7 +182,7 @@ watch(artistId, async id => {
 
 const download = () => downloadService.fromArtist(artist.value!)
 
-onScreenActivated('Artist', () => (artistId.value = Number.parseInt(getRouteParam('id')!)))
+onScreenActivated('Artist', () => (artistId.value = getRouteParam('id')))
 
 // if the current artist has been deleted, go back to the list
 eventBus.on('SONGS_UPDATED', () => artistStore.byId(artist.value!.id) || go(url('artists.index')))

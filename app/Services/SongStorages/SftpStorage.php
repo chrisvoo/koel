@@ -3,86 +3,84 @@
 namespace App\Services\SongStorages;
 
 use App\Enums\SongStorageType;
-use App\Models\Song;
+use App\Helpers\Ulid;
 use App\Models\User;
-use App\Services\FileScanner;
 use App\Services\SongStorages\Concerns\DeletesUsingFilesystem;
-use App\Services\SongStorages\Concerns\ScansUploadedFile;
+use App\Services\SongStorages\Concerns\MovesUploadedFile;
+use App\Services\SongStorages\Contracts\MustDeleteTemporaryLocalFileAfterUpload;
+use App\Values\UploadReference;
+use Closure;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Symfony\Component\Uid\Ulid;
 
-final class SftpStorage extends SongStorage
+class SftpStorage extends SongStorage implements MustDeleteTemporaryLocalFileAfterUpload
 {
     use DeletesUsingFilesystem;
-    use ScansUploadedFile;
+    use MovesUploadedFile;
 
-    public function __construct(protected FileScanner $scanner)
+    private Filesystem $disk;
+
+    public function __construct()
     {
+        $this->disk = Storage::disk('sftp');
     }
 
-    public function storeUploadedFile(UploadedFile $file, User $uploader): Song
+    public function storeUploadedFile(UploadedFile $uploadedFile, User $uploader): UploadReference
     {
-        self::assertSupported();
+        $file = $this->moveUploadedFileToTemporaryLocation($uploadedFile);
+        $path = $this->generateRemotePath($uploadedFile->getClientOriginalName(), $uploader);
 
-        return DB::transaction(function () use ($file, $uploader): Song {
-            $result = $this->scanUploadedFile($this->scanner, $file, $uploader);
-            $song = $this->scanner->getSong();
+        $this->disk->put($path, $file->getContent());
 
-            $path = $this->generateRemotePath($file->getClientOriginalName(), $uploader);
-
-            Storage::disk('sftp')->put($path, File::get($result->path));
-
-            $song->update([
-                'path' => "sftp://$path",
-                'storage' => SongStorageType::SFTP,
-            ]);
-
-            File::delete($result->path);
-
-            return $song;
-        });
+        return UploadReference::make(
+            location: "sftp://$path",
+            localPath: $file->getRealPath(),
+        );
     }
 
-    public function delete(Song $song, bool $backup = false): void
+    public function undoUpload(UploadReference $reference): void
     {
-        self::assertSupported();
-        $this->deleteUsingFileSystem(Storage::disk('sftp'), $song, $backup);
+        // Delete the tmp file
+        File::delete($reference->localPath);
+
+        // Delete the file from the SFTP server
+        $this->delete(location: Str::after($reference->location, 'sftp://'), backup: false);
     }
 
-    public function getSongContent(Song $song): string
+    public function delete(string $location, bool $backup = false): void
     {
-        self::assertSupported();
-
-        return Storage::disk('sftp')->get($song->storage_metadata->getPath());
+        $this->deleteFileUnderPath(
+            $location,
+            $backup ? static fn (Filesystem $fs, string $path) => $fs->copy($path, "$path.bak") : false,
+        );
     }
 
-    public function copyToLocal(Song $song): string
+    public function copyToLocal(string $path): string
     {
-        self::assertSupported();
+        $localPath = artifact_path(sprintf('tmp/%s_%s', Ulid::generate(), basename($path)));
 
-        $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'koel_tmp';
-        File::ensureDirectoryExists($tmpDir);
-
-        $localPath = $tmpDir . DIRECTORY_SEPARATOR . basename($song->storage_metadata->getPath());
-
-        File::put($localPath, $this->getSongContent($song));
+        File::put($localPath, $this->disk->get($path));
 
         return $localPath;
     }
 
     public function testSetup(): void
     {
-        Storage::disk('sftp')->put('test.txt', 'Koel test file');
-        Storage::disk('sftp')->delete('test.txt');
+        $this->disk->put('test.txt', 'Koel test file');
+        $this->disk->delete('test.txt');
     }
 
     private function generateRemotePath(string $filename, User $uploader): string
     {
-        return sprintf('%s__%s__%s', $uploader->id, Str::lower(Ulid::generate()), $filename);
+        return sprintf('%s__%s__%s', $uploader->id, Ulid::generate(), $filename);
+    }
+
+    public function deleteFileUnderPath(string $path, bool|Closure $backup): void
+    {
+        $this->deleteUsingFilesystem($this->disk, $path, $backup);
     }
 
     public function getStorageType(): SongStorageType

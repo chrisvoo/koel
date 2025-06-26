@@ -36,7 +36,7 @@ new class extends UnitTestCase {
       const artist = factory.states('unknown')('artist')
 
       expect(artistStore.isUnknown(artist)).toBe(true)
-      expect(artistStore.isUnknown(artist.id)).toBe(true)
+      expect(artistStore.isUnknown(artist.name)).toBe(true)
       expect(artistStore.isUnknown(factory('artist'))).toBe(false)
     })
 
@@ -44,7 +44,7 @@ new class extends UnitTestCase {
       const artist = factory.states('various')('artist')
 
       expect(artistStore.isVarious(artist)).toBe(true)
-      expect(artistStore.isVarious(artist.id)).toBe(true)
+      expect(artistStore.isVarious(artist.name)).toBe(true)
       expect(artistStore.isVarious(factory('artist'))).toBe(false)
     })
 
@@ -104,7 +104,12 @@ new class extends UnitTestCase {
         },
       })
 
-      expect(await artistStore.paginate(1)).toEqual(2)
+      expect(await artistStore.paginate({
+        page: 1,
+        sort: 'name',
+        order: 'asc',
+      })).toEqual(2)
+
       expect(artistStore.state.artists).toEqual(artists)
       expect(artistStore.vault.size).toBe(3)
     })

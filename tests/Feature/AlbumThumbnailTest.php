@@ -18,7 +18,7 @@ class AlbumThumbnailTest extends TestCase
     {
         parent::setUp();
 
-        $this->mediaMetadataService = self::mock(MediaMetadataService::class);
+        $this->mediaMetadataService = $this->mock(MediaMetadataService::class);
     }
 
     /** @return array<mixed> */
@@ -41,7 +41,7 @@ class AlbumThumbnailTest extends TestCase
             }))
             ->andReturn($thumbnailUrl);
 
-        $response = $this->getAs("api/albums/{$createdAlbum->id}/thumbnail");
+        $response = $this->getAs("api/albums/{$createdAlbum->public_id}/thumbnail");
         $response->assertJson(['thumbnailUrl' => $thumbnailUrl]);
     }
 }

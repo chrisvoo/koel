@@ -5,25 +5,55 @@ namespace App\Services;
 use App\Enums\SongStorageType;
 use App\Models\Song;
 use App\Models\SongZipArchive;
-use App\Services\SongStorages\DropboxStorage;
-use App\Services\SongStorages\S3CompatibleStorage;
+use App\Services\SongStorages\CloudStorageFactory;
 use App\Services\SongStorages\SftpStorage;
+use App\Values\Downloadable;
 use App\Values\Podcast\EpisodePlayable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\File;
 
 class DownloadService
 {
-    public function getDownloadablePath(Collection $songs): ?string
+    /**
+     * @param Collection<Song>|array<array-key, Song> $songs
+     */
+    public function getDownloadable(Collection $songs): ?Downloadable
     {
         if ($songs->count() === 1) {
-            return $this->getLocalPath($songs->first()); // @phpstan-ignore-line
+            return optional(
+                $this->getLocalPathOrDownloadableUrl($songs->first()), // @phpstan-ignore-line
+                static fn (string $url) => Downloadable::make($url)
+            );
         }
 
-        return (new SongZipArchive())
+        return Downloadable::make(
+            (new SongZipArchive())
             ->addSongs($songs)
             ->finish()
-            ->getPath();
+            ->getPath()
+        );
+    }
+
+    public function getLocalPathOrDownloadableUrl(Song $song): ?string
+    {
+        if (!$song->storage->supported()) {
+            return null;
+        }
+
+        if ($song->isEpisode()) {
+            // If the song is an episode, get the episode's media URL ("path").
+            return $song->path;
+        }
+
+        if ($song->storage === SongStorageType::LOCAL) {
+            return $song->path;
+        }
+
+        if ($song->storage === SongStorageType::SFTP) {
+            return app(SftpStorage::class)->copyToLocal($song);
+        }
+
+        return CloudStorageFactory::make($song->storage)->getPresignedUrl($song->storage_metadata->getPath());
     }
 
     public function getLocalPath(Song $song): ?string
@@ -36,28 +66,19 @@ class DownloadService
             return EpisodePlayable::getForEpisode($song)->path;
         }
 
+        $location = $song->storage_metadata->getPath();
+
         if ($song->storage === SongStorageType::LOCAL) {
-            return File::exists($song->path) ? $song->path : null;
+            return File::exists($location) ? $location : null;
         }
 
         if ($song->storage === SongStorageType::SFTP) {
-            return app(SftpStorage::class)->copyToLocal($song);
+            /** @var SftpStorage $storage */
+            $storage = app(SftpStorage::class);
+
+            return $storage->copyToLocal($location);
         }
 
-        switch ($song->storage) {
-            case SongStorageType::DROPBOX:
-                $cloudStorage = app(DropboxStorage::class);
-                break;
-
-            case SongStorageType::S3:
-            case SongStorageType::S3_LAMBDA:
-                $cloudStorage = app(S3CompatibleStorage::class);
-                break;
-
-            default:
-                return null;
-        }
-
-        return $cloudStorage->copyToLocal($song);
+        return CloudStorageFactory::make($song->storage)->copyToLocal($location);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Facades\License;
 use App\Models\Song;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Str;
@@ -50,7 +51,7 @@ class SongResource extends JsonResource
         ],
     ];
 
-    public function __construct(protected readonly Song $song)
+    public function __construct(protected Song $song)
     {
         parent::__construct($song);
     }
@@ -58,17 +59,19 @@ class SongResource extends JsonResource
     /** @inheritDoc */
     public function toArray($request): array
     {
+        $isPlus = once(static fn () => License::isPlus());
+        $user = once(static fn () => auth()->user());
+
         $data = [
             'type' => Str::plural($this->song->type->value),
             'id' => $this->song->id,
-            'owner_id' => $this->song->owner_id,
             'title' => $this->song->title,
             'lyrics' => $this->song->lyrics,
-            'album_id' => $this->song->album?->id,
+            'album_id' => $this->song->album?->public_id,
             'album_name' => $this->song->album?->name,
-            'artist_id' => $this->song->artist?->id,
+            'artist_id' => $this->song->artist?->public_id,
             'artist_name' => $this->song->artist?->name,
-            'album_artist_id' => $this->song->album_artist?->id,
+            'album_artist_id' => $this->song->album_artist?->public_id,
             'album_artist_name' => $this->song->album_artist?->name,
             'album_cover' => $this->song->album?->cover,
             'length' => $this->song->length,
@@ -90,6 +93,11 @@ class SongResource extends JsonResource
                 'podcast_id' => $this->song->podcast->id,
                 'podcast_title' => $this->song->podcast->title,
                 'podcast_author' => $this->song->podcast->metadata->author,
+            ];
+        } else {
+            $data += [
+                'owner_id' => $this->song->owner->public_id,
+                'is_external' => $isPlus && !$this->song->ownedBy($user),
             ];
         }
 

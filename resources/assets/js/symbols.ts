@@ -11,14 +11,15 @@ export const OverlayKey: InjectionKey<Ref<InstanceType<typeof Overlay>>> = Symbo
 export const DialogBoxKey: InjectionKey<Ref<InstanceType<typeof DialogBox>>> = Symbol('DialogBox')
 export const MessageToasterKey: InjectionKey<Ref<InstanceType<typeof MessageToaster>>> = Symbol('MessageToaster')
 
+export const FilterKeywordsKey: InjectionKey<Ref<string>> = Symbol('PlayableListFilterKeywords')
+
 export const PlayablesKey: ReadonlyInjectionKey<Ref<Playable[]>> | InjectionKey<Ref<Playable[]>> = Symbol('PlayablesKey')
 export const FilteredPlayablesKey: ReadonlyInjectionKey<Ref<Playable[]>> | InjectionKey<Ref<Playable[]>> = Symbol('FilteredPlayablesKey')
 export const CurrentPlayableKey: InjectionKey<Ref<Playable | undefined>> = Symbol('CurrentPlayable')
 export const SelectedPlayablesKey: ReadonlyInjectionKey<Ref<Playable[]>> = Symbol('SelectedPlayables')
-export const PlayableListConfigKey: ReadonlyInjectionKey<Partial<PlayableListConfig>> = Symbol('SongListConfig')
-export const PlayableListSortFieldKey: ReadonlyInjectionKey<Ref<PlayableListSortField>> = Symbol('SongListSortField')
-export const SongListSortOrderKey: ReadonlyInjectionKey<Ref<SortOrder>> = Symbol('SongListSortOrder')
-export const SongListFilterKeywordsKey: InjectionKey<Ref<string>> = Symbol('SongListFilterKeywords')
-export const PlayableListContextKey: InjectionKey<Ref<PlayableListContext>> = Symbol('SongListContext')
+export const PlayableListConfigKey: ReadonlyInjectionKey<Partial<PlayableListConfig>> = Symbol('PlayableListConfig')
+export const PlayableListSortFieldKey: ReadonlyInjectionKey<Ref<PlayableListSortField>> = Symbol('PlayableListSortField')
+export const PlayableListSortOrderKey: ReadonlyInjectionKey<Ref<SortOrder>> = Symbol('PlayableListSortOrder')
+export const PlayableListContextKey: InjectionKey<Ref<PlayableListContext>> = Symbol('PlayableListContext')
 
 export const ModalContextKey: InjectionKey<Ref<Record<string, any>>> = Symbol('ModalContext')

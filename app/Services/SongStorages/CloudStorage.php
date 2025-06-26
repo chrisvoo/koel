@@ -2,31 +2,20 @@
 
 namespace App\Services\SongStorages;
 
-use App\Models\Song;
+use App\Helpers\Ulid;
 use App\Models\User;
-use App\Services\FileScanner;
-use App\Services\SongStorages\Concerns\ScansUploadedFile;
+use App\Services\SongStorages\Concerns\MovesUploadedFile;
+use App\Services\SongStorages\Contracts\MustDeleteTemporaryLocalFileAfterUpload;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
-use Symfony\Component\Uid\Ulid;
 
-abstract class CloudStorage extends SongStorage
+abstract class CloudStorage extends SongStorage implements MustDeleteTemporaryLocalFileAfterUpload
 {
-    use ScansUploadedFile;
+    use MovesUploadedFile;
 
-    public function __construct(protected FileScanner $scanner)
+    public function copyToLocal(string $key): string
     {
-    }
-
-    public function copyToLocal(Song $song): string
-    {
-        self::assertSupported();
-
-        $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'koel_tmp';
-        File::ensureDirectoryExists($tmpDir);
-
-        $publicUrl = $this->getSongPresignedUrl($song);
-        $localPath = $tmpDir . DIRECTORY_SEPARATOR . basename($song->storage_metadata->getPath());
+        $publicUrl = $this->getPresignedUrl($key);
+        $localPath = artifact_path(sprintf('tmp/%s_%s', Ulid::generate(), basename($key)));
 
         File::copy($publicUrl, $localPath);
 
@@ -35,8 +24,12 @@ abstract class CloudStorage extends SongStorage
 
     protected function generateStorageKey(string $filename, User $uploader): string
     {
-        return sprintf('%s__%s__%s', $uploader->id, Str::lower(Ulid::generate()), $filename);
+        return sprintf('%s__%s__%s', $uploader->id, Ulid::generate(), $filename);
     }
 
-    abstract public function getSongPresignedUrl(Song $song): string;
+    abstract public function uploadToStorage(string $key, string $path): void;
+
+    abstract public function getPresignedUrl(string $key): string;
+
+    abstract public function deleteFileWithKey(string $key, bool $backup): void;
 }

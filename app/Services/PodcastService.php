@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\FailedToParsePodcastFeedException;
-use App\Exceptions\UserAlreadySubscribedToPodcast;
+use App\Exceptions\UserAlreadySubscribedToPodcastException;
 use App\Models\Podcast;
 use App\Models\PodcastUserPivot;
 use App\Models\Song as Episode;
@@ -78,7 +78,7 @@ class PodcastService
 
                 return $podcast;
             });
-        } catch (UserAlreadySubscribedToPodcast $exception) {
+        } catch (UserAlreadySubscribedToPodcastException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
             Log::error($exception);
@@ -184,7 +184,7 @@ class PodcastService
 
     public function isPodcastObsolete(Podcast $podcast): bool
     {
-        if ($podcast->last_synced_at->diffInHours(now()) < 12) {
+        if (abs($podcast->last_synced_at->diffInHours(now())) < 12) {
             // If we have recently synchronized the podcast, consider it "fresh"
             return false;
         }

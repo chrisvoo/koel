@@ -3,8 +3,11 @@
 namespace App\Models;
 
 use App\Builders\AlbumBuilder;
+use App\Helpers\Ulid;
 use App\Models\Concerns\SupportsDeleteWhereValueNotIn;
+use App\Models\Contracts\PermissionableResource;
 use Carbon\Carbon;
+use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,32 +17,39 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
 use Laravel\Scout\Searchable;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
- * @property string $cover The album cover's URL
- * @property string|null $cover_path The absolute path to the cover file
- * @property bool $has_cover If the album has a non-default cover image
- * @property string $name Name of the album
+ * @property ?int $year
+ * @property ?string $cover_path The absolute path to the cover file
+ * @property ?string $thumbnail The public URL to the album's thumbnail
+ * @property ?string $thumbnail_name The file name of the album's thumbnail
+ * @property ?string $thumbnail_path The full path to the thumbnail. This doesn't guarantee the thumbnail exists.
  * @property Artist $artist The album's artist
- * @property int $artist_id
- * @property Collection<array-key, Song> $songs
- * @property bool $is_unknown If the album is the Unknown Album
- * @property string|null $thumbnail_name The file name of the album's thumbnail
- * @property string|null $thumbnail_path The full path to the thumbnail.
- *                                       Notice that this doesn't guarantee the thumbnail exists.
- * @property string|null $thumbnail The public URL to the album's thumbnail
  * @property Carbon $created_at
+ * @property Collection<array-key, Song> $songs
+ * @property User $user
+ * @property bool $has_cover If the album has a non-default cover image
+ * @property bool $is_unknown If the album is the Unknown Album
  * @property float|string $length Total length of the album in seconds (dynamically calculated)
+ * @property int $artist_id
+ * @property int $id
+ * @property int $user_id
  * @property int|string $play_count Total number of times the album's songs have been played (dynamically calculated)
  * @property int|string $song_count Total number of songs on the album (dynamically calculated)
+ * @property string $cover The album cover's URL
+ * @property string $name Name of the album
+ * @property string $public_id The album's public ID (ULID)
  */
-class Album extends Model
+class Album extends Model implements AuditableContract, PermissionableResource
 {
+    use Auditable;
+    /** @use HasFactory<UserFactory> */
     use HasFactory;
     use Searchable;
     use SupportsDeleteWhereValueNotIn;
 
-    public const UNKNOWN_ID = 1;
     public const UNKNOWN_NAME = 'Unknown Album';
 
     protected $guarded = ['id'];
@@ -51,8 +61,18 @@ class Album extends Model
     /** @deprecated */
     protected $appends = ['is_compilation'];
 
+    protected static function booted(): void
+    {
+        parent::booted();
+
+        static::creating(static function (self $album): void {
+            $album->public_id ??= Ulid::generate();
+        });
+    }
+
     public static function query(): AlbumBuilder
     {
+        /** @var AlbumBuilder */
         return parent::query();
     }
 
@@ -69,6 +89,7 @@ class Album extends Model
     {
         return static::query()->firstOrCreate([ // @phpstan-ignore-line
             'artist_id' => $artist->id,
+            'user_id' => $artist->user_id,
             'name' => trim($name) ?: self::UNKNOWN_NAME,
         ]);
     }
@@ -83,9 +104,19 @@ class Album extends Model
         return $this->hasMany(Song::class);
     }
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function belongsToUser(User $user): bool
+    {
+        return $this->user_id === $user->id;
+    }
+
     protected function isUnknown(): Attribute
     {
-        return Attribute::get(fn (): bool => $this->id === self::UNKNOWN_ID);
+        return Attribute::get(fn (): bool => $this->name === self::UNKNOWN_NAME);
     }
 
     protected function cover(): Attribute
@@ -97,7 +128,7 @@ class Album extends Model
     {
         return Attribute::get(
             fn (): bool => $this->cover_path && (app()->runningUnitTests() || File::exists($this->cover_path))
-        )->shouldCache();
+        );
     }
 
     protected function coverPath(): Attribute
@@ -106,7 +137,7 @@ class Album extends Model
             $cover = Arr::get($this->attributes, 'cover');
 
             return $cover ? album_cover_path($cover) : null;
-        })->shouldCache();
+        });
     }
 
     /**
@@ -133,20 +164,18 @@ class Album extends Model
 
     protected function thumbnailPath(): Attribute
     {
-        return Attribute::get(fn () => $this->thumbnail_name ? album_cover_path($this->thumbnail_name) : null)
-            ->shouldCache();
+        return Attribute::get(fn () => $this->thumbnail_name ? album_cover_path($this->thumbnail_name) : null);
     }
 
     protected function thumbnail(): Attribute
     {
-        return Attribute::get(fn () => $this->thumbnail_name ? album_cover_url($this->thumbnail_name) : null)
-            ->shouldCache();
+        return Attribute::get(fn () => $this->thumbnail_name ? album_cover_url($this->thumbnail_name) : null);
     }
 
     /** @deprecated Only here for backward compat with mobile apps */
     protected function isCompilation(): Attribute
     {
-        return Attribute::get(fn () => $this->artist_id === Artist::VARIOUS_ID);
+        return Attribute::get(fn () => $this->artist->is_various);
     }
 
     /** @inheritdoc */
@@ -162,5 +191,15 @@ class Album extends Model
         }
 
         return $array;
+    }
+
+    public static function getPermissionableResourceIdentifier(): string
+    {
+        return 'public_id';
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'public_id';
     }
 }

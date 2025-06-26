@@ -4,69 +4,45 @@ namespace App\Services\SongStorages;
 
 use App\Enums\SongStorageType;
 use App\Exceptions\MediaPathNotSetException;
-use App\Exceptions\SongUploadFailedException;
 use App\Models\Setting;
-use App\Models\Song;
 use App\Models\User;
-use App\Services\FileScanner;
-use App\Values\ScanConfiguration;
+use App\Values\UploadReference;
 use Exception;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
-use Throwable;
+use Illuminate\Support\Str;
 
-use function Functional\memoize;
-
-final class LocalStorage extends SongStorage
+class LocalStorage extends SongStorage
 {
-    public function __construct(private readonly FileScanner $scanner)
+    public function storeUploadedFile(UploadedFile $uploadedFile, User $uploader): UploadReference
     {
-    }
-
-    public function storeUploadedFile(UploadedFile $file, User $uploader): Song
-    {
-        self::assertSupported();
-
         $uploadDirectory = $this->getUploadDirectory($uploader);
-        $targetFileName = $this->getTargetFileName($file, $uploader);
+        $targetFileName = $this->getTargetFileName($uploadedFile, $uploader);
 
-        $file->move($uploadDirectory, $targetFileName);
+        $uploadedFile->move($uploadDirectory, $targetFileName);
         $targetPathName = $uploadDirectory . $targetFileName;
 
-        try {
-            $result = $this->scanner->setFile($targetPathName)
-                ->scan(ScanConfiguration::make(
-                    owner: $uploader,
-                    makePublic: $uploader->preferences->makeUploadsPublic
-                ));
-        } catch (Throwable $e) {
-            File::delete($targetPathName);
-            throw new SongUploadFailedException($e->getMessage());
-        }
+        // For local storage, the "location" and "localPath" are the same.
+        return UploadReference::make(
+            location: $targetPathName,
+            localPath: $targetPathName,
+        );
+    }
 
-        if ($result->isError()) {
-            File::delete($targetPathName);
-            throw new SongUploadFailedException($result->error);
-        }
-
-        return $this->scanner->getSong();
+    public function undoUpload(UploadReference $reference): void
+    {
+        // To undo an upload, we simply delete the file from the local disk.
+        File::delete($reference->localPath);
     }
 
     private function getUploadDirectory(User $uploader): string
     {
-        return memoize(static function () use ($uploader): string {
+        return once(static function () use ($uploader): string {
             $mediaPath = Setting::get('media_path');
 
             throw_unless((bool) $mediaPath, MediaPathNotSetException::class);
 
-            $dir = sprintf(
-                '%s%s__KOEL_UPLOADS_$%s__%s',
-                $mediaPath,
-                DIRECTORY_SEPARATOR,
-                $uploader->id,
-                DIRECTORY_SEPARATOR
-            );
-
+            $dir = "$mediaPath/__KOEL_UPLOADS_\${$uploader->id}__/";
             File::ensureDirectoryExists($dir);
 
             return $dir;
@@ -87,18 +63,16 @@ final class LocalStorage extends SongStorage
 
     private function getUniqueHash(): string
     {
-        return substr(sha1(uniqid()), 0, 6);
+        return Str::take(sha1(Str::uuid()), 6);
     }
 
-    public function delete(Song $song, bool $backup = false): void
+    public function delete(string $location, bool $backup = false): void
     {
-        $path = $song->storage_metadata->getPath();
-
         if ($backup) {
-            File::move($path, "$path.bak");
+            File::move($location, "$location.bak");
         }
 
-        throw_unless(File::delete($path), new Exception("Failed to delete song file: $path"));
+        throw_unless(File::delete($location), new Exception("Failed to delete song file: $location"));
     }
 
     public function testSetup(): void

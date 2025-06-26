@@ -8,6 +8,7 @@ import { downloadService } from '@/services/downloadService'
 import { playbackService } from '@/services/playbackService'
 import { commonStore } from '@/stores/commonStore'
 import { songStore } from '@/stores/songStore'
+import { resourcePermissionService } from '@/services/resourcePermissionService'
 import ArtistContextMenu from './ArtistContextMenu.vue'
 
 let artist: Artist
@@ -83,6 +84,8 @@ new class extends UnitTestCase {
   }
 
   private async renderComponent (_artist?: Artist) {
+    this.mock(resourcePermissionService, 'check').mockReturnValue(true)
+
     artist = _artist || factory('artist', {
       name: 'Accept',
     })

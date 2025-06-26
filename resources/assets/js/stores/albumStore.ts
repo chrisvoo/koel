@@ -6,7 +6,18 @@ import { arrayify } from '@/utils/helpers'
 import { logger } from '@/utils/logger'
 import { songStore } from '@/stores/songStore'
 
-const UNKNOWN_ALBUM_ID = 1
+const UNKNOWN_ALBUM_NAME = 'Unknown Album'
+
+interface AlbumUpdateData {
+  name: string
+  year: number | null
+}
+
+interface AlbumListPaginateParams extends Record<string, any> {
+  sort: AlbumListSortField
+  order: SortOrder
+  page: number
+}
 
 export const albumStore = {
   vault: new Map<Album['id'], Album>(),
@@ -27,11 +38,12 @@ export const albumStore = {
     })
   },
 
-  isUnknown: (album: Album | Album['id']) => {
-    if (typeof album === 'number') {
-      return album === UNKNOWN_ALBUM_ID
+  isUnknown: (album: Album | Album['name']) => {
+    if (typeof album === 'string') {
+      return album === UNKNOWN_ALBUM_NAME
     }
-    return album.id === UNKNOWN_ALBUM_ID
+
+    return album.name === UNKNOWN_ALBUM_NAME
   },
 
   syncWithVault (albums: MaybeArray<Album>) {
@@ -60,6 +72,13 @@ export const albumStore = {
     return album.cover
   },
 
+  async update (album: Album, data: AlbumUpdateData) {
+    const updated = await http.put<Album>(`albums/${album.id}`, data)
+    this.state.albums = unionBy(this.state.albums, this.syncWithVault(updated), 'id')
+
+    songStore.updateAlbumName(album, updated.name)
+  },
+
   /**
    * Fetch the (blurry) thumbnail-sized version of an album's cover.
    */
@@ -83,18 +102,23 @@ export const albumStore = {
     return album
   },
 
-  async paginate (page: number) {
-    const resource = await http.get<PaginatorResource<Album>>(`albums?page=${page}`)
+  async paginate (params: AlbumListPaginateParams) {
+    const resource = await http.get<PaginatorResource<Album>>(`albums?${new URLSearchParams(params).toString()}`)
     this.state.albums = unionBy(this.state.albums, this.syncWithVault(resource.data), 'id')
 
     return resource.links.next ? ++resource.meta.current_page : null
   },
 
   async fetchForArtist (artist: Artist | Artist['id']) {
-    const id = typeof artist === 'number' ? artist : artist.id
+    const id = typeof artist === 'string' ? artist : artist.id
 
     return this.syncWithVault(
       await cache.remember<Album[]>(['artist-albums', id], async () => await http.get<Album[]>(`artists/${id}/albums`)),
     )
+  },
+
+  reset () {
+    this.vault.clear()
+    this.state.albums = []
   },
 }

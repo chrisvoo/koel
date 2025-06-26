@@ -3,17 +3,21 @@
 namespace Tests\Integration\KoelPlus\Services\SongStorages;
 
 use App\Filesystems\DropboxFilesystem;
+use App\Helpers\Ulid;
 use App\Models\Song;
 use App\Services\SongStorages\DropboxStorage;
+use App\Values\UploadReference;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Mockery;
 use Mockery\MockInterface;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Dropbox\Client;
 use Spatie\FlysystemDropbox\DropboxAdapter;
+use Tests\Integration\KoelPlus\Services\TestingDropboxStorage;
 use Tests\PlusTestCase;
 
 use function Tests\create_user;
@@ -21,6 +25,8 @@ use function Tests\test_path;
 
 class DropboxStorageTest extends PlusTestCase
 {
+    use TestingDropboxStorage;
+
     private MockInterface|DropboxFilesystem $filesystem;
     private MockInterface|Client $client;
     private UploadedFile $file;
@@ -45,7 +51,7 @@ class DropboxStorageTest extends PlusTestCase
             Mockery::mock(DropboxAdapter::class, ['getClient' => $this->client])
         );
 
-        self::mockRefreshAccessTokenCall();
+        self::mockDropboxRefreshAccessTokenCall();
 
         $this->file = UploadedFile::fromFile(test_path('songs/full.mp3'), 'song.mp3'); //@phpstan-ignore-line
     }
@@ -53,6 +59,8 @@ class DropboxStorageTest extends PlusTestCase
     #[Test]
     public function storeUploadedFile(): void
     {
+        Ulid::freeze('random');
+
         $this->client->shouldReceive('setAccessToken')->with('free-bird')->once();
 
         /** @var DropboxStorage $service */
@@ -65,13 +73,33 @@ class DropboxStorageTest extends PlusTestCase
                 && $request['grant_type'] === 'refresh_token';
         });
 
-        self::assertSame(0, Song::query()->where('storage', 'dropbox')->count());
-
+        $user = create_user();
         $this->filesystem->shouldReceive('write')->once();
-        $service->storeUploadedFile($this->file, create_user());
+        $reference = $service->storeUploadedFile($this->file, $user);
 
-        self::assertSame(1, Song::query()->where('storage', 'dropbox')->count());
+        self::assertSame("dropbox://{$user->id}__random__song.mp3", $reference->location);
+        self::assertSame(artifact_path("tmp/random/song.mp3"), $reference->localPath);
+
         self::assertSame('free-bird', Cache::get('dropbox_access_token'));
+    }
+
+    #[Test]
+    public function undoUpload(): void
+    {
+        $this->filesystem->shouldReceive('delete')->once()->with('koel/song.mp3');
+        File::shouldReceive('delete')->once()->with('/tmp/random/song.mp3');
+
+        $reference = UploadReference::make(
+            location: 'dropbox://koel/song.mp3',
+            localPath: '/tmp/random/song.mp3',
+        );
+
+        $this->client->shouldReceive('setAccessToken')->with('free-bird')->once();
+
+        /** @var DropboxStorage $service */
+        $service = app(DropboxStorage::class);
+
+        $service->undoUpload($reference);
     }
 
     #[Test]
@@ -102,18 +130,9 @@ class DropboxStorageTest extends PlusTestCase
             ->with('song.mp3')
             ->andReturn('https://dropbox.com/song.mp3?token=123');
 
-        self::assertSame('https://dropbox.com/song.mp3?token=123', $service->getSongPresignedUrl($song));
-    }
-
-    private static function mockRefreshAccessTokenCall(): void
-    {
-        Http::preventStrayRequests();
-
-        Http::fake([
-            'https://api.dropboxapi.com/oauth2/token' => Http::response([
-                'access_token' => 'free-bird',
-                'expires_in' => 3600,
-            ]),
-        ]);
+        self::assertSame(
+            'https://dropbox.com/song.mp3?token=123',
+            $service->getPresignedUrl($song->storage_metadata->getPath())
+        );
     }
 }

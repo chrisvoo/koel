@@ -2,16 +2,17 @@
 
 namespace Database\Factories;
 
-use App\Models\Playlist;
 use Illuminate\Database\Eloquent\Factories\Factory;
+
+use function Tests\create_playlist;
 
 class PlaylistCollaborationTokenFactory extends Factory
 {
-    /** @return array<mixed> */
+    /** @inheritdoc */
     public function definition(): array
     {
         return [
-            'playlist_id' => Playlist::factory(),
+            'playlist_id' => create_playlist()->id,
         ];
     }
 }

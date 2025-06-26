@@ -11,9 +11,9 @@ use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Jackiedo\DotenvEditor\DotenvEditor;
 use Throwable;
@@ -22,9 +22,6 @@ class InitCommand extends Command
 {
     use AskForPassword;
 
-    private const DEFAULT_ADMIN_NAME = 'Koel';
-    private const DEFAULT_ADMIN_EMAIL = 'admin@koel.dev';
-    private const DEFAULT_ADMIN_PASSWORD = 'KoelIsCool';
     private const NON_INTERACTION_MAX_DATABASE_ATTEMPT_COUNT = 10;
 
     protected $signature =
@@ -79,7 +76,7 @@ class InitCommand extends Command
 
         if ($this->adminSeeded) {
             $this->info(
-                sprintf('Log in with email %s and password %s', self::DEFAULT_ADMIN_EMAIL, self::DEFAULT_ADMIN_PASSWORD)
+                sprintf('Log in with email %s and password %s', User::FIRST_ADMIN_EMAIL, User::FIRST_ADMIN_PASSWORD)
             );
         }
 
@@ -197,13 +194,7 @@ class InitCommand extends Command
     private function setUpAdminAccount(): void
     {
         $this->components->task('Creating default admin account', function (): void {
-            User::query()->create([
-                'name' => self::DEFAULT_ADMIN_NAME,
-                'email' => self::DEFAULT_ADMIN_EMAIL,
-                'password' => Hash::make(self::DEFAULT_ADMIN_PASSWORD),
-                'is_admin' => true,
-            ]);
-
+            User::firstAdmin();
             $this->adminSeeded = true;
         });
     }
@@ -229,7 +220,7 @@ class InitCommand extends Command
             // In non-interactive mode, we must not endlessly attempt to connect.
             // Doing so will just end up with a huge amount of "failed to connect" logs.
             // We do retry a little, though, just in case there's some kind of temporary failure.
-            if ($this->inNoInteractionMode() && $attempt >= self::NON_INTERACTION_MAX_DATABASE_ATTEMPT_COUNT) {
+            if ($attempt >= self::NON_INTERACTION_MAX_DATABASE_ATTEMPT_COUNT && $this->inNoInteractionMode()) {
                 $this->components->error('Maximum database connection attempts reached. Giving up.');
                 break;
             }
@@ -240,7 +231,7 @@ class InitCommand extends Command
                 // Make sure the config cache is cleared before another attempt.
                 Artisan::call('config:clear', ['--quiet' => true]);
                 DB::reconnect();
-                DB::getDoctrineSchemaManager()->listTables();
+                Schema::getTables();
 
                 break;
             } catch (Throwable $e) {

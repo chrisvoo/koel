@@ -3,13 +3,17 @@
 namespace App\Builders;
 
 use App\Facades\License;
+use App\Models\Song;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\JoinClause;
+use Illuminate\Support\Str;
 use Webmozart\Assert\Assert;
 
 /**
  * @method self logSql()
+ *
+ * @extends Builder<Song>
  */
 class SongBuilder extends Builder
 {
@@ -19,6 +23,8 @@ class SongBuilder extends Builder
         'length' => 'songs.length',
         'created_at' => 'songs.created_at',
         'disc' => 'songs.disc',
+        'genre' => 'songs.genre',
+        'year' => 'songs.year',
         'artist_name' => 'artists.name',
         'album_name' => 'albums.name',
         'podcast_title' => 'podcasts.title',
@@ -29,6 +35,8 @@ class SongBuilder extends Builder
         'songs.title',
         'songs.track',
         'songs.length',
+        'songs.genre',
+        'songs.year',
         'songs.created_at',
         'artists.name',
         'albums.name',
@@ -41,7 +49,7 @@ class SongBuilder extends Builder
     public function inDirectory(string $path): self
     {
         // Make sure the path ends with a directory separator.
-        $path = rtrim(trim($path), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        $path = Str::finish(trim($path), DIRECTORY_SEPARATOR);
 
         return $this->where('path', 'LIKE', "$path%");
     }
@@ -128,7 +136,7 @@ class SongBuilder extends Builder
 
     private static function normalizeSortColumn(string $column): string
     {
-        return key_exists($column, self::SORT_COLUMNS_NORMALIZE_MAP)
+        return array_key_exists($column, self::SORT_COLUMNS_NORMALIZE_MAP)
             ? self::SORT_COLUMNS_NORMALIZE_MAP[$column]
             : $column;
     }
@@ -136,7 +144,14 @@ class SongBuilder extends Builder
     public function storedOnCloud(): self
     {
         return $this->whereNotNull('storage')
-            ->where('storage', '!=', '');
+            ->where('storage', '!=', '')
+            ->whereNull('podcast_id');
+    }
+
+    public function storedLocally(): self
+    {
+        return $this->where(static fn (self $query) => $query->whereNull('songs.storage')->orWhere('songs.storage', ''))
+                ->whereNull('songs.podcast_id');
     }
 
     public function forUser(User $user): self

@@ -117,7 +117,7 @@ interface ArtistInfo {
 
 interface Artist {
   type: 'artists'
-  readonly id: number
+  readonly id: string
   name: string
   image: string | null
   created_at: string
@@ -125,13 +125,14 @@ interface Artist {
 
 interface Album {
   type: 'albums'
-  readonly id: number
+  readonly id: string
   artist_id: Artist['id']
   artist_name: Artist['name']
   name: string
   cover: string
   thumbnail?: string | null
   created_at: string
+  year: number | null
 }
 
 interface Playable {
@@ -165,6 +166,8 @@ interface Song extends Playable {
   year: number | null
   lyrics: string
   is_public: boolean
+  is_external: boolean
+  basename?: string
   deleted?: boolean
 }
 
@@ -253,7 +256,7 @@ type PlaylistCollaborator = Pick<User, 'id' | 'name' | 'avatar'> & {
 interface Playlist {
   type: 'playlists'
   readonly id: string
-  readonly user_id: User['id']
+  readonly owner_id: User['id']
   name: string
   folder_id: PlaylistFolder['id'] | null
   is_smart: boolean
@@ -308,6 +311,8 @@ interface UserPreferences extends Record<string, any> {
   equalizer: EqualizerPreset
   artists_view_mode: ArtistAlbumViewMode | null
   albums_view_mode: ArtistAlbumViewMode | null
+  albums_sort_field: AlbumListSortField
+  albums_sort_order: SortOrder
   transcode_on_mobile: boolean
   transcode_quality: number
   support_bar_no_bugging: boolean
@@ -315,14 +320,14 @@ interface UserPreferences extends Record<string, any> {
   lyrics_zoom_level: number | null
   theme?: Theme['id'] | null
   visualizer?: Visualizer['id'] | null
-  active_extra_panel_tab: ExtraPanelTab | null
+  active_extra_panel_tab: SideSheetTab | null
   make_uploads_public: boolean
   lastfm_session_key?: string
 }
 
 interface User {
   type: 'users'
-  id: number
+  id: string
   name: string
   email: string
   is_admin: boolean
@@ -399,6 +404,7 @@ declare type ScreenName =
   | 'Episode'
   | 'Search.Excerpt'
   | 'Search.Songs'
+  | 'MediaBrowser'
   | 'Invitation.Accept'
   | 'Password.Reset'
   | '404'
@@ -429,6 +435,8 @@ type ThemeableProperty = '--color-text-primary'
   | '--bg-position'
   | '--bg-attachment'
   | '--bg-size'
+  | '--font-family'
+  | '--font-size'
 
 interface Theme {
   id: string
@@ -457,11 +465,18 @@ interface PlayableListContext {
 }
 
 type PlayableListSortField =
-  keyof Pick<Song, 'track' | 'disc' | 'title' | 'album_name' | 'length' | 'artist_name' | 'created_at'>
+  keyof Pick<Song, 'track' | 'disc' | 'title' | 'album_name' | 'length' | 'artist_name' | 'genre' | 'year' | 'created_at'>
   | keyof Pick<Episode, 'podcast_author' | 'podcast_title'>
   | 'position'
 
 type PodcastListSortField = keyof Pick<Podcast, 'title' | 'last_played_at' | 'subscribed_at' | 'author'>
+type AlbumListSortField = keyof Pick<Album, 'name' | 'year' | 'artist_name' | 'created_at'>
+type ArtistListSortField = keyof Pick<Artist, 'name' | 'created_at'>
+
+interface BasicListSorterDropDownItem<T extends PodcastListSortField | AlbumListSortField | ArtistListSortField> {
+  label: string
+  field: T
+}
 
 type SortOrder = 'asc' | 'desc'
 type MoveType = 'before' | 'after'
@@ -494,7 +509,7 @@ interface Genre {
   length: number
 }
 
-type ExtraPanelTab = 'Lyrics' | 'Artist' | 'Album' | 'YouTube'
+type SideSheetTab = 'Lyrics' | 'Artist' | 'Album' | 'YouTube'
 
 interface Visualizer {
   init: (container: HTMLElement) => Promise<Closure>
@@ -506,4 +521,19 @@ interface Visualizer {
   }
 }
 
-type PlayableListColumnName = 'title' | 'album' | 'track' | 'duration' | 'created_at' | 'play_count'
+type PlayableListColumnName = 'title' | 'album' | 'track' | 'duration' | 'created_at' | 'play_count' | 'year' | 'genre'
+
+interface Folder {
+  type: 'folders'
+  id: string
+  parent_id: string | null
+  path: string
+  name: string
+}
+
+interface MediaRow {
+  item: Folder | Song
+  selected: boolean
+}
+
+type MediaReference = Pick<Folder, 'type' | 'path'> | Pick<Song, 'type' | 'id'>

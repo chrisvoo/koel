@@ -9,9 +9,9 @@ use App\Http\Integrations\LemonSqueezy\Requests\DeactivateLicenseRequest;
 use App\Http\Integrations\LemonSqueezy\Requests\ValidateLicenseRequest;
 use App\Models\License;
 use App\Services\License\Contracts\LicenseServiceInterface;
-use App\Values\LicenseInstance;
-use App\Values\LicenseMeta;
-use App\Values\LicenseStatus;
+use App\Values\License\LicenseInstance;
+use App\Values\License\LicenseMeta;
+use App\Values\License\LicenseStatus;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
@@ -36,7 +36,7 @@ class LicenseService implements LicenseServiceInterface
             }
 
             $license = $this->updateOrCreateLicenseFromApiResponseBody($result);
-            $this->cacheStatus(LicenseStatus::valid($license));
+            self::cacheStatus(LicenseStatus::valid($license));
 
             return $license;
         } catch (RequestException $e) {
@@ -76,6 +76,7 @@ class LicenseService implements LicenseServiceInterface
             return Cache::get('license_status');
         }
 
+        /** @var ?License $license */
         $license = License::query()->latest()->first();
 
         if (!$license) {

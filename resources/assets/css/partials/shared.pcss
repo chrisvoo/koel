@@ -28,7 +28,7 @@
     @mixin themed-background;
 
     font-family: var(--font-family);
-    font-size: 13px;
+    font-size: var(--font-size);
 
     @apply text-k-text-primary font-light leading-6 overflow-hidden;
   }
@@ -53,11 +53,13 @@
   }
 
   a {
-    @apply no-underline text-k-text-primary cursor-pointer hover:text-k-accent focus:text-k-accent;
+    @apply no-underline cursor-pointer focus:text-k-accent;
 
-    &:link,
-    &:visited {
-      @apply text-k-accent;
+    /** Set the attributes manually to allow for inline overriding, which wouldn't be possible with @apply. */
+    color: var(--color-text-primary);
+
+    &:hover {
+      color: var(--color-accent);
     }
   }
 

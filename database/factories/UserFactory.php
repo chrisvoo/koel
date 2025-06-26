@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -9,8 +10,6 @@ use Illuminate\Support\Str;
 
 class UserFactory extends Factory
 {
-    protected $model = User::class;
-
     /** @return array<mixed> */
     public function definition(): array
     {
@@ -23,6 +22,7 @@ class UserFactory extends Factory
                 'lastfm_session_key' => Str::random(),
             ],
             'remember_token' => Str::random(10),
+            'organization_id' => Organization::default()->id,
         ];
     }
 

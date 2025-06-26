@@ -3,10 +3,12 @@
 namespace Tests\Feature;
 
 use App\Http\Resources\SongResource;
+use App\Jobs\DeleteSongFiles;
 use App\Models\Album;
 use App\Models\Artist;
 use App\Models\Song;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Bus;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -17,7 +19,7 @@ class SongTest extends TestCase
     #[Test]
     public function index(): void
     {
-        Song::factory(10)->create();
+        Song::factory(2)->create();
 
         $this->getAs('api/songs')->assertJsonStructure(SongResource::PAGINATION_JSON_STRUCTURE);
         $this->getAs('api/songs?sort=title&order=desc')->assertJsonStructure(SongResource::PAGINATION_JSON_STRUCTURE);
@@ -29,29 +31,34 @@ class SongTest extends TestCase
         /** @var Song $song */
         $song = Song::factory()->create();
 
-        $this->getAs('api/songs/' . $song->id)->assertJsonStructure(SongResource::JSON_STRUCTURE);
+        $this->getAs("api/songs/{$song->id}")->assertJsonStructure(SongResource::JSON_STRUCTURE);
     }
 
     #[Test]
     public function destroy(): void
     {
+        Bus::fake();
+
         $songs = Song::factory(3)->create();
 
         $this->deleteAs('api/songs', ['songs' => $songs->modelKeys()], create_admin())
             ->assertNoContent();
 
         $songs->each(fn (Song $song) => $this->assertModelMissing($song));
+        Bus::assertDispatched(DeleteSongFiles::class);
     }
 
     #[Test]
     public function unauthorizedDelete(): void
     {
+        Bus::fake();
         $songs = Song::factory(3)->create();
 
         $this->deleteAs('api/songs', ['songs' => $songs->modelKeys()])
             ->assertForbidden();
 
         $songs->each(fn (Song $song) => $this->assertModelExists($song));
+        Bus::assertNotDispatched(DeleteSongFiles::class);
     }
 
     #[Test]
@@ -81,7 +88,7 @@ class SongTest extends TestCase
         $album = Album::query()->where('name', 'One by One')->first();
         self::assertNotNull($album);
 
-        self::assertDatabaseHas(Song::class, [
+        $this->assertDatabaseHas(Song::class, [
             'id' => $song->id,
             'album_id' => $album->id,
             'lyrics' => 'Lorem ipsum dolor sic amet.',
@@ -218,7 +225,7 @@ class SongTest extends TestCase
         /** @var Artist $artist */
         $artist = Artist::query()->where('name', 'John Cena')->first();
 
-        self::assertDatabaseHas(Song::class, [
+        $this->assertDatabaseHas(Song::class, [
             'id' => $song->id,
             'artist_id' => $artist->id,
             'album_id' => $album->id,

@@ -2,10 +2,13 @@
 
 namespace Tests\Integration\KoelPlus\Services\SongStorages;
 
-use App\Models\Song;
+use App\Helpers\Ulid;
 use App\Services\SongStorages\SftpStorage;
+use App\Values\UploadReference;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\PlusTestCase;
 
@@ -21,6 +24,7 @@ class SftpStorageTest extends PlusTestCase
     {
         parent::setUp();
 
+        Storage::fake('sftp');
         $this->service = app(SftpStorage::class);
         $this->file = UploadedFile::fromFile(test_path('songs/full.mp3'), 'song.mp3'); //@phpstan-ignore-line
     }
@@ -28,69 +32,50 @@ class SftpStorageTest extends PlusTestCase
     #[Test]
     public function storeUploadedFile(): void
     {
-        self::assertEquals(0, Song::query()->where('storage', 'sftp')->count());
+        Ulid::freeze('random');
+        $user = create_user();
+        $reference = $this->service->storeUploadedFile($this->file, $user);
 
-        Storage::fake('sftp');
-        $song = $this->service->storeUploadedFile($this->file, create_user());
+        Storage::disk('sftp')->assertExists(Str::after($reference->location, 'sftp://'));
 
-        Storage::disk('sftp')->assertExists($song->storage_metadata->getPath());
-        self::assertEquals(1, Song::query()->where('storage', 'sftp')->count());
+        self::assertSame("sftp://{$user->id}__random__song.mp3", $reference->location);
+        self::assertSame(artifact_path('tmp/random/song.mp3'), $reference->localPath);
     }
 
     #[Test]
-    public function storingWithVisibilityPreference(): void
+    public function undoUpload(): void
     {
-        Storage::fake('sftp');
+        Storage::disk('sftp')->put('123__random__song.mp3', 'fake content');
+        File::shouldReceive('delete')->once()->with('/tmp/random/song.mp3');
 
-        $user = create_user();
+        $reference = UploadReference::make(
+            location: 'sftp://123__random__song.mp3',
+            localPath: '/tmp/random/song.mp3',
+        );
 
-        $user->preferences->makeUploadsPublic = true;
-        $user->save();
-
-        self::assertTrue($this->service->storeUploadedFile($this->file, $user)->is_public);
-
-        $user->preferences->makeUploadsPublic = false;
-        $user->save();
-
-        $privateFile = UploadedFile::fromFile(test_path('songs/full.mp3'), 'song.mp3'); //@phpstan-ignore-line
-        self::assertFalse($this->service->storeUploadedFile($privateFile, $user)->is_public);
+        $this->service->undoUpload($reference);
     }
 
     #[Test]
     public function deleteSong(): void
     {
-        Storage::fake('sftp');
+        $reference = $this->service->storeUploadedFile($this->file, create_user());
+        $remotePath = Str::after($reference->location, 'sftp://');
+        Storage::disk('sftp')->assertExists($remotePath);
 
-        $song = $this->service->storeUploadedFile($this->file, create_user());
-        Storage::disk('sftp')->assertExists($song->storage_metadata->getPath());
+        $this->service->delete($remotePath);
 
-        $this->service->delete($song);
-        Storage::disk('sftp')->assertMissing($song->storage_metadata->getPath());
-    }
-
-    #[Test]
-    public function getSongContent(): void
-    {
-        /** @var Song $song */
-        $song = Song::factory()->create();
-
-        Storage::fake('sftp');
-        Storage::shouldReceive('disk->get')->with($song->storage_metadata->getPath())->andReturn('binary-content');
-
-        self::assertEquals('binary-content', $this->service->getSongContent($song));
+        Storage::disk('sftp')->assertMissing($remotePath);
     }
 
     #[Test]
     public function copyToLocal(): void
     {
-        /** @var Song $song */
-        $song = Song::factory()->create();
+        // Put a fake file on the fake SFTP disk
+        Storage::disk('sftp')->put('music/test-song.mp3', 'fake mp3 content');
 
-        Storage::fake('sftp');
-        Storage::shouldReceive('disk->get')->with($song->storage_metadata->getPath())->andReturn('binary-content');
+        $localPath = $this->service->copyToLocal('music/test-song.mp3');
 
-        $localPath = $this->service->copyToLocal($song);
-
-        self::assertStringEqualsFile($localPath, 'binary-content');
+        self::assertStringEqualsFile($localPath, 'fake mp3 content');
     }
 }

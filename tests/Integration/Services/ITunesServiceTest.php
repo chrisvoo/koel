@@ -26,18 +26,18 @@ class ITunesServiceTest extends TestCase
     #[Test]
     public function configuration(): void
     {
-        config(['koel.itunes.enabled' => true]);
-        self::assertTrue($this->service->used());
+        config(['koel.services.itunes.enabled' => true]);
+        self::assertTrue($this->service::used());
 
-        config(['koel.itunes.enabled' => false]);
-        self::assertFalse($this->service->used());
+        config(['koel.services.itunes.enabled' => false]);
+        self::assertFalse($this->service::used());
     }
 
     #[Test]
     public function getTrackUrl(): void
     {
-        config(['koel.itunes.enabled' => true]);
-        config(['koel.itunes.affiliate_id' => 'foo']);
+        config(['koel.services.itunes.enabled' => true]);
+        config(['koel.services.itunes.affiliate_id' => 'foo']);
 
         Saloon::fake([
             GetTrackRequest::class => MockResponse::make(body: [
@@ -56,10 +56,7 @@ class ITunesServiceTest extends TestCase
             $this->service->getTrackUrl('Bohemian Rhapsody', $album)
         );
 
-        self::assertSame(
-            'https://itunes.apple.com/bar?at=foo',
-            Cache::get('itunes.track.5f0467bebbb2b26bf9dc7b19f3d85077')
-        );
+        self::assertSame('https://itunes.apple.com/bar?at=foo', Cache::get('8eca87872691f06f3cc6f2fbe6b3c528'));
 
         Saloon::assertSent(static function (GetTrackRequest $request): bool {
             self::assertSame([

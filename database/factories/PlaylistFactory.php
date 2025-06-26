@@ -2,10 +2,9 @@
 
 namespace Database\Factories;
 
-use App\Models\User;
-use App\Values\SmartPlaylistRule;
-use App\Values\SmartPlaylistRuleGroup;
-use App\Values\SmartPlaylistRuleGroupCollection;
+use App\Values\SmartPlaylist\SmartPlaylistRule;
+use App\Values\SmartPlaylist\SmartPlaylistRuleGroup;
+use App\Values\SmartPlaylist\SmartPlaylistRuleGroupCollection;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -15,7 +14,6 @@ class PlaylistFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => User::factory(),
             'name' => $this->faker->name,
             'rules' => null,
         ];

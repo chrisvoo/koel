@@ -2,18 +2,20 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\ScanEvent;
 use App\Models\Setting;
 use App\Models\User;
-use App\Repositories\UserRepository;
-use App\Services\MediaScanner;
-use App\Values\ScanConfiguration;
-use App\Values\ScanResult;
+use App\Services\Scanners\DirectoryScanner;
+use App\Services\Scanners\WatchRecordScanner;
+use App\Values\Scanning\ScanConfiguration;
+use App\Values\Scanning\ScanResult;
 use App\Values\WatchRecord\InotifyWatchRecord;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Symfony\Component\Finder\Finder;
 
 class ScanCommand extends Command
 {
@@ -31,16 +33,10 @@ class ScanCommand extends Command
     private ProgressBar $progressBar;
 
     public function __construct(
-        private readonly MediaScanner $scanner,
-        private readonly UserRepository $userRepository
+        private readonly DirectoryScanner $directoryScanner,
+        private readonly WatchRecordScanner $watchRecordScanner,
     ) {
         parent::__construct();
-
-        $this->scanner->on('paths-gathered', function (array $paths): void {
-            $this->progressBar = new ProgressBar($this->output, count($paths));
-        });
-
-        $this->scanner->on('progress', [$this, 'onScanProgress']);
     }
 
     protected function configure(): void
@@ -84,13 +80,19 @@ class ScanCommand extends Command
      */
     private function scanMediaPath(ScanConfiguration $config): void
     {
+        $this->directoryScanner->on(ScanEvent::PATHS_GATHERED, function (Finder $files): void {
+            $this->progressBar = new ProgressBar($this->output, $files->count());
+        });
+
+        $this->directoryScanner->on(ScanEvent::SCAN_PROGRESS, [$this, 'onScanProgress']);
+
         $this->components->info('Scanning ' . $this->mediaPath);
 
         if ($config->ignores) {
             $this->components->info('Ignoring tag(s): ' . implode(', ', $config->ignores));
         }
 
-        $results = $this->scanner->scan($config);
+        $results = $this->directoryScanner->scan((string) Setting::get('media_path'), $config);
 
         $this->newLine(2);
         $this->components->info('Scanning completed!');
@@ -104,7 +106,7 @@ class ScanCommand extends Command
 
     /**
      * @param string $record The watch record.
-     *                       As of current we only support inotifywait.
+     *                       As of current, we only support inotifywait.
      *                       Some examples:
      *                       - "DELETE /var/www/media/gone.mp3"
      *                       - "CLOSE_WRITE,CLOSE /var/www/media/new.mp3"
@@ -114,7 +116,7 @@ class ScanCommand extends Command
      */
     private function scanSingleRecord(string $record, ScanConfiguration $config): void
     {
-        $this->scanner->scanWatchRecord(new InotifyWatchRecord($record), $config);
+        $this->watchRecordScanner->scan(new InotifyWatchRecord($record), $config);
     }
 
     public function onScanProgress(ScanResult $result): void
@@ -168,7 +170,7 @@ class ScanCommand extends Command
         $specifiedOwner = $this->option('owner');
 
         if ($specifiedOwner) {
-            $user = User::findOr($specifiedOwner, function () use ($specifiedOwner): void {
+            $user = User::query()->findOr($specifiedOwner, function () use ($specifiedOwner): never {
                 $this->components->error("User with ID $specifiedOwner does not exist.");
                 exit(self::INVALID);
             });
@@ -178,7 +180,7 @@ class ScanCommand extends Command
             return $user;
         }
 
-        $user = $this->userRepository->getDefaultAdminUser();
+        $user = User::firstAdmin();
 
         $this->components->warn(
             "No song owner specified. Setting the first admin ($user->name, ID {$user->id}) as owner."

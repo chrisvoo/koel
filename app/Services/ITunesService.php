@@ -15,17 +15,16 @@ class ITunesService
 
     public static function used(): bool
     {
-        return (bool) config('koel.itunes.enabled');
+        return (bool) config('koel.services.itunes.enabled');
     }
 
     public function getTrackUrl(string $trackName, Album $album): ?string
     {
         return rescue(function () use ($trackName, $album): ?string {
             $request = new GetTrackRequest($trackName, $album);
-            $hash = md5(serialize($request->query()));
 
             return Cache::remember(
-                "itunes.track.$hash",
+                cache_key('iTunes track URL', serialize($request->query())),
                 now()->addWeek(),
                 function () use ($request): ?string {
                     $response = $this->connector->send($request)->object();
@@ -37,7 +36,7 @@ class ITunesService
                     $trackUrl = $response->results[0]->trackViewUrl;
                     $connector = parse_url($trackUrl, PHP_URL_QUERY) ? '&' : '?';
 
-                    return $trackUrl . "{$connector}at=" . config('koel.itunes.affiliate_id');
+                    return $trackUrl . "{$connector}at=" . config('koel.services.itunes.affiliate_id');
                 }
             );
         });

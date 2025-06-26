@@ -70,23 +70,24 @@ return [
             'bucket' => env('AWS_BUCKET'),
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
-            'use_path_style_endpoint' => false,
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
             'throw' => true,
         ],
 
         'dropbox' => [
-            'app_key' => env('DROPBOX_APP_KEY'),
-            'app_secret' => env('DROPBOX_APP_SECRET'),
-            'refresh_token' => env('DROPBOX_REFRESH_TOKEN'),
+            'driver' => 'dropbox',
+            'app_key' => env('DROPBOX_APP_KEY', ''),
+            'app_secret' => env('DROPBOX_APP_SECRET', ''),
+            'refresh_token' => env('DROPBOX_REFRESH_TOKEN', ''),
         ],
 
         'sftp' => [
             'driver' => 'sftp',
-            'host' => env('SFTP_HOST'),
+            'host' => env('SFTP_HOST', ''),
             'root' => rtrim(env('SFTP_ROOT') ?? '', '/\\'),
 
-            'username' => env('SFTP_USERNAME'),
-            'password' => env('SFTP_PASSWORD'),
+            'username' => env('SFTP_USERNAME', ''),
+            'password' => env('SFTP_PASSWORD', ''),
 
             'privateKey' => env('SFTP_PRIVATE_KEY'),
             'passphrase' => env('SFTP_PASSPHRASE'),

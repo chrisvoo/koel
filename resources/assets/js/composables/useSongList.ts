@@ -13,13 +13,13 @@ import { useRouter } from '@/composables/useRouter'
 
 import {
   FilteredPlayablesKey,
+  FilterKeywordsKey,
   PlayableListConfigKey,
   PlayableListContextKey,
   PlayableListSortFieldKey,
+  PlayableListSortOrderKey,
   PlayablesKey,
   SelectedPlayablesKey,
-  SongListFilterKeywordsKey,
-  SongListSortOrderKey,
 } from '@/symbols'
 
 import ControlsToggle from '@/components/ui/ScreenControlsToggle.vue'
@@ -144,26 +144,30 @@ export const useSongList = (
   const applyFilter = throttle((keywords: string) => (filterKeywords.value = keywords), 200)
 
   const filteredPlayables = computed(() => {
-    if (!fuzzy || !filterKeywords.value) {
-      return playables.value
+    // This manually accesses playables.value, forcing Vue to properly track playables.value changes and re-compute.
+    const items = playables.value
+    const filtered = fuzzy && filterKeywords.value ? fuzzy.search(filterKeywords.value) : items
+
+    const collectSortFields = () => {
+      if (!sortField.value) {
+        return null
+      }
+
+      const fields = extendedSortFields.value!
+
+      if (fields[0] === 'disc' && fields.length > 1 && new Set(filtered.map(p => p.disc ?? null)).size === 1) {
+        // If we're sorting by disc and there's only one disc, we remove disc from the sort fields.
+        // Otherwise, the tracks will be sorted by disc number first, and since there's only one disc,
+        // the track order will remain the same through alternating between asc and desc.
+        fields.shift()
+      }
+
+      return fields
     }
 
-    const filtered = fuzzy.search(filterKeywords.value)
+    const sortFields = collectSortFields()
 
-    if (!sortField.value) {
-      return filtered
-    }
-
-    const sortFields = extendedSortFields.value!
-
-    if (sortFields[0] === 'disc' && sortFields.length > 1 && new Set(filtered.map(p => p.disc ?? null)).size === 1) {
-      // If we're sorting by disc and there's only one disc, we remove disc from the sort fields.
-      // Otherwise, the tracks will be sorted by disc number first, and since there's only one disc,
-      // the track order will remain the same through alternating between asc and desc.
-      sortFields.shift()
-    }
-
-    return orderBy(filtered, sortFields, sortOrder.value)
+    return sortFields ? orderBy(filtered, sortFields, sortOrder.value) : filtered
   })
 
   const onPressEnter = async (event: KeyboardEvent) => {
@@ -200,15 +204,15 @@ export const useSongList = (
   provideReadonly(PlayableListConfigKey, config)
   provideReadonly(PlayableListContextKey, context)
   provideReadonly(PlayableListSortFieldKey, sortField)
-  provideReadonly(SongListSortOrderKey, sortOrder)
+  provideReadonly(PlayableListSortOrderKey, sortOrder)
 
-  provide(SongListFilterKeywordsKey, filterKeywords)
+  provide(FilterKeywordsKey, filterKeywords)
 
   return {
     SongList,
     ControlsToggle,
     ThumbnailStack,
-    songs: playables,
+    songs: filteredPlayables,
     config,
     context,
     downloadable,
@@ -220,6 +224,7 @@ export const useSongList = (
     songList,
     selectedPlayables,
     showingControls,
+    filterKeywords,
     isPhone,
     onPressEnter,
     playAll,

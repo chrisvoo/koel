@@ -25,15 +25,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\File;
 use Laravel\Scout\Searchable;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 use PhanAn\Poddle\Values\EpisodeMetadata;
 use Throwable;
+use Webmozart\Assert\Assert;
 
 /**
  * @property string $path
  * @property string $title
  * @property ?Album $album
- * @property User $uploader
  * @property ?Artist $artist
  * @property ?Artist $album_artist
  * @property float $length
@@ -43,6 +46,7 @@ use Throwable;
  * @property int $album_id
  * @property int|null $year
  * @property string $genre
+ * @property ?string $mime_type The MIME type of the song file, if available
  * @property string $id
  * @property int $artist_id
  * @property int $mtime
@@ -54,12 +58,15 @@ use Throwable;
  * @property User $owner
  * @property-read SongStorageMetadata $storage_metadata
  * @property SongStorageType $storage
+ * @property ?string $folder_id
+ * @property ?Folder $folder
+ * @property ?string $basename
  *
  * // The following are only available for collaborative playlists
  * @property-read ?string $collaborator_email The email of the user who added the song to the playlist
  * @property-read ?string $collaborator_name The name of the user who added the song to the playlist
  * @property-read ?string $collaborator_avatar The avatar of the user who added the song to the playlist
- * @property-read ?int $collaborator_id The ID of the user who added the song to the playlist
+ * @property-read ?string $collaborator_public_id The public ID of the user who added the song to the playlist
  * @property-read ?string $added_at The date the song was added to the playlist
  * @property-read PlayableType $type
  *
@@ -69,14 +76,13 @@ use Throwable;
  * @property ?string $podcast_id
  * @property ?Podcast $podcast
  */
-class Song extends Model
+class Song extends Model implements AuditableContract
 {
+    use Auditable;
     use HasFactory;
+    use HasUuids;
     use Searchable;
     use SupportsDeleteWhereValueNotIn;
-    use HasUuids;
-
-    public const ID_REGEX = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 
     protected $guarded = [];
     protected $hidden = ['updated_at', 'path', 'mtime'];
@@ -93,7 +99,7 @@ class Song extends Model
         'episode_metadata' => EpisodeMetadataCast::class,
     ];
 
-    protected $with = ['album', 'artist', 'podcast'];
+    protected $with = ['album', 'artist', 'podcast', 'owner'];
 
     public static function query(?PlayableType $type = null, ?User $user = null): SongBuilder
     {
@@ -131,6 +137,11 @@ class Song extends Model
         return $this->belongsTo(Podcast::class);
     }
 
+    public function folder(): BelongsTo
+    {
+        return $this->belongsTo(Folder::class);
+    }
+
     public function playlists(): BelongsToMany
     {
         return $this->belongsToMany(Playlist::class);
@@ -162,8 +173,7 @@ class Song extends Model
 
     public function ownedBy(User $user): bool
     {
-        // Do not use $song->owner->is($user) here, as it may trigger an extra query.
-        return $this->owner_id === $user->id;
+        return $this->owner->id === $user->id;
     }
 
     protected function storageMetadata(): Attribute
@@ -198,6 +208,15 @@ class Song extends Model
         ))->shouldCache();
     }
 
+    protected function basename(): Attribute
+    {
+        return Attribute::get(function () {
+            Assert::eq($this->type, PlayableType::SONG);
+
+            return File::basename($this->path);
+        });
+    }
+
     public static function getPathFromS3BucketAndKey(string $bucket, string $key): string
     {
         return "s3://$bucket/$key";
@@ -226,6 +245,15 @@ class Song extends Model
     public function isEpisode(): bool
     {
         return $this->type === PlayableType::PODCAST_EPISODE;
+    }
+
+    public function isStoredOnCloud(): bool
+    {
+        return in_array($this->storage, [
+            SongStorageType::S3,
+            SongStorageType::S3_LAMBDA,
+            SongStorageType::DROPBOX,
+        ], true);
     }
 
     public function __toString(): string
