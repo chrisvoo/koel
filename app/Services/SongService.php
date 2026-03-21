@@ -132,6 +132,8 @@ class SongService
         $data->disc ??= $song->disc;
         $data->genre ??= $song->genre;
         $data->year ??= $song->year;
+        $data->needToBeTrimmed ??= $song->need_to_be_trimmed;
+        $data->needMetatagUpdate ??= $song->need_metatag_update;
 
         $albumArtist = Artist::getOrCreate($song->album_artist->user, $data->albumArtistName);
         $artist = Artist::getOrCreate($song->artist->user, $data->artistName);
@@ -146,6 +148,8 @@ class SongService
         $song->track = $data->track;
         $song->disc = $data->disc;
         $song->year = $data->year;
+        $song->need_to_be_trimmed = $data->needToBeTrimmed;
+        $song->need_metatag_update = $data->needMetatagUpdate;
 
         $song->push();
 
