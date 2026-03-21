@@ -25,6 +25,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(static function (Middleware $middleware): void {
+        $middleware->redirectGuestsTo('/');
+
         $middleware->api(append: [
             RestrictPlusFeatures::class,
             HandleDemoMode::class,
@@ -43,13 +45,15 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(static function (Exceptions $exceptions): void {
-        $exceptions->render(
-            static function (AuthenticationException $e, Request $request): JsonResponse|RedirectResponse {
-                if ($request->expectsJson()) {
-                    return response()->json(['error' => 'Unauthenticated.'], 401);
-                }
-
-                return redirect()->guest('/');
+        $exceptions->render(static function (
+            AuthenticationException $e,
+            Request $request,
+        ): JsonResponse|RedirectResponse {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Unauthenticated.'], 401);
             }
-        );
-    })->create();
+
+            return redirect()->guest('/');
+        });
+    })
+    ->create();
