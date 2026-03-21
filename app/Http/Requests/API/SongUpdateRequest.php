@@ -4,6 +4,7 @@ namespace App\Http\Requests\API;
 
 use App\Models\Song;
 use App\Values\Song\SongUpdateData;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 
 /**
@@ -17,12 +18,16 @@ class SongUpdateRequest extends Request
     {
         return [
             'data' => 'required|array',
+            'data.need_to_be_trimmed' => ['sometimes', 'boolean'],
+            'data.need_metatag_update' => ['sometimes', 'boolean'],
             'songs' => ['required', 'array', Rule::exists(Song::class, 'id')->whereNull('podcast_id')],
         ];
     }
 
     public function toDto(): SongUpdateData
     {
+        $payload = $this->input('data', []);
+
         return SongUpdateData::make(
             title: $this->input('data.title'),
             artistName: $this->input('data.artist_name'),
@@ -33,6 +38,10 @@ class SongUpdateRequest extends Request
             genre: $this->input('data.genre'),
             year: (int) $this->input('data.year'),
             lyrics: $this->input('data.lyrics'),
+            needToBeTrimmed: Arr::has($payload, 'need_to_be_trimmed') ? (bool) $payload['need_to_be_trimmed'] : null,
+            needMetatagUpdate: Arr::has($payload, 'need_metatag_update')
+                ? (bool) $payload['need_metatag_update']
+                : null,
         );
     }
 }

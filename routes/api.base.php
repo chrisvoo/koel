@@ -66,6 +66,7 @@ use App\Http\Controllers\API\Settings\UpdateBrandingController;
 use App\Http\Controllers\API\Settings\UpdateMediaPathController;
 use App\Http\Controllers\API\SongController;
 use App\Http\Controllers\API\SongSearchController;
+use App\Http\Controllers\API\SystemStatsController;
 use App\Http\Controllers\API\ThemeController;
 use App\Http\Controllers\API\ToggleLikeSongController;
 use App\Http\Controllers\API\UnlikeMultipleSongsController;
@@ -118,6 +119,7 @@ Route::prefix('api')
 
             Route::get('overview', FetchOverviewController::class);
             Route::get('data', FetchInitialDataController::class);
+            Route::get('system-stats', SystemStatsController::class);
 
             Route::get('queue/fetch', FetchSongsForQueueController::class);
             Route::put('queue/playback-status', UpdatePlaybackStatusController::class);

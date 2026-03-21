@@ -61,6 +61,38 @@ class SongTest extends TestCase
     }
 
     #[Test]
+    public function singleUpdateMaintenanceFlags(): void
+    {
+        $song = Song::factory()->createOne([
+            'need_to_be_trimmed' => false,
+            'need_metatag_update' => false,
+        ]);
+
+        $this->putAs(
+            '/api/songs',
+            [
+                'songs' => [$song->id],
+                'data' => [
+                    'title' => $song->title,
+                    'artist_name' => $song->artist_name,
+                    'album_name' => $song->album_name,
+                    'lyrics' => $song->lyrics,
+                    'track' => $song->track,
+                    'disc' => $song->disc,
+                    'need_to_be_trimmed' => true,
+                    'need_metatag_update' => true,
+                ],
+            ],
+            create_admin(),
+        )->assertOk();
+
+        $song->refresh();
+
+        self::assertTrue($song->need_to_be_trimmed);
+        self::assertTrue($song->need_metatag_update);
+    }
+
+    #[Test]
     public function singleUpdateAllInfoNoCompilation(): void
     {
         $song = Song::factory()->createOne();

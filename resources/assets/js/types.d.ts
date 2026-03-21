@@ -182,6 +182,8 @@ interface Song extends BasePlayable {
   lyrics: string
   is_public: boolean
   is_external: boolean
+  need_to_be_trimmed?: boolean
+  need_metatag_update?: boolean
   basename?: string
   deleted?: boolean
   collaboration?: {
@@ -619,7 +621,7 @@ interface PaginatorResource<T> {
   }
 }
 
-type EditSongFormTabName = 'details' | 'lyrics' | 'visibility'
+type EditSongFormTabName = 'details' | 'lyrics' | 'visibility' | 'flags'
 
 interface ToastMessage {
   id: string

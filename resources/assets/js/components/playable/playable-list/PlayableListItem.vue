@@ -47,8 +47,18 @@
         <span v-if="shouldShowColumn('year')" class="year">{{ playable.year || '—' }}</span>
       </template>
       <span v-if="shouldShowColumn('duration')" class="time font-mono">{{ fmtLength }}</span>
-      <span class="extra">
-        <FavoriteButton :favorite="playable.favorite" @toggle="toggleFavorite" />
+      <span class="extra flex items-center justify-end gap-2">
+        <span
+          class="play-count font-mono text-sm tabular-nums text-k-fg-50 shrink-0"
+          :title="`${playable.play_count} plays`"
+        >
+          {{ playable.play_count }}
+        </span>
+        <FavoriteButton
+          class="favorite-toggle hidden md:inline-flex"
+          :favorite="playable.favorite"
+          @toggle="toggleFavorite"
+        />
       </span>
     </article>
   </div>

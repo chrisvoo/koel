@@ -336,6 +336,19 @@ class SongRepository extends Repository implements ScoutableRepository
         return Song::query(type: PlayableType::SONG, user: $scopedUser ?? $this->auth->user())->accessible()->count();
     }
 
+    /**
+     * @return array{total_songs: int, total_size: int}
+     */
+    public function getAccessibleLibraryStats(?User $scopedUser = null): array
+    {
+        $user = $scopedUser ?? $this->auth->user();
+
+        return [
+            'total_songs' => Song::query(type: PlayableType::SONG, user: $user)->accessible()->count(),
+            'total_size' => (int) Song::query(type: PlayableType::SONG, user: $user)->accessible()->sum('file_size'),
+        ];
+    }
+
     public function getTotalSongLength(?User $scopedUser = null): float
     {
         return Song::query(type: PlayableType::SONG, user: $scopedUser ?? $this->auth->user())->accessible()->sum(

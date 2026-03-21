@@ -8,6 +8,9 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use Mhor\MediaInfo\Attribute\Duration;
+use Mhor\MediaInfo\Attribute\Size;
+use Mhor\MediaInfo\Type\General;
 
 class ScanInformation implements Arrayable
 {
@@ -132,6 +135,118 @@ class ScanInformation implements Arrayable
         }
 
         return $value ?? $default;
+    }
+
+    public static function fromMediaInfo(General $general, string $path): self
+    {
+        /** @var array<string, mixed> $mediainfo */
+        $mediainfo = $general->get();
+
+        $fileSize = null;
+        $sizeAttr = $mediainfo['file_size'] ?? null;
+
+        if ($sizeAttr instanceof Size) {
+            $fileSize = $sizeAttr->getBit();
+        }
+
+        if (!$fileSize && File::exists($path)) {
+            $fileSize = File::size($path);
+        }
+
+        $durationRaw = $mediainfo['duration'] ?? 0;
+        $length = 0.0;
+
+        if ($durationRaw instanceof Duration) {
+            $length = $durationRaw->getMilliseconds() / 1000;
+        } elseif (is_numeric($durationRaw)) {
+            $length = (float) $durationRaw;
+        }
+
+        $releaseDate = $mediainfo['original_released_date'] ?? $mediainfo['recorded_date'] ?? null;
+        $year = self::yearFromMediaInfoDate($releaseDate);
+
+        $performer = $mediainfo['performer'] ?? $mediainfo['artists'] ?? $mediainfo['artist'] ?? '';
+        $artistName = html_entity_decode(self::stringifyMediaInfoValue($performer) ?: Artist::UNKNOWN_NAME);
+
+        $albumPerformer = $mediainfo['album_performer'] ?? '';
+        $albumArtistName = html_entity_decode(self::stringifyMediaInfoValue($albumPerformer) ?: Artist::UNKNOWN_NAME);
+
+        $titleRaw = $mediainfo['title'] ?? pathinfo($path, PATHINFO_FILENAME);
+        $genreRaw = $mediainfo['genre'] ?? '';
+
+        $track = (int) ($mediainfo['track_name_position'] ?? 0);
+        $disc = (int) ($mediainfo['part_position'] ?? 0);
+
+        if ($disc === 0) {
+            $disc = 1;
+        }
+
+        $mimeType = Str::lower(self::stringifyMediaInfoValue($mediainfo['internet_media_type'] ?? '')) ?: 'audio/mpeg';
+
+        return new self(
+            title: html_entity_decode(self::stringifyMediaInfoValue($titleRaw) ?: pathinfo($path, PATHINFO_FILENAME)),
+            albumName: html_entity_decode(
+                self::stringifyMediaInfoValue($mediainfo['album'] ?? '') ?: Album::UNKNOWN_NAME,
+            ),
+            artistName: $artistName,
+            albumArtistName: $albumArtistName,
+            track: $track,
+            disc: $disc,
+            year: $year,
+            genre: self::stringifyMediaInfoValue($genreRaw),
+            lyrics: null,
+            length: $length,
+            cover: [],
+            path: $path,
+            hash: File::hash($path),
+            mTime: get_mtime($path),
+            mimeType: $mimeType,
+            fileSize: $fileSize,
+        );
+    }
+
+    private static function stringifyMediaInfoValue(mixed $value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        if (is_string($value)) {
+            return $value;
+        }
+
+        if (is_object($value) && method_exists($value, '__toString')) {
+            return (string) $value;
+        }
+
+        if (is_scalar($value)) {
+            return (string) $value;
+        }
+
+        return '';
+    }
+
+    private static function yearFromMediaInfoDate(mixed $date): ?int
+    {
+        if ($date === null) {
+            return null;
+        }
+
+        $str = self::stringifyMediaInfoValue($date);
+
+        if ($str === '') {
+            return null;
+        }
+
+        if (is_numeric($str)) {
+            return (int) $str;
+        }
+
+        if (preg_match('/\d{4}-\d{2}-\d{2}/', $str)) {
+            return (int) substr($str, 0, 4);
+        }
+
+        return null;
     }
 
     /** @inheritdoc */

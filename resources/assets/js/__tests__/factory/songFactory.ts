@@ -26,6 +26,8 @@ const generate = (partOfCompilation = false): Song => {
     play_count: faker.number.int(),
     favorite: faker.datatype.boolean(),
     is_public: faker.datatype.boolean(),
+    need_to_be_trimmed: false,
+    need_metatag_update: false,
     created_at: faker.date.past().toISOString(),
     playback_state: 'Stopped',
     is_external: false,

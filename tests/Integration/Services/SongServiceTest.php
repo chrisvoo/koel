@@ -39,6 +39,24 @@ class SongServiceTest extends TestCase
     }
 
     #[Test]
+    public function updateSongMaintenanceFlags(): void
+    {
+        $song = Song::factory()->createOne([
+            'need_to_be_trimmed' => false,
+            'need_metatag_update' => false,
+        ]);
+
+        $data = SongUpdateData::make(needToBeTrimmed: true, needMetatagUpdate: true);
+
+        $result = $this->service->updateSongs([$song->id], $data);
+        /** @var Song $updated */
+        $updated = $result->updatedSongs->first();
+
+        self::assertTrue($updated->need_to_be_trimmed);
+        self::assertTrue($updated->need_metatag_update);
+    }
+
+    #[Test]
     public function updateSingleSong(): void
     {
         $song = Song::factory()->createOne();

@@ -1,7 +1,9 @@
 <template>
   <ScreenBase id="homeWrapper">
     <template #header>
-      <ScreenHeader layout="collapsed">{{ greeting }}</ScreenHeader>
+      <ScreenHeader layout="collapsed">
+        <span class="text-k-fg">{{ librarySummary }}</span>
+      </ScreenHeader>
     </template>
 
     <ScreenEmptyState v-if="libraryEmpty">
@@ -26,12 +28,12 @@
 
 <script lang="ts" setup>
 import { faVolumeOff } from '@fortawesome/free-solid-svg-icons'
-import { sample } from 'lodash'
 import { computed, ref } from 'vue'
 import { eventBus } from '@/utils/eventBus'
 import { commonStore } from '@/stores/commonStore'
 import { overviewStore } from '@/stores/overviewStore'
-import { userStore } from '@/stores/userStore'
+import { systemStore } from '@/stores/systemStore'
+import { formatBytes } from '@/utils/formatters'
 import { useRouter } from '@/composables/useRouter'
 import { usePolicies } from '@/composables/usePolicies'
 import { useErrorHandler } from '@/composables/useErrorHandler'
@@ -49,34 +51,40 @@ import ScreenBase from '@/components/screens/ScreenBase.vue'
 
 const { currentUserCan } = usePolicies()
 
-const greetings = [
-  'Oh hai!',
-  'Hey, %s!',
-  'Howdy, %s!',
-  'Yo!',
-  'How’s it going, %s?',
-  'Sup, %s?',
-  'How’s life, %s?',
-  'How’s your day, %s?',
-  'How have you been, %s?',
-]
+const librarySummary = computed(() => {
+  const { totalSongs, totalBytes } = systemStore.state
 
-const greeting = computed(() => (userStore.current ? sample(greetings)!.replace('%s', userStore.current.name) : ''))
+  if (!totalSongs) {
+    return ''
+  }
+
+  return `${totalSongs} songs (${formatBytes(totalBytes)})`
+})
 const libraryEmpty = computed(() => commonStore.state.song_length === 0)
 
 const loading = ref(false)
 let initialized = false
 
 eventBus
-  .on('SONGS_DELETED', () => overviewStore.fetch())
-  .on('SONGS_UPDATED', () => overviewStore.fetch())
-  .on('SONG_UPLOADED', () => overviewStore.fetch())
+  .on('SONGS_DELETED', () => {
+    overviewStore.fetch()
+    void systemStore.refresh()
+  })
+  .on('SONGS_UPDATED', () => {
+    overviewStore.fetch()
+    void systemStore.refresh()
+  })
+  .on('SONG_UPLOADED', () => {
+    overviewStore.fetch()
+    void systemStore.refresh()
+  })
 
 useRouter().onScreenActivated('Home', async () => {
   if (!initialized) {
     loading.value = true
     try {
       await overviewStore.fetch()
+      await systemStore.init()
       initialized = true
     } catch (error: unknown) {
       useErrorHandler('dialog').handleHttpError(error)

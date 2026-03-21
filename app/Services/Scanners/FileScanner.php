@@ -14,6 +14,7 @@ class FileScanner
     public function __construct(
         private readonly getID3 $getID3,
         private readonly SimpleLrcReader $lrcReader,
+        private readonly MediaInfoScanner $mediaInfoScanner,
     ) {}
 
     public function scan(string|SplFileInfo $path): ScanInformation
@@ -29,7 +30,17 @@ class FileScanner
             $syncError = Arr::get($raw, 'error.0') ?: 'Empty file';
         }
 
-        throw_if($syncError, new RuntimeException($syncError));
+        if ($syncError) {
+            $fallback = $this->mediaInfoScanner->tryScan($filePath);
+
+            if ($fallback !== null) {
+                return tap($fallback, function (ScanInformation $info) use ($filePath): void {
+                    $info->lyrics = $info->lyrics ?: $this->lrcReader->tryReadForMediaFile($filePath);
+                });
+            }
+
+            throw new RuntimeException($syncError);
+        }
 
         $this->getID3->CopyTagsToComments($raw);
 

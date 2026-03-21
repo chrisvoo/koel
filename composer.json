@@ -55,7 +55,8 @@
     "spatie/laravel-permission": "^6.21",
     "enshrined/svg-sanitize": "^0.22.0",
     "phanan/poddle": "^1.2",
-    "laravel/ai": "^0.2.6"
+    "laravel/ai": "^0.2.6",
+    "mhor/php-mediainfo": "^5.8"
   },
   "require-dev": {
     "roave/security-advisories": "dev-latest",

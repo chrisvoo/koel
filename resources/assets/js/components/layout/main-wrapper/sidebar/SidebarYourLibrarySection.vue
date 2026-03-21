@@ -5,6 +5,12 @@
     </template>
 
     <ul class="menu">
+      <SidebarItem :href="url('queue')" :active="isCurrentScreen('Queue')">
+        <template #icon>
+          <Icon :icon="faList" fixed-width />
+        </template>
+        Current Queue
+      </SidebarItem>
       <SidebarItem :href="url('songs.index')" :active="isCurrentScreen('Songs')">
         <template #icon>
           <Icon :icon="faMusic" fixed-width />
@@ -60,7 +66,7 @@
 </template>
 
 <script lang="ts" setup>
-import { faCloudArrowDown, faCompactDisc, faMusic, faPodcast } from '@fortawesome/free-solid-svg-icons'
+import { faCloudArrowDown, faCompactDisc, faList, faMusic, faPodcast } from '@fortawesome/free-solid-svg-icons'
 import { GuitarIcon, MicVocalIcon, RadioIcon } from 'lucide-vue-next'
 import { unescape } from 'lodash'
 import { computed, ref, toRef } from 'vue'

@@ -57,6 +57,8 @@ use PhanAn\Poddle\Values\EpisodeMetadata;
  * @property int $track
  * @property ?int $year
  * @property ?int $file_size The size in bytes of the song file, if available.
+ * @property bool $need_to_be_trimmed
+ * @property bool $need_metatag_update
  * @property string $id
  * @property string $lyrics
  * @property string $path
@@ -112,6 +114,8 @@ class Song extends Model implements AuditableContract, Favoriteable, Embeddable
             'storage' => SongStorageCast::class,
             'episode_metadata' => EpisodeMetadataCast::class,
             'favorite' => 'bool',
+            'need_to_be_trimmed' => 'bool',
+            'need_metatag_update' => 'bool',
         ];
     }
 

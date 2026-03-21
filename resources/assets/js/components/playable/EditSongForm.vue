@@ -32,6 +32,15 @@
         >
           Lyrics
         </TabButton>
+        <TabButton
+          id="editSongTabFlags"
+          :selected="currentTab === 'flags'"
+          aria-controls="editSongPanelFlags"
+          data-testid="edit-song-flags-tab"
+          @click="currentTab = 'flags'"
+        >
+          Flags
+        </TabButton>
       </TabList>
 
       <TabPanelContainer>
@@ -140,6 +149,23 @@
             <TextArea v-model="data.lyrics" v-koel-focus data-testid="lyrics-input" name="lyrics" title="Lyrics" />
           </FormRow>
         </TabPanel>
+
+        <TabPanel
+          v-if="editingOnlyOneSong"
+          v-show="currentTab === 'flags'"
+          id="editSongPanelFlags"
+          aria-labelledby="editSongTabFlags"
+          class="space-y-5"
+        >
+          <FormRow>
+            <template #label>Need to be trimmed</template>
+            <CheckBox v-model="data.need_to_be_trimmed" data-testid="need-trimmed-input" name="need_to_be_trimmed" />
+          </FormRow>
+          <FormRow>
+            <template #label>Need metatags update</template>
+            <CheckBox v-model="data.need_metatag_update" data-testid="need-metatags-input" name="need_metatag_update" />
+          </FormRow>
+        </TabPanel>
       </TabPanelContainer>
     </Tabs>
 
@@ -163,6 +189,7 @@ import { useForm } from '@/composables/useForm'
 import { useBranding } from '@/composables/useBranding'
 
 import Btn from '@/components/ui/form/Btn.vue'
+import CheckBox from '@/components/ui/form/CheckBox.vue'
 import TextInput from '@/components/ui/form/TextInput.vue'
 import TextArea from '@/components/ui/form/TextArea.vue'
 import FormRow from '@/components/ui/form/FormRow.vue'
@@ -209,6 +236,8 @@ const initialValues: SongUpdateData = {
     ? {
         title: allSongsShareSameValue('title') ? songs[0].title : '',
         lyrics: editingOnlyOneSong ? songs[0].lyrics : '',
+        need_to_be_trimmed: songs[0].need_to_be_trimmed ?? false,
+        need_metatag_update: songs[0].need_metatag_update ?? false,
       }
     : {}),
 }

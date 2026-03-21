@@ -27,6 +27,8 @@ export interface SongUpdateData {
   lyrics?: string
   year?: number | null
   genre?: string
+  need_to_be_trimmed?: boolean
+  need_metatag_update?: boolean
   visibility?: 'public' | 'private' | 'unchanged'
 }
 

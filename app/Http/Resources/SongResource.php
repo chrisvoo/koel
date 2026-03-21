@@ -33,6 +33,8 @@ class SongResource extends JsonResource
         'disc',
         'is_public',
         'created_at',
+        'need_to_be_trimmed',
+        'need_metatag_update',
     ];
 
     public const array PAGINATION_JSON_STRUCTURE = [
@@ -104,6 +106,8 @@ class SongResource extends JsonResource
             'year' => $this->unless($embedding, $this->song->year),
             'is_public' => $this->unless($embedding, $this->song->is_public),
             'created_at' => $this->unless($embedding, $this->song->created_at),
+            'need_to_be_trimmed' => $this->unless($embedding, $this->song->need_to_be_trimmed),
+            'need_metatag_update' => $this->unless($embedding, $this->song->need_metatag_update),
             'embed_stream_url' => $this->when($embedding, fn () => URL::temporarySignedRoute(
                 'embeds.stream',
                 now()->addDay(),

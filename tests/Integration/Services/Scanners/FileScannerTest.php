@@ -5,6 +5,9 @@ namespace Tests\Integration\Services\Scanners;
 use App\Helpers\Ulid;
 use App\Models\Setting;
 use App\Services\Scanners\FileScanner;
+use App\Services\Scanners\MediaInfoScanner;
+use App\Services\SimpleLrcReader;
+use App\Values\Scanning\ScanInformation;
 use getID3;
 use Illuminate\Support\Facades\File;
 use Mockery;
@@ -158,5 +161,40 @@ class FileScannerTest extends TestCase
         self::assertSame('佐倉綾音 Unknown', $info->artistName);
         self::assertSame('小岩井こ Random', $info->albumName);
         self::assertSame('水谷広実', $info->title);
+    }
+
+    #[Test]
+    public function fallsBackToMediaInfoWhenGetId3Fails(): void
+    {
+        $path = test_path('songs/full.mp3');
+
+        $this->swap(getID3::class, Mockery::mock(getID3::class, [
+            'analyze' => [
+                'filenamepath' => $path,
+                'error' => ['unreadable'],
+            ],
+        ]));
+
+        $mediaInfoScanner = Mockery::mock(MediaInfoScanner::class);
+        $mediaInfoScanner
+            ->shouldReceive('tryScan')
+            ->once()
+            ->with($path)
+            ->andReturn(ScanInformation::make(
+                title: 'From MediaInfo',
+                path: $path,
+                length: 42.0,
+                mTime: filemtime($path),
+            ));
+
+        $this->app->instance(MediaInfoScanner::class, $mediaInfoScanner);
+
+        /** @var FileScanner $fileScanner */
+        $fileScanner = new FileScanner(app(getID3::class), app(SimpleLrcReader::class), $mediaInfoScanner);
+
+        $info = $fileScanner->scan($path);
+
+        self::assertSame('From MediaInfo', $info->title);
+        self::assertEqualsWithDelta(42.0, $info->length, 0.001);
     }
 }
