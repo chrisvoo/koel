@@ -164,6 +164,35 @@ class FileScannerTest extends TestCase
     }
 
     #[Test]
+    public function doesNotFallBackToMediaInfoWhenGetId3HasPlaytimeButAlsoErrors(): void
+    {
+        $path = test_path('songs/full.mp3');
+
+        $analyzed = [
+            'filenamepath' => $path,
+            'playtime_seconds' => 10.0,
+            'error' => ['some non-fatal getID3 warning'],
+            'tags' => ['id3v2' => ['title' => ['My Song']]],
+            'encoding' => 'UTF-8',
+        ];
+
+        $mediaInfoScanner = Mockery::mock(MediaInfoScanner::class);
+        $mediaInfoScanner->shouldNotReceive('tryScan');
+
+        $this->swap(getID3::class, Mockery::mock(getID3::class, [
+            'analyze' => $analyzed,
+            'CopyTagsToComments' => $analyzed,
+        ]));
+
+        /** @var FileScanner $fileScanner */
+        $fileScanner = new FileScanner(app(getID3::class), app(SimpleLrcReader::class), $mediaInfoScanner);
+        $info = $fileScanner->scan($path);
+
+        self::assertSame('My Song', $info->title);
+        self::assertEqualsWithDelta(10.0, $info->length, 0.001);
+    }
+
+    #[Test]
     public function fallsBackToMediaInfoWhenGetId3Fails(): void
     {
         $path = test_path('songs/full.mp3');

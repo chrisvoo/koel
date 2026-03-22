@@ -25,29 +25,25 @@ class FileScanner
         $raw = $this->getID3->analyze($filePath);
 
         if (Arr::get($raw, 'playtime_seconds')) {
-            $syncError = Arr::get($raw, 'error.0') ?: null;
-        } else {
-            $syncError = Arr::get($raw, 'error.0') ?: 'Empty file';
+            $this->getID3->CopyTagsToComments($raw);
+
+            return tap(ScanInformation::fromGetId3Info($raw, $filePath), function (ScanInformation $info) use (
+                $filePath,
+            ): void {
+                $info->lyrics = $info->lyrics ?: $this->lrcReader->tryReadForMediaFile($filePath);
+            });
         }
 
-        if ($syncError) {
-            $fallback = $this->mediaInfoScanner->tryScan($filePath);
+        // getID3 could not determine the duration — try MediaInfo as a fallback.
+        $syncError = Arr::get($raw, 'error.0') ?: 'Empty file';
+        $fallback = $this->mediaInfoScanner->tryScan($filePath);
 
-            if ($fallback !== null) {
-                return tap($fallback, function (ScanInformation $info) use ($filePath): void {
-                    $info->lyrics = $info->lyrics ?: $this->lrcReader->tryReadForMediaFile($filePath);
-                });
-            }
-
-            throw new RuntimeException($syncError);
+        if ($fallback !== null) {
+            return tap($fallback, function (ScanInformation $info) use ($filePath): void {
+                $info->lyrics = $info->lyrics ?: $this->lrcReader->tryReadForMediaFile($filePath);
+            });
         }
 
-        $this->getID3->CopyTagsToComments($raw);
-
-        return tap(ScanInformation::fromGetId3Info($raw, $filePath), function (ScanInformation $info) use (
-            $filePath,
-        ): void {
-            $info->lyrics = $info->lyrics ?: $this->lrcReader->tryReadForMediaFile($filePath);
-        });
+        throw new RuntimeException($syncError);
     }
 }
