@@ -164,6 +164,21 @@ class PodcastServiceTest extends TestCase
     }
 
     #[Test]
+    public function podcastObsoleteIfNoLastModifiedHeader(): void
+    {
+        Http::fake([
+            'https://example.com/feed.xml' => Http::response(),
+        ]);
+
+        $podcast = Podcast::factory()->createOne([
+            'url' => 'https://example.com/feed.xml',
+            'last_synced_at' => now()->subDays(1),
+        ]);
+
+        self::assertTrue($this->service->isPodcastObsolete($podcast));
+    }
+
+    #[Test]
     public function updateEpisodeProgress(): void
     {
         $episode = Song::factory()->asEpisode()->createOne();
@@ -230,5 +245,31 @@ class PodcastServiceTest extends TestCase
         $podcast = Podcast::factory()->createOne();
         $this->service->deletePodcast($podcast);
         self::assertModelMissing($podcast);
+    }
+
+    #[Test]
+    public function refreshPodcastUsesLastBuildDateWhenPubDateIsStale(): void
+    {
+        // The fixture has pubDate=2021 (stale) and lastBuildDate=2024-05-02 (the real update date).
+        // Set last_synced_at between the two: after pubDate but before lastBuildDate.
+        // With the old code, pubDate (2021) < last_synced_at (2023) would cause an early return.
+        // The fix picks the most recent date (lastBuildDate=2024) which is after last_synced_at.
+        $mock = new MockHandler([
+            new Response(200, [], file_get_contents(test_path('fixtures/podcast-stale-pubdate.xml'))),
+        ]);
+
+        $this->instance(ClientInterface::class, new Client(['handler' => HandlerStack::create($mock)]));
+        $service = app(PodcastService::class);
+
+        $podcast = Podcast::factory()->createOne([
+            'url' => 'https://example.com/feed.xml',
+            'title' => 'Old Title',
+            'last_synced_at' => '2023-01-01 00:00:00',
+        ]);
+
+        $service->refreshPodcast($podcast);
+
+        self::assertSame('Podcast Feed Parser', $podcast->fresh()->title);
+        self::assertCount(8, $podcast->episodes);
     }
 }

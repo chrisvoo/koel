@@ -50,6 +50,14 @@ class SongRepository extends Repository implements ScoutableRepository
         return Song::query()->where('path', $path)->first();
     }
 
+    public function findByHash(string $hash, User $owner): ?Song
+    {
+        return Song::query()
+            ->where('hash', $hash)
+            ->where('owner_id', $owner->id)
+            ->first();
+    }
+
     /** @return Collection|array<array-key, Song> */
     public function getAllStoredOnCloud(): Collection
     {
@@ -186,12 +194,9 @@ class SongRepository extends Repository implements ScoutableRepository
 
         return Song::query(type: PlayableType::SONG, user: $scopedUser ?? $this->auth->user())
             ->withUserContext()
+            ->leftJoin('albums as albums_by_artist', 'songs.album_id', 'albums_by_artist.id')
             ->where(static function (SongBuilder $query) use ($artist): void {
-                $query->whereBelongsTo($artist)->orWhereHas('album', static function (Builder $albumQuery) use (
-                    $artist,
-                ): void {
-                    $albumQuery->whereBelongsTo($artist);
-                });
+                $query->where('songs.artist_id', $artist->id)->orWhere('albums_by_artist.artist_id', $artist->id);
             })
             ->orderBy('songs.album_name')
             ->orderBy('songs.disc')
@@ -245,7 +250,7 @@ class SongRepository extends Repository implements ScoutableRepository
     {
         throw_unless($playlist->is_smart, NonSmartPlaylistException::create($playlist));
 
-        $query = Song::query(type: PlayableType::SONG, user: $scopedUser)->withUserContext();
+        $query = Song::query(type: PlayableType::SONG, user: $scopedUser ?? $this->auth->user())->withUserContext();
 
         $playlist->rule_groups->each(static function (RuleGroup $group, int $index) use ($query): void {
             $whereClosure = static function (SongBuilder $subQuery) use ($group): void {
@@ -452,15 +457,33 @@ class SongRepository extends Repository implements ScoutableRepository
     /** @return Collection<Song>|array<array-key, Song> */
     public function getSimilar(Song $song, int $limit = 50, ?User $user = null): Collection
     {
-        $genreIds = $song->genres->pluck('id')->all();
+        /** @var Collection<int, Song> $songs */
+        $songs = new Collection([$song]);
+
+        return $this->getSimilarToMany($songs, $limit, $user);
+    }
+
+    /** @param Collection<int, Song> $songs */
+    public function getSimilarToMany(Collection $songs, int $limit = 50, ?User $user = null): Collection
+    {
+        if ($songs->isEmpty()) {
+            return new Collection();
+        }
+
+        $songIds = $songs->pluck('id')->all();
+        $artistIds = $songs->pluck('artist_id')->unique()->all();
+
+        /** @var Collection<int, Song> $loadedSongs */
+        $loadedSongs = $songs->load('genres');
+        $genreIds = $loadedSongs->flatMap(static fn (Song $song) => $song->genres->pluck('id'))->unique()->all();
 
         return Song::query(type: PlayableType::SONG, user: $user ?? $this->auth->user())
             ->withUserContext()
-            ->where('songs.id', '!=', $song->id)
-            ->where(static function (SongBuilder $query) use ($song, $genreIds): void {
-                $query->where(
+            ->whereNotIn('songs.id', $songIds)
+            ->where(static function (SongBuilder $query) use ($artistIds, $genreIds): void {
+                $query->whereIn(
                     'songs.artist_id',
-                    $song->artist_id,
+                    $artistIds,
                 )->when($genreIds, static fn (SongBuilder $q) => $q->orWhereHas('genres', static fn (Builder $gq) => $gq->whereIn(
                     'genres.id',
                     $genreIds,
@@ -476,8 +499,8 @@ class SongRepository extends Repository implements ScoutableRepository
     {
         return $this->getMany(
             ids: Song::search($keywords)
-                ->get()
                 ->take($limit)
+                ->get()
                 ->modelKeys(),
             preserveOrder: true,
             scopedUser: $user,

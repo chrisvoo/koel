@@ -71,7 +71,7 @@
           <GridListView v-if="otherAlbums.length" v-koel-overflow-fade view-mode="list">
             <AlbumCard v-for="otherAlbum in otherAlbums" :key="otherAlbum.id" :album="otherAlbum" layout="compact" />
           </GridListView>
-          <p v-else>No other albums by {{ album.artist_name }} found in the library.</p>
+          <p v-else class="p-6 text-k-fg-50">No other albums by {{ album.artist_name }} found in the library.</p>
         </template>
         <GridListView v-else view-mode="list">
           <AlbumCardSkeleton v-for="i in 6" :key="i" layout="compact" />
@@ -79,7 +79,7 @@
       </div>
 
       <div v-if="useEncyclopedia && album" v-show="activeTab === 'information'" class="info-pane">
-        <AlbumInfo :album="album" mode="full" />
+        <AlbumInfo :album mode="full" />
       </div>
     </ScreenTabs>
   </ScreenBase>

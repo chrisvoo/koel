@@ -1,5 +1,6 @@
 import { without } from 'lodash'
 import { reactive } from 'vue'
+import { http } from '@/services/http'
 import { postWithProgress } from '@/services/http'
 import { albumStore } from '@/stores/albumStore'
 import { commonStore } from '@/stores/commonStore'
@@ -23,10 +24,22 @@ export interface UploadFile {
   message?: string
 }
 
+export interface DuplicateUpload {
+  type: 'duplicate-uploads'
+  id: string
+  song_title: string | null
+  artist_name: string | null
+  filename: string
+  created_at: string
+}
+
 export const uploadService = {
   state: reactive({
     files: [] as UploadFile[],
+    duplicatedSongs: [] as DuplicateUpload[],
   }),
+
+  abortHandles: new Map<string, () => void>(),
 
   simultaneousUploads: 5,
 
@@ -36,8 +49,14 @@ export const uploadService = {
   },
 
   remove(file: UploadFile) {
+    this.abortHandles.delete(file.id)
     this.state.files = without(this.state.files, file)
     this.proceed()
+  },
+
+  abort(file: UploadFile) {
+    this.abortHandles.get(file.id)?.()
+    this.abortHandles.delete(file.id)
   },
 
   proceed() {
@@ -75,10 +94,14 @@ export const uploadService = {
     file.progress = 0
     file.status = 'Uploading'
 
+    const { promise, abort } = postWithProgress<UploadResult | null>('upload', formData, (e: ProgressEvent) => {
+      file.progress = (e.loaded * 100) / e.total
+    })
+
+    this.abortHandles.set(file.id, abort)
+
     try {
-      const result = await postWithProgress<UploadResult | null>('upload', formData, (e: ProgressEvent) => {
-        file.progress = (e.loaded * 100) / e.total
-      })
+      const result = await promise
 
       if (result?.song && result?.album) {
         file.status = 'Uploaded'
@@ -91,17 +114,63 @@ export const uploadService = {
 
       this.proceed()
     } catch (error: unknown) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        file.status = 'Canceled'
+        file.message = 'Upload cancelled.'
+        this.proceed()
+        return
+      }
+
       logger.error(error)
       file.status = 'Errored'
 
-      if (error instanceof Error && 'responseData' in error && (error as any).responseData?.message) {
-        file.message = `Upload failed: ${(error as any).responseData.message}`
+      const err = error as {
+        status?: number
+        responseData?: DuplicateUpload | { message?: string }
+      }
+
+      if (err.status === 409 && err.responseData) {
+        this.state.duplicatedSongs.push(err.responseData as DuplicateUpload)
+        this.remove(file)
+        return
+      }
+
+      if (err.responseData && 'message' in err.responseData && err.responseData.message) {
+        file.message = `Upload failed: ${err.responseData.message}`
       } else {
         file.message = 'Upload failed: Unknown error.'
       }
 
       this.proceed() // upload the next file
+    } finally {
+      this.abortHandles.delete(file.id)
     }
+  },
+
+  async fetchDuplicates() {
+    this.state.duplicatedSongs = await http.get<DuplicateUpload[]>('duplicate-uploads')
+  },
+
+  async keepDuplicate(id: DuplicateUpload['id']) {
+    const result = await http.post<UploadResult>(`duplicate-uploads/${id}`)
+    this.state.duplicatedSongs = this.state.duplicatedSongs.filter(s => s.id !== id)
+    this.handleUploadResult(result)
+  },
+
+  async keepAllDuplicates() {
+    const results = await http.post<UploadResult[]>('duplicate-uploads')
+    this.state.duplicatedSongs = []
+    results.forEach(result => this.handleUploadResult(result))
+  },
+
+  async discardDuplicate(id: DuplicateUpload['id']) {
+    await http.delete(`duplicate-uploads/${id}`)
+    this.state.duplicatedSongs = this.state.duplicatedSongs.filter(s => s.id !== id)
+  },
+
+  async discardAllDuplicates() {
+    await http.delete('duplicate-uploads')
+    this.state.duplicatedSongs = []
   },
 
   handleUploadResult: (result: UploadResult) => {

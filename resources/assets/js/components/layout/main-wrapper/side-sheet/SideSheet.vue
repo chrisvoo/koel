@@ -19,7 +19,7 @@
       </div>
     </header>
 
-    <main v-if="songPlaying" v-show="activeTab" class="panes relative overflow-auto bg-k-fg-5">
+    <main v-if="songPlaying" v-show="activeTab" class="panes relative overflow-auto" v-koel-overflow-fade>
       <SideSheetPanelLazyWrapper
         id="extraPanelLyrics"
         :active="activeTab === 'Lyrics'"
@@ -37,7 +37,7 @@
         data-testid="side-sheet-artist"
         aria-labelledby="extraTabArtist"
       >
-        <ArtistInfo v-if="artist && !loadingArtist" :artist="artist" class="px-6 py-8" mode="aside" />
+        <ArtistInfo v-if="artist && !loadingArtist" :artist class="px-6 py-8" mode="aside" />
         <SideSheetArtistAlbumInfoSkeleton v-else class="px-6 py-8" />
       </SideSheetPanelLazyWrapper>
 
@@ -48,7 +48,7 @@
         data-testid="side-sheet-album"
         aria-labelledby="extraTabAlbum"
       >
-        <AlbumInfo v-if="album && !loadingAlbum" :album="album" class="px-6 py-8" mode="aside" />
+        <AlbumInfo v-if="album && !loadingAlbum" :album class="px-6 py-8" mode="aside" />
         <SideSheetArtistAlbumInfoSkeleton v-else class="px-6 py-8" />
       </SideSheetPanelLazyWrapper>
 
@@ -154,6 +154,7 @@ watch(
 
 watch(activeTab, tab => {
   if (!tab) {
+    preferenceStore.active_extra_panel_tab = null
     return
   }
 
@@ -203,8 +204,6 @@ aside {
 
 .panes {
   @apply no-hover:overflow-y-auto w-k-side-sheet-width;
-
-  box-shadow: 0 0 5px 0 rgba(0, 0, 0, 0.1);
 
   @media screen and (max-width: 768px) {
     width: 100%;

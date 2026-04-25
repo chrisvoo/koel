@@ -11,11 +11,14 @@ use App\Models\Artist;
 use App\Models\Setting;
 use App\Models\Song;
 use App\Models\Transcode;
+use App\Services\AlbumService;
 use App\Services\Scanners\FileScanner;
 use App\Services\SongService;
 use App\Values\Scanning\ScanConfiguration;
 use App\Values\Song\SongUpdateData;
+use Mockery;
 use PHPUnit\Framework\Attributes\Test;
+use RuntimeException;
 use Tests\TestCase;
 
 use function Tests\create_admin;
@@ -306,5 +309,166 @@ class SongServiceTest extends TestCase
         self::assertTrue($song->album->is($album));
 
         self::assertSame(2018, $album->refresh()->year);
+    }
+
+    #[Test]
+    public function scanContinuesWhenCoverArtExtractionFails(): void
+    {
+        Dispatcher::expects('dispatch')->with(ExtractSongFolderStructureJob::class);
+
+        $albumService = Mockery::mock(AlbumService::class);
+        $albumService->shouldReceive('storeAlbumCover')->andThrow(new RuntimeException('DecoderException'));
+        $albumService->shouldReceive('trySetAlbumCoverFromDirectory');
+        $this->app->instance(AlbumService::class, $albumService);
+
+        $this->service = app(SongService::class);
+
+        $info = app(FileScanner::class)->scan(test_path('songs/full.mp3'));
+        $song = $this->service->createOrUpdateSongFromScan($info, ScanConfiguration::make(owner: create_admin()));
+
+        self::assertSame('Amet', $song->title);
+    }
+
+    #[Test]
+    public function updateCompilationSongPreservesAlbumArtist(): void
+    {
+        $user = create_user();
+        $this->actingAs($user);
+
+        $variousArtist = Artist::getOrCreate($user, Artist::VARIOUS_NAME);
+        $songArtist = Artist::getOrCreate($user, 'Dark Tranquillity');
+        $album = Album::getOrCreate($variousArtist, 'A Tribute To The Four Horsemen');
+
+        $song = Song::factory()->for($user, 'owner')->createOne([
+            'artist_id' => $songArtist->id,
+            'artist_name' => $songArtist->name,
+            'album_id' => $album->id,
+            'album_name' => $album->name,
+            'track' => 1,
+        ]);
+
+        // Edit the song without providing album artist (as the UI does)
+        $data = SongUpdateData::make(track: 5);
+        $result = $this->service->updateSongs([$song->id], $data);
+
+        /** @var Song $updatedSong */
+        $updatedSong = $result->updatedSongs->first();
+
+        // The album artist should still be "Various Artists", not "Dark Tranquillity"
+        self::assertSame(Artist::VARIOUS_NAME, $updatedSong->album_artist->name);
+        self::assertTrue($updatedSong->album->is($album));
+        self::assertSame(5, $updatedSong->track);
+    }
+
+    #[Test]
+    public function updateCompilationSongArtistPreservesAlbumArtist(): void
+    {
+        $user = create_user();
+        $this->actingAs($user);
+
+        $variousArtist = Artist::getOrCreate($user, Artist::VARIOUS_NAME);
+        $songArtist = Artist::getOrCreate($user, 'Dark Tranquillity');
+        $album = Album::getOrCreate($variousArtist, 'A Tribute To The Four Horsemen');
+
+        $song = Song::factory()->for($user, 'owner')->createOne([
+            'artist_id' => $songArtist->id,
+            'artist_name' => $songArtist->name,
+            'album_id' => $album->id,
+            'album_name' => $album->name,
+        ]);
+
+        // Change the song artist — compilation album artist should be preserved
+        $data = SongUpdateData::make(artistName: 'Sonata Arctica');
+        $result = $this->service->updateSongs([$song->id], $data);
+
+        /** @var Song $updatedSong */
+        $updatedSong = $result->updatedSongs->first();
+
+        self::assertSame('Sonata Arctica', $updatedSong->artist->name);
+        self::assertSame(Artist::VARIOUS_NAME, $updatedSong->album_artist->name);
+        self::assertTrue($updatedSong->album->is($album));
+    }
+
+    #[Test]
+    public function updateMultipleCompilationSongsPreservesAlbumArtist(): void
+    {
+        $user = create_user();
+        $this->actingAs($user);
+
+        $variousArtist = Artist::getOrCreate($user, Artist::VARIOUS_NAME);
+        $album = Album::getOrCreate($variousArtist, 'A Tribute To The Four Horsemen');
+
+        $song1 = Song::factory()->for($user, 'owner')->createOne([
+            'artist_id' => Artist::getOrCreate($user, 'Dark Tranquillity')->id,
+            'artist_name' => 'Dark Tranquillity',
+            'album_id' => $album->id,
+            'album_name' => $album->name,
+        ]);
+
+        $song2 = Song::factory()->for($user, 'owner')->createOne([
+            'artist_id' => Artist::getOrCreate($user, 'Sonata Arctica')->id,
+            'artist_name' => 'Sonata Arctica',
+            'album_id' => $album->id,
+            'album_name' => $album->name,
+        ]);
+
+        // Batch update genre without providing album artist
+        $data = SongUpdateData::make(genre: 'Metal');
+        $result = $this->service->updateSongs([$song1->id, $song2->id], $data);
+
+        foreach ($result->updatedSongs as $updatedSong) {
+            self::assertSame(Artist::VARIOUS_NAME, $updatedSong->album_artist->name);
+            self::assertTrue($updatedSong->album->is($album));
+            self::assertSame('Metal', $updatedSong->genre);
+        }
+    }
+
+    #[Test]
+    public function updateCompilationSongWithExplicitAlbumArtistOverrides(): void
+    {
+        $user = create_user();
+        $this->actingAs($user);
+
+        $variousArtist = Artist::getOrCreate($user, Artist::VARIOUS_NAME);
+        $songArtist = Artist::getOrCreate($user, 'Dark Tranquillity');
+        $album = Album::getOrCreate($variousArtist, 'A Tribute To The Four Horsemen');
+
+        $song = Song::factory()->for($user, 'owner')->createOne([
+            'artist_id' => $songArtist->id,
+            'artist_name' => $songArtist->name,
+            'album_id' => $album->id,
+            'album_name' => $album->name,
+        ]);
+
+        // Explicitly change the album artist — should override
+        $data = SongUpdateData::make(albumArtistName: 'Dark Tranquillity');
+        $result = $this->service->updateSongs([$song->id], $data);
+
+        /** @var Song $updatedSong */
+        $updatedSong = $result->updatedSongs->first();
+
+        self::assertSame('Dark Tranquillity', $updatedSong->album_artist->name);
+        self::assertFalse($updatedSong->album->is($album));
+    }
+
+    #[Test]
+    public function updateNonCompilationSongArtistAlsoUpdatesAlbumArtist(): void
+    {
+        $song = Song::factory()->createOne();
+        $originalAlbumArtist = $song->album_artist;
+
+        // Verify non-compilation: album artist === song artist
+        self::assertTrue($originalAlbumArtist->is($song->artist));
+
+        // Change artist without specifying album artist
+        $data = SongUpdateData::make(artistName: 'New Artist');
+        $result = $this->service->updateSongs([$song->id], $data);
+
+        /** @var Song $updatedSong */
+        $updatedSong = $result->updatedSongs->first();
+
+        // For non-compilation songs, album artist should follow the song artist
+        self::assertSame('New Artist', $updatedSong->artist->name);
+        self::assertSame('New Artist', $updatedSong->album_artist->name);
     }
 }
