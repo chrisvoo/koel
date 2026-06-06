@@ -637,6 +637,7 @@ type PlayableListSortField =
       | 'created_at'
       | 'rating'
       | 'favorite'
+      | 'play_count'
     >
   | keyof Pick<Episode, 'podcast_author' | 'podcast_title'>
   | 'position'

@@ -66,6 +66,13 @@
       <span v-if="shouldShowColumn('duration')" class="time text-[0.9rem] text-k-fg-50 tabular-nums">
         {{ fmtLength }}
       </span>
+      <span
+        v-if="shouldShowColumn('play_count')"
+        class="play-count font-mono text-[0.9rem] tabular-nums text-k-fg-50 shrink-0"
+        :title="`${playable.play_count} plays`"
+      >
+        {{ playable.play_count }}
+      </span>
       <span v-if="shouldShowColumn('favorite')" class="favorite">
         <FavoriteButton :favorite="playable.favorite" @toggle="toggleFavorite" />
       </span>

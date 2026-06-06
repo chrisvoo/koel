@@ -149,6 +149,20 @@
       </template>
     </span>
     <span
+      v-if="shouldShowColumn('play_count')"
+      class="play-count"
+      data-testid="header-play-count"
+      role="button"
+      title="Sort by play count"
+      @click="sort('play_count')"
+    >
+      Plays
+      <template v-if="config.sortable">
+        <Icon v-if="sortField === 'play_count' && sortOrder === 'asc'" :icon="faCaretUp" class="text-k-highlight" />
+        <Icon v-if="sortField === 'play_count' && sortOrder === 'desc'" :icon="faCaretDown" class="text-k-highlight" />
+      </template>
+    </span>
+    <span
       v-if="shouldShowColumn('favorite')"
       class="favorite"
       data-testid="header-favorite"
