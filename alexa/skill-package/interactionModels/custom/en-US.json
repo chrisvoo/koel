@@ -1,0 +1,131 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "koel",
+      "intents": [
+        {
+          "name": "PlaySongIntent",
+          "slots": [
+            { "name": "songName", "type": "AMAZON.MusicRecording" },
+            { "name": "artistName", "type": "AMAZON.MusicGroup" }
+          ],
+          "samples": [
+            "play {songName}",
+            "play the song {songName}",
+            "play {songName} by {artistName}",
+            "play the song {songName} by {artistName}",
+            "put on {songName}",
+            "put on {songName} by {artistName}",
+            "I want to hear {songName}",
+            "I want to hear {songName} by {artistName}"
+          ]
+        },
+        {
+          "name": "PlayArtistIntent",
+          "slots": [
+            { "name": "artistName", "type": "AMAZON.MusicGroup" }
+          ],
+          "samples": [
+            "play {artistName}",
+            "play songs by {artistName}",
+            "play something by {artistName}",
+            "play music by {artistName}",
+            "put on {artistName}",
+            "I want to hear {artistName}",
+            "play some {artistName}"
+          ]
+        },
+        {
+          "name": "PlayAlbumIntent",
+          "slots": [
+            { "name": "albumName", "type": "AMAZON.MusicAlbum" },
+            { "name": "artistName", "type": "AMAZON.MusicGroup" }
+          ],
+          "samples": [
+            "play the album {albumName}",
+            "play album {albumName}",
+            "play the album {albumName} by {artistName}",
+            "play album {albumName} by {artistName}",
+            "play songs from the album {albumName}",
+            "play songs from the album {albumName} by {artistName}",
+            "put on the album {albumName}",
+            "put on the album {albumName} by {artistName}"
+          ]
+        },
+        {
+          "name": "PlayGenreIntent",
+          "slots": [
+            { "name": "genreName", "type": "AMAZON.MusicGroup" }
+          ],
+          "samples": [
+            "play {genreName}",
+            "play some {genreName}",
+            "play {genreName} music",
+            "put on some {genreName}",
+            "I want to hear {genreName}",
+            "play {genreName} songs"
+          ]
+        },
+        {
+          "name": "PlayPlaylistIntent",
+          "slots": [
+            { "name": "playlistName", "type": "AMAZON.SearchQuery" }
+          ],
+          "samples": [
+            "play {playlistName} playlist",
+            "play my {playlistName} playlist",
+            "play playlist {playlistName}",
+            "play the {playlistName} playlist",
+            "put on my {playlistName} playlist"
+          ]
+        },
+        {
+          "name": "PlayFavoritesIntent",
+          "samples": [
+            "play my favorites",
+            "play my liked songs",
+            "play my favorite songs",
+            "play favorites",
+            "play what I like"
+          ]
+        },
+        {
+          "name": "PlayRandomIntent",
+          "samples": [
+            "play something random",
+            "surprise me",
+            "shuffle my library",
+            "play a random mix",
+            "play anything",
+            "play something"
+          ]
+        },
+        {
+          "name": "NowPlayingIntent",
+          "samples": [
+            "what's playing",
+            "what song is this",
+            "what is this song",
+            "what am I listening to",
+            "what's this",
+            "who sings this"
+          ]
+        },
+        { "name": "AMAZON.PauseIntent" },
+        { "name": "AMAZON.ResumeIntent" },
+        { "name": "AMAZON.NextIntent" },
+        { "name": "AMAZON.PreviousIntent" },
+        { "name": "AMAZON.ShuffleOnIntent" },
+        { "name": "AMAZON.ShuffleOffIntent" },
+        { "name": "AMAZON.LoopOnIntent" },
+        { "name": "AMAZON.LoopOffIntent" },
+        { "name": "AMAZON.StartOverIntent" },
+        { "name": "AMAZON.RepeatIntent" },
+        { "name": "AMAZON.HelpIntent" },
+        { "name": "AMAZON.StopIntent" },
+        { "name": "AMAZON.CancelIntent" },
+        { "name": "AMAZON.FallbackIntent" }
+      ]
+    }
+  }
+}

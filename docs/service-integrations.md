@@ -54,3 +54,8 @@ the sidebar for you to watch without leaving Koel. The only thing you need to do
 YouTube integration is always disabled on mobile due to OS restrictions. Also, you interact with the videos via YouTube
 controls. Koel's equalizer, volume, seeker, play/pause buttons, etc., doesn't have an effect on the videos.
 :::
+
+## Alexa
+
+Koel can be controlled via Amazon Alexa for voice-controlled music playback on Echo devices.
+See the dedicated [Alexa Integration](alexa-integration) guide for setup instructions.

@@ -1,0 +1,76 @@
+{
+  "manifest": {
+    "publishingInformation": {
+      "locales": {
+        "en-US": {
+          "summary": "Play music from your personal Koel music server using voice commands.",
+          "examplePhrases": [
+            "Alexa, open koel",
+            "Alexa, ask koel to play Painkiller",
+            "Alexa, ask koel to play songs by Judas Priest"
+          ],
+          "keywords": [
+            "koel",
+            "music",
+            "streaming",
+            "personal",
+            "server"
+          ],
+          "name": "Koel Music Player",
+          "description": "Koel Alexa Skill lets you play music from your personal Koel music streaming server. You can play songs by name, browse your library by artist, album, genre, or playlist, play your favorites, and control playback with voice commands.\n\nRequires a running Koel instance accessible over HTTPS."
+        },
+        "it-IT": {
+          "summary": "Riproduci musica dal tuo server Koel personale usando comandi vocali.",
+          "examplePhrases": [
+            "Alexa, apri koel",
+            "Alexa, chiedi a koel di riprodurre Painkiller",
+            "Alexa, chiedi a koel di riprodurre le canzoni di Judas Priest"
+          ],
+          "keywords": [
+            "koel",
+            "musica",
+            "streaming",
+            "personale",
+            "server"
+          ],
+          "name": "Koel Music Player",
+          "description": "L'Alexa Skill di Koel ti permette di riprodurre la musica dal tuo server Koel personale. Puoi riprodurre canzoni per nome, navigare la libreria per artista, album, genere o playlist, ascoltare i preferiti e controllare la riproduzione con comandi vocali.\n\nRichiede un'istanza Koel raggiungibile via HTTPS."
+        }
+      },
+      "isAvailableWorldwide": true,
+      "testingInstructions": "1. Deploy the Lambda backend with your Koel instance URL.\n2. Configure Account Linking with your Koel instance's OAuth endpoints.\n3. Link your Koel account in the Alexa app.\n4. Test: 'Alexa, open koel' should welcome you.",
+      "category": "MUSIC_AND_AUDIO"
+    },
+    "apis": {
+      "custom": {
+        "endpoint": {
+          "uri": "arn:aws:lambda:us-east-1:ACCOUNT_ID:function:koel-alexa-skill"
+        },
+        "interfaces": [
+          {
+            "type": "AUDIO_PLAYER"
+          }
+        ]
+      }
+    },
+    "manifestVersion": "1.0",
+    "permissions": [],
+    "privacyAndCompliance": {
+      "allowsPurchases": false,
+      "usesPersonalInfo": false,
+      "isChildDirected": false,
+      "isExportCompliant": true,
+      "containsAds": false,
+      "locales": {
+        "en-US": {
+          "privacyPolicyUrl": "",
+          "termsOfUseUrl": ""
+        },
+        "it-IT": {
+          "privacyPolicyUrl": "",
+          "termsOfUseUrl": ""
+        }
+      }
+    }
+  }
+}

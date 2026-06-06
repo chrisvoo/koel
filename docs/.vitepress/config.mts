@@ -97,6 +97,10 @@ export default defineConfig({
         link: '/service-integrations.md',
       },
       {
+        text: 'Alexa Integration',
+        link: '/alexa-integration',
+      },
+      {
         text: 'Mobile Apps',
         link: '/mobile-apps',
       },

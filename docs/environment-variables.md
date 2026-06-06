@@ -134,6 +134,15 @@ Koel Plus only. See [Proxy Authentication](plus/proxy-auth).
 
 Additional providers (Gemini, Ollama, etc.) can be configured in `config/ai.php`.
 
+## Alexa
+
+See [Alexa Integration](alexa-integration) for full setup instructions.
+
+| Variable | Description | Default |
+|---|---|---|
+| `ALEXA_ENABLED` | Enable the Alexa integration. See [Alexa Integration](alexa-integration). | `false` |
+| `ALEXA_SKILL_ID` | Your Alexa Skill ID (starts with `amzn1.ask.skill.`). | _(empty)_ |
+
 ## Miscellaneous
 
 | Variable | Description | Default |

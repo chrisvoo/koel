@@ -1,0 +1,132 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "koel",
+      "intents": [
+        {
+          "name": "PlaySongIntent",
+          "slots": [
+            { "name": "songName", "type": "AMAZON.MusicRecording" },
+            { "name": "artistName", "type": "AMAZON.MusicGroup" }
+          ],
+          "samples": [
+            "riproduci {songName}",
+            "metti {songName}",
+            "metti la canzone {songName}",
+            "riproduci {songName} di {artistName}",
+            "metti {songName} di {artistName}",
+            "voglio ascoltare {songName}",
+            "voglio ascoltare {songName} di {artistName}",
+            "fai partire {songName}",
+            "fai partire {songName} di {artistName}"
+          ]
+        },
+        {
+          "name": "PlayArtistIntent",
+          "slots": [
+            { "name": "artistName", "type": "AMAZON.MusicGroup" }
+          ],
+          "samples": [
+            "riproduci {artistName}",
+            "metti {artistName}",
+            "riproduci le canzoni di {artistName}",
+            "riproduci qualcosa di {artistName}",
+            "metti la musica di {artistName}",
+            "fai partire {artistName}",
+            "voglio ascoltare {artistName}"
+          ]
+        },
+        {
+          "name": "PlayAlbumIntent",
+          "slots": [
+            { "name": "albumName", "type": "AMAZON.MusicAlbum" },
+            { "name": "artistName", "type": "AMAZON.MusicGroup" }
+          ],
+          "samples": [
+            "riproduci l'album {albumName}",
+            "metti l'album {albumName}",
+            "riproduci l'album {albumName} di {artistName}",
+            "metti l'album {albumName} di {artistName}",
+            "riproduci le canzoni dell'album {albumName}",
+            "riproduci le canzoni dell'album {albumName} di {artistName}",
+            "fai partire l'album {albumName}",
+            "fai partire l'album {albumName} di {artistName}"
+          ]
+        },
+        {
+          "name": "PlayGenreIntent",
+          "slots": [
+            { "name": "genreName", "type": "AMAZON.MusicGroup" }
+          ],
+          "samples": [
+            "riproduci {genreName}",
+            "metti {genreName}",
+            "riproduci musica {genreName}",
+            "metti un po' di {genreName}",
+            "voglio ascoltare {genreName}",
+            "riproduci canzoni {genreName}"
+          ]
+        },
+        {
+          "name": "PlayPlaylistIntent",
+          "slots": [
+            { "name": "playlistName", "type": "AMAZON.SearchQuery" }
+          ],
+          "samples": [
+            "riproduci la playlist {playlistName}",
+            "metti la playlist {playlistName}",
+            "riproduci la mia playlist {playlistName}",
+            "fai partire la playlist {playlistName}",
+            "metti la mia playlist {playlistName}"
+          ]
+        },
+        {
+          "name": "PlayFavoritesIntent",
+          "samples": [
+            "riproduci i miei preferiti",
+            "metti i preferiti",
+            "riproduci le mie canzoni preferite",
+            "metti le canzoni che mi piacciono",
+            "riproduci i preferiti"
+          ]
+        },
+        {
+          "name": "PlayRandomIntent",
+          "samples": [
+            "riproduci qualcosa a caso",
+            "sorprendimi",
+            "metti qualcosa",
+            "metti musica a caso",
+            "riproduci un mix casuale",
+            "metti qualcosa di bello"
+          ]
+        },
+        {
+          "name": "NowPlayingIntent",
+          "samples": [
+            "cosa sta suonando",
+            "che canzone e' questa",
+            "cosa sto ascoltando",
+            "che brano e'",
+            "chi canta",
+            "dimmi che canzone e'"
+          ]
+        },
+        { "name": "AMAZON.PauseIntent" },
+        { "name": "AMAZON.ResumeIntent" },
+        { "name": "AMAZON.NextIntent" },
+        { "name": "AMAZON.PreviousIntent" },
+        { "name": "AMAZON.ShuffleOnIntent" },
+        { "name": "AMAZON.ShuffleOffIntent" },
+        { "name": "AMAZON.LoopOnIntent" },
+        { "name": "AMAZON.LoopOffIntent" },
+        { "name": "AMAZON.StartOverIntent" },
+        { "name": "AMAZON.RepeatIntent" },
+        { "name": "AMAZON.HelpIntent" },
+        { "name": "AMAZON.StopIntent" },
+        { "name": "AMAZON.CancelIntent" },
+        { "name": "AMAZON.FallbackIntent" }
+      ]
+    }
+  }
+}

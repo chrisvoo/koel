@@ -9,6 +9,7 @@ use App\Http\Controllers\Download\DownloadArtistController;
 use App\Http\Controllers\Download\DownloadFavoritesController;
 use App\Http\Controllers\Download\DownloadPlaylistController;
 use App\Http\Controllers\Download\DownloadSongsController;
+use App\Http\Controllers\Alexa\AccountLinkController;
 use App\Http\Controllers\IndexController;
 use App\Http\Controllers\LastfmController;
 use App\Http\Controllers\PlayController;
@@ -43,6 +44,12 @@ Route::middleware('web')->group(static function (): void {
     Route::get('auth/google/callback', GoogleCallbackController::class);
 
     Route::get('dropbox/authorize/{key}', AuthorizeDropboxController::class)->name('dropbox.authorize');
+
+    Route::prefix('alexa')->group(static function (): void {
+        Route::get('authorize', [AccountLinkController::class, 'showAuthorize'])->name('alexa.authorize');
+        Route::post('authorize', [AccountLinkController::class, 'handleAuthorize'])->name('alexa.authorize.handle');
+        Route::post('token', [AccountLinkController::class, 'token'])->name('alexa.token');
+    });
 
     Route::middleware('audio.auth')->group(static function (): void {
         Route::get('play/{song}/{transcode?}', PlayController::class)->name('song.play');

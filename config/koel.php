@@ -200,6 +200,11 @@ return [
         'allow_list' => array_map(static fn ($entry) => trim($entry), explode(',', env('PROXY_AUTH_ALLOW_LIST', ''))),
     ],
 
+    'alexa' => [
+        'enabled' => env('ALEXA_ENABLED', false),
+        'skill_id' => env('ALEXA_SKILL_ID'),
+    ],
+
     'ai' => [
         'enabled' => env('AI_ENABLED', false),
     ],

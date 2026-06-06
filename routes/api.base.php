@@ -6,6 +6,8 @@ use App\Http\Controllers\API\Acl\CheckResourcePermissionController;
 use App\Http\Controllers\API\Acl\FetchAssignableRolesController;
 use App\Http\Controllers\API\ActivateLicenseController;
 use App\Http\Controllers\API\AiController;
+use App\Http\Controllers\Alexa\AccountLinkController;
+use App\Http\Controllers\API\Alexa\FetchAudioTokenController;
 use App\Http\Controllers\API\AlbumController;
 use App\Http\Controllers\API\AlbumSongController;
 use App\Http\Controllers\API\Artist\ArtistAlbumController;
@@ -270,6 +272,9 @@ Route::prefix('api')
                 Route::get('permissions/{type}/{id}/{action}', CheckResourcePermissionController::class);
                 Route::get('assignable-roles', FetchAssignableRolesController::class);
             });
+
+            // Alexa integration routes
+            Route::get('alexa/audio-token', FetchAudioTokenController::class);
         });
 
         // Object-storage (S3) routes
