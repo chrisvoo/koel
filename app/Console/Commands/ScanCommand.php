@@ -110,6 +110,14 @@ class ScanCommand extends Command
             "<fg=yellow>{$results->skipped()->count()}</> unchanged song(s)",
             "<fg=red>{$results->error()->count()}</> invalid file(s)",
         ]);
+
+        $errors = $results->error();
+        if ($errors->isNotEmpty()) {
+            $rows = $errors->map(
+                static fn (ScanResult $result) => [$result->path, $result->type->value, $result->error]
+            )->values()->all();
+            $this->table(['Path', 'Type', 'Message'], $rows);
+        }
     }
 
     /**

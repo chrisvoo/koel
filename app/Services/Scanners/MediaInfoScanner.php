@@ -6,6 +6,7 @@ use App\Values\Scanning\ScanInformation;
 use Mhor\MediaInfo\MediaInfo;
 use Symfony\Component\Process\ExecutableFinder;
 use Throwable;
+use Illuminate\Support\Facades\Log;
 
 class MediaInfoScanner
 {
@@ -45,7 +46,8 @@ class MediaInfoScanner
             }
 
             return ScanInformation::fromMediaInfo($general, $path);
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            Log::debug('MediaInfo failed: ' . $e->getMessage() . ' for ' . $path);
             return null;
         }
     }
