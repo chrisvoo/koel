@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1bc3c17beadede56f356721d4f6526b4",
+    "content-hash": "e55a3bf95c7a80c9b627b9b775e63acd",
     "packages": [
         {
             "name": "algolia/algoliasearch-client-php",
@@ -3960,6 +3960,63 @@
                 "source": "https://github.com/meilisearch/meilisearch-php/tree/v0.24.2"
             },
             "time": "2022-08-16T15:18:17+00:00"
+        },
+        {
+            "name": "mhor/php-mediainfo",
+            "version": "5.8.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/mhor/php-mediainfo.git",
+                "reference": "a0be4ef4dc1f56292793ad31c2b3efc75bfdbf05"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/mhor/php-mediainfo/zipball/a0be4ef4dc1f56292793ad31c2b3efc75bfdbf05",
+                "reference": "a0be4ef4dc1f56292793ad31c2b3efc75bfdbf05",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.4",
+                "symfony/filesystem": "~5.0|~6.0|~7.0|~8.0",
+                "symfony/process": "~5.0|~6.0|~7.0|~8.0"
+            },
+            "require-dev": {
+                "phpspec/prophecy": "^1.15",
+                "phpunit/phpunit": "~8.5"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "6.0.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Mhor\\MediaInfo\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "mhor",
+                    "email": "maxime.horcholle@gmail.com"
+                }
+            ],
+            "description": "PHP wrapper around the mediainfo command",
+            "keywords": [
+                "id3",
+                "mediainfo",
+                "metadata",
+                "wrapper"
+            ],
+            "support": {
+                "issues": "https://github.com/mhor/php-mediainfo/issues",
+                "source": "https://github.com/mhor/php-mediainfo/tree/5.8.0"
+            },
+            "time": "2026-01-06T22:20:55+00:00"
         },
         {
             "name": "mlocati/ip-lib",
@@ -15638,9 +15695,9 @@
         "ext-json": "*",
         "ext-simplexml": "*"
     },
-    "platform-dev": {},
+    "platform-dev": [],
     "platform-overrides": {
         "php": "8.3.0"
     },
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.3.0"
 }
