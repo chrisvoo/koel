@@ -3,7 +3,6 @@
 namespace App\Values\User;
 
 use App\Enums\Acl\Role;
-use Illuminate\Support\Facades\Hash;
 use SensitiveParameter;
 
 final readonly class UserUpdateData
@@ -16,9 +15,9 @@ final readonly class UserUpdateData
         #[SensitiveParameter]
         ?string $plainTextPassword,
         public ?Role $role,
-        public ?string $avatar,
+        public ?AvatarUpdateData $avatar,
     ) {
-        $this->password = $plainTextPassword ? Hash::make($plainTextPassword) : null;
+        $this->password = $plainTextPassword === '' ? null : $plainTextPassword;
     }
 
     public static function make(
@@ -27,7 +26,7 @@ final readonly class UserUpdateData
         #[SensitiveParameter]
         ?string $plainTextPassword = null,
         ?Role $role = null,
-        ?string $avatar = null,
+        ?AvatarUpdateData $avatar = null,
     ): self {
         return new self(
             name: $name,

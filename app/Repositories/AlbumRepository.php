@@ -5,12 +5,14 @@ namespace App\Repositories;
 use App\Models\Album;
 use App\Models\Artist;
 use App\Models\User;
+use App\Repositories\Contracts\PaginationStrategy;
 use App\Repositories\Contracts\ScoutableRepository;
+use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Query\JoinClause;
-use Illuminate\Support\Facades\DB;
 
 /**
  * @extends Repository<Album>
@@ -37,34 +39,46 @@ class AlbumRepository extends Repository implements ScoutableRepository
             ->find($id);
     }
 
-    public function getRecentlyAdded(int $count = 6, ?User $user = null): Collection
+    public function getRecentlyAdded(int $count = 6, int $offset = 0, ?User $user = null): Collection
     {
         return Album::query()
             ->onlyStandard()
             ->withUserContext(user: $user ?? $this->auth->user())
             ->latest()
+            ->offset($offset)
             ->limit($count)
             ->get();
     }
 
-    public function getMostPlayed(int $count = 6, ?User $user = null): Collection
+    public function getMostPlayed(int $count = 6, int $offset = 0, ?User $user = null): Collection
     {
         return Album::query()
             ->onlyStandard()
             ->withUserContext(user: $user ?? $this->auth->user(), includePlayCount: true)
             ->orderByDesc('play_count')
+            ->offset($offset)
             ->limit($count)
             ->get();
     }
 
-    public function getRecentlyPlayed(int $count = 6, ?User $user = null): Collection
+    public function getRecentlyPlayed(int $count = 6, int $offset = 0, ?User $user = null): Collection
     {
+        $user ??= $this->auth->user();
+
         return Album::query()
             ->onlyStandard()
-            ->withUserContext(user: $user ?? $this->auth->user(), includePlayCount: true)
-            ->addSelect(DB::raw('MAX(interactions.last_played_at) as last_played_at'))
-            ->havingRaw('MAX(interactions.last_played_at) IS NOT NULL')
+            ->withUserContext(user: $user)
+            ->whereExists(static function (QueryBuilder $query) use ($user): void {
+                $query
+                    ->selectRaw('1')
+                    ->from('interactions')
+                    ->join('songs as recently_played_songs', 'recently_played_songs.id', 'interactions.song_id')
+                    ->whereColumn('recently_played_songs.album_id', 'albums.id')
+                    ->where('interactions.user_id', $user->id)
+                    ->whereNotNull('interactions.last_played_at');
+            })
             ->orderByDesc('last_played_at')
+            ->offset($offset)
             ->limit($count)
             ->get();
     }
@@ -185,22 +199,27 @@ class AlbumRepository extends Repository implements ScoutableRepository
             ->onlyStandard()
             ->withUserContext(user: $user ?? $this->auth->user())
             ->sort($sortColumn, $sortDirection)
+            ->orderBy('albums.id')
             ->offset($offset)
             ->limit($limit)
             ->get();
     }
 
-    public function getForListing(
+    public function paginate(
         string $sortColumn,
         string $sortDirection,
+        PaginationStrategy $strategy,
         bool $favoritesOnly = false,
         ?User $user = null,
-    ): Paginator {
-        return Album::query()
-            ->onlyStandard()
-            ->withUserContext(user: $user ?? $this->auth->user(), favoritesOnly: $favoritesOnly)
-            ->sort($sortColumn, $sortDirection)
-            ->simplePaginate(21);
+    ): Paginator|CursorPaginator {
+        return $strategy->apply(
+            Album::query()
+                ->onlyStandard()
+                ->withUserContext(user: $user ?? $this->auth->user(), favoritesOnly: $favoritesOnly)
+                ->sort($sortColumn, $sortDirection),
+            idColumn: 'albums.id',
+            perPage: 21,
+        );
     }
 
     public function search(string $keywords, int $limit, ?User $user = null): Collection

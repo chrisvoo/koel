@@ -19,6 +19,7 @@ describe('playableStore', () => {
     afterEach: () => {
       isMobile.any = false
       preferenceStore.temporary.transcode_on_mobile = false
+      playlistStore.state.playlists = []
     },
   })
 
@@ -273,16 +274,37 @@ describe('playableStore', () => {
     expect(playlist.playables).toEqual([])
   })
 
+  it('fetches and deduplicates songs for playlists', async () => {
+    const playlists = h.factory('playlist').make(3)
+    const sharedSong = h.factory('song').make()
+    const firstSong = h.factory('song').make()
+    const secondSong = h.factory('song').make()
+    const thirdSong = h.factory('song').make()
+    const fetchMock = h
+      .mock(playableStore, 'fetchForPlaylist')
+      .mockResolvedValueOnce([sharedSong, firstSong])
+      .mockResolvedValueOnce([secondSong, sharedSong])
+      .mockResolvedValueOnce([thirdSong])
+
+    const songs = await playableStore.fetchForPlaylists(playlists)
+
+    expect(fetchMock).toHaveBeenNthCalledWith(1, playlists[0])
+    expect(fetchMock).toHaveBeenNthCalledWith(2, playlists[1])
+    expect(fetchMock).toHaveBeenNthCalledWith(3, playlists[2])
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(songs).toEqual([sharedSong, firstSong, secondSong, thirdSong])
+  })
+
   it('paginates', async () => {
     const songs = h.factory('song').make(3)
 
     const getMock = h.mock(http, 'get').mockResolvedValueOnce({
       data: songs,
-      links: {
-        next: 'http://test/api/v1/songs?page=3',
-      },
       meta: {
-        current_page: 2,
+        path: '/songs',
+        per_page: 50,
+        next_cursor: 'eyJuZXh0Ijoi...',
+        prev_cursor: null,
       },
     })
 
@@ -290,13 +312,13 @@ describe('playableStore', () => {
 
     expect(
       await playableStore.paginateSongs({
-        page: 2,
+        cursor: 'prev-token',
         sort: 'title',
         order: 'desc',
       }),
-    ).toBe(3)
+    ).toBe('eyJuZXh0Ijoi...')
 
-    expect(getMock).toHaveBeenCalledWith('songs?page=2&sort=title&order=desc')
+    expect(getMock).toHaveBeenCalledWith('songs?cursor=prev-token&sort=title&order=desc')
     expect(syncMock).toHaveBeenCalledWith(songs)
     expect(playableStore.state.playables).toEqual(reactive(songs))
   })
@@ -307,11 +329,11 @@ describe('playableStore', () => {
 
     const getMock = h.mock(http, 'get').mockResolvedValueOnce({
       data: songs,
-      links: {
-        next: 'http://test/api/v1/songs?page=3',
-      },
       meta: {
-        current_page: 2,
+        path: '/genres/foo/songs',
+        per_page: 50,
+        next_cursor: 'next-token',
+        prev_cursor: null,
       },
     })
 
@@ -319,16 +341,16 @@ describe('playableStore', () => {
 
     expect(
       await playableStore.paginateSongsByGenre('foo', {
-        page: 2,
+        cursor: 'prev-token',
         sort: 'title',
         order: 'desc',
       }),
     ).toEqual({
       songs: reactiveSongs,
-      nextPage: 3,
+      nextCursor: 'next-token',
     })
 
-    expect(getMock).toHaveBeenCalledWith('genres/foo/songs?page=2&sort=title&order=desc')
+    expect(getMock).toHaveBeenCalledWith('genres/foo/songs?cursor=prev-token&sort=title&order=desc')
     expect(syncMock).toHaveBeenCalledWith(songs)
   })
 

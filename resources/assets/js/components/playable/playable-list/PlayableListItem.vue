@@ -148,7 +148,7 @@ const toggleFavorite = () => playableStore.toggleFavorite(playable.value)
 @reference '@css/app.pcss';
 article {
   &.droppable {
-    @apply relative transition-none after:absolute after:w-full after:h-[3px] after:rounded-sm after:bg-k-success after:top-0;
+    @apply relative transition-none after:absolute after:inset-x-0 after:h-[3px] after:rounded-sm after:bg-k-success after:top-0;
 
     &.dragover-bottom {
       @apply after:top-auto after:bottom-0;
@@ -159,7 +159,7 @@ article {
     .title,
     .track-number,
     .favorite {
-      @apply text-k-highlight!;
+      @apply text-k-highlight;
     }
   }
 

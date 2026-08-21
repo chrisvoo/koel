@@ -4,8 +4,9 @@ namespace Tests;
 
 use App\Models\Playlist;
 use App\Models\User;
+use App\Services\Image\ImageWriter;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\ParallelTesting;
 
 function create_user(array $attributes = []): User
 {
@@ -37,18 +38,13 @@ function test_path(string $path = ''): string
     return base_path('tests' . DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR));
 }
 
-function read_as_data_url(string $path): string
-{
-    return 'data:' . mime_content_type($path) . ';base64,' . base64_encode(File::get($path));
-}
-
 function create_playlist(array $attributes = [], bool $smart = false): Playlist
 {
     return $smart ? Playlist::factory()->smart()->createOne($attributes) : Playlist::factory()->createOne($attributes);
 }
 
 /**
- * @return Collection<Playlist>|array<array-key, Playlist>
+ * @return Collection<int, Playlist>
  */
 function create_playlists(int $count, array $attributes = [], ?User $owner = null): Collection
 {
@@ -70,4 +66,28 @@ function create_playlists(int $count, array $attributes = [], ?User $owner = nul
 function minimal_base64_encoded_image(): string
 {
     return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII';
+}
+
+/**
+ * The name a stored image gets, whose extension depends on the formats the image driver supports.
+ */
+function stored_image_name(string $ulid): string
+{
+    return sprintf('%s.%s', $ulid, app(ImageWriter::class)->format());
+}
+
+/**
+ * Each parallel worker gets its own sandbox, so that tearing one down doesn't
+ * delete files another worker is still using.
+ */
+function sandbox_dir(): string
+{
+    $token = ParallelTesting::token();
+
+    return $token ? "sandbox-$token" : 'sandbox';
+}
+
+function sandbox_path(string $subPath = ''): string
+{
+    return public_path(sandbox_dir() . "/$subPath");
 }

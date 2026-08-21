@@ -1,4 +1,4 @@
-# koel [![Frontend Unit Tests](https://github.com/koel/koel/actions/workflows/unit-frontend.yml/badge.svg)](https://github.com/koel/koel/actions/workflows/unit-frontend.yml) ![Code Quality](https://scrutinizer-ci.com/g/phanan/koel/badges/quality-score.png?b=master) [![codecov](https://codecov.io/gh/koel/koel/branch/master/graph/badge.svg)](https://codecov.io/gh/koel/koel) [![OpenCollective](https://opencollective.com/koel/backers/badge.svg)](#backers) [![OpenCollective](https://opencollective.com/koel/sponsors/badge.svg)](#sponsors)
+# koel [![Frontend Unit Tests](https://github.com/koel/koel/actions/workflows/unit-frontend.yml/badge.svg)](https://github.com/koel/koel/actions/workflows/unit-frontend.yml) ![Code Quality](https://scrutinizer-ci.com/g/phanan/koel/badges/quality-score.png?b=master) [![OpenCollective](https://opencollective.com/koel/backers/badge.svg)](#sponsors-and-backers) [![OpenCollective](https://opencollective.com/koel/sponsors/badge.svg)](#sponsors-and-backers)
 
 ![Showcase](https://user-images.githubusercontent.com/8056274/115028055-bc02a280-9ec4-11eb-991c-69cd2a45b69c.png)
 
@@ -36,9 +36,7 @@ visit [its repository](https://github.com/koel/player).
 ## Sponsors and Backers
 
 [<img style="margin-right: 5px" src="./.github/assets/sponsors/whatthediff.svg" height="32" alt="What The Diff logo" title="What The Diff — AI assistant for your pull requests">](https://whatthediff.ai/)
-[<img style="margin-right: 5px" src="./.github/assets/sponsors/do.svg" height="32" alt="DigitalOcean logo" title="DigitalOcean">](https://www.digitalocean.com)
 [<img style="margin-right: 5px" src="./.github/assets/sponsors/ray.svg" height="32" alt="Ray logo" title="Understand and fix bugs faster using Ray">](https://myray.app/)
-[<img style="margin-right: 5px" src="./.github/assets/sponsors/codespect.png" height="32" alt="CodeSpect logo" title="CodeSpect - AI Code Review Tool">](https://codespect.io/?ref=koel)
 
 [Support me on OpenCollective](https://opencollective.com/koel#backer) with a monthly donation and help me continue
 building Koel.

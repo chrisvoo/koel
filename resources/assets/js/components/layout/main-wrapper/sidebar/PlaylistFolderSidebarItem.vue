@@ -1,41 +1,27 @@
 <template>
   <li
-    :class="{ droppable }"
+    :class="{ droppable, 'drop-target-path': isOnDropTargetPath }"
     class="playlist-folder relative"
     :draggable="!isMobile.any"
-    tabindex="0"
     @dragleave="onDragLeave"
     @dragover="onDragOver"
-    @dragstart="onDragStart"
+    @dragstart.stop="onDragStart"
     @drop="onDrop"
   >
     <ul>
-      <SidebarItem @click="toggle" @contextmenu.prevent="onContextMenu">
+      <SidebarItem tabindex="0" @click="toggle" @contextmenu.prevent.stop="onContextMenu">
         <template #icon>
           <Icon :icon="opened ? faFolderOpen : faFolder" fixed-width />
         </template>
         {{ folder.name }}
       </SidebarItem>
 
-      <li v-if="playlistsInFolder.length" v-show="opened">
-        <ul>
-          <PlaylistSidebarItem
-            v-for="playlist in playlistsInFolder"
-            :key="playlist.id"
-            :list="playlist"
-            class="pl-10"
-          />
+      <li v-if="opened && (childFolders.length || playlistsInFolder.length)">
+        <ul class="pl-4">
+          <PlaylistFolderSidebarItem v-for="child in childFolders" :key="child.id" :folder="child" />
+          <PlaylistSidebarItem v-for="playlist in playlistsInFolder" :key="playlist.id" :list="playlist" />
         </ul>
       </li>
-
-      <li
-        v-if="opened"
-        :class="droppableOnHatch && 'droppable'"
-        class="hatch absolute bottom-0 w-full h-1"
-        @dragover="onDragOverHatch"
-        @dragleave.prevent="onDragLeaveHatch"
-        @drop.prevent="onDropOnHatch"
-      />
     </ul>
   </li>
 </template>
@@ -43,12 +29,13 @@
 <script lang="ts" setup>
 import { faFolder, faFolderOpen } from '@fortawesome/free-solid-svg-icons'
 import isMobile from 'ismobilejs'
-import { computed, ref, toRefs } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref, toRefs } from 'vue'
 import { defineAsyncComponent } from '@/utils/helpers'
 import { playlistFolderStore } from '@/stores/playlistFolderStore'
 import { playlistStore } from '@/stores/playlistStore'
-import { useDraggable, useDroppable } from '@/composables/useDragAndDrop'
+import { setDragText, useDraggable, useDroppable } from '@/composables/useDragAndDrop'
 import { useContextMenu } from '@/composables/useContextMenu'
+import { DraggedPlaylistFolderKey, DraggedPlaylistKey, PlaylistFolderDropTargetKey } from '@/config/symbols'
 
 import PlaylistSidebarItem from './PlaylistSidebarItem.vue'
 import SidebarItem from './SidebarItem.vue'
@@ -59,27 +46,83 @@ const ContextMenu = defineAsyncComponent(() => import('@/components/playlist/Pla
 
 const { folder } = toRefs(props)
 
-const { acceptsDrop, resolveDroppedValue } = useDroppable(['playlist'])
+const { acceptsDrop, resolveDroppedValue } = useDroppable(['playlist', 'playlist-folder'])
 const { startDragging } = useDraggable('playlist-folder')
 const { openContextMenu } = useContextMenu()
 
+const folderDropTargetId = inject(PlaylistFolderDropTargetKey, ref<string | null>(null))
+const draggedPlaylist = inject(DraggedPlaylistKey, ref<Playlist | null>(null))
+const draggedPlaylistFolder = inject(DraggedPlaylistFolderKey, ref<PlaylistFolder | null>(null))
+
 const opened = ref(false)
 const droppable = ref(false)
-const droppableOnHatch = ref(false)
-let expandTimeout = 0
+const expandTimeout = ref<number | null>(null)
 
 const playlistsInFolder = computed(() => playlistStore.byFolder(folder.value))
+const childFolders = computed(() => playlistFolderStore.byParent(folder.value))
+const isOnDropTargetPath = computed(() => {
+  if (!folderDropTargetId.value) {
+    return false
+  }
+
+  return (
+    folderDropTargetId.value === folder.value.id ||
+    playlistFolderStore.descendantsOf(folder.value).some(descendant => descendant.id === folderDropTargetId.value)
+  )
+})
 
 const toggle = () => (opened.value = !opened.value)
 
-const onDragStart = (event: DragEvent) => startDragging(event, folder.value)
+const acceptsFolderMove = (draggedFolder: PlaylistFolder) =>
+  draggedFolder.id !== folder.value.id &&
+  draggedFolder.parent_id !== folder.value.id &&
+  !playlistFolderStore.descendantsOf(draggedFolder).some(descendant => descendant.id === folder.value.id)
+
+const cancelAutoExpand = () => {
+  if (expandTimeout.value !== null) {
+    window.clearTimeout(expandTimeout.value)
+    expandTimeout.value = null
+  }
+}
+
+// dragend always fires on the source, regardless of drop-handler stopPropagation.
+const clearOnDragEnd = () => {
+  droppable.value = false
+  cancelAutoExpand()
+
+  if (folderDropTargetId.value === folder.value.id) {
+    folderDropTargetId.value = null
+  }
+}
+
+onMounted(() => document.addEventListener('dragend', clearOnDragEnd))
+
+onBeforeUnmount(() => {
+  cancelAutoExpand()
+  document.removeEventListener('dragend', clearOnDragEnd)
+})
+
+const onDragStart = (event: DragEvent) => {
+  startDragging(event, folder.value)
+  draggedPlaylistFolder.value = folder.value
+}
 
 const onDragOver = (event: DragEvent) => {
-  // Expand the folder after a short delay so the user can drop songs onto playlists inside.
-  if (!opened.value && !expandTimeout) {
-    expandTimeout = window.setTimeout(() => {
+  const draggedFolder = draggedPlaylistFolder.value
+  if (draggedFolder && !acceptsFolderMove(draggedFolder)) {
+    event.stopPropagation()
+    droppable.value = false
+    cancelAutoExpand()
+    folderDropTargetId.value = null
+    setDragText('')
+    return false
+  }
+
+  // Auto-expand so the user can drop on a playlist inside.
+  if (!opened.value && expandTimeout.value === null) {
+    expandTimeout.value = window.setTimeout(() => {
       opened.value = true
-      expandTimeout = 0
+      expandTimeout.value = null
     }, 500)
   }
 
@@ -88,18 +131,41 @@ const onDragOver = (event: DragEvent) => {
   }
 
   event.preventDefault()
+  event.stopPropagation()
+
+  // macOS ignores CSS cursor: during DnD; dropEffect drives the native + cursor.
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = draggedFolder ? 'move' : 'copy'
+  }
+
   droppable.value = true
+  folderDropTargetId.value = folder.value.id
+
+  if (draggedFolder) {
+    setDragText(`Move ${draggedFolder.name} to ${folder.value.name}`)
+  } else if (draggedPlaylist.value) {
+    const playlist = draggedPlaylist.value
+    setDragText(playlist.folder_id === folder.value.id ? '' : `Move ${playlist.name} to ${folder.value.name}`)
+  }
 }
 
-const onDragLeave = () => {
+const onDragLeave = (event: DragEvent) => {
+  // dragleave also fires when entering a child — ignore unless cursor is truly outside.
+  const relatedTarget = event.relatedTarget as Node | null
+  if (relatedTarget && (event.currentTarget as Node).contains(relatedTarget)) {
+    return
+  }
+
   droppable.value = false
-  clearTimeout(expandTimeout)
-  expandTimeout = 0
+  cancelAutoExpand()
+
+  if (folderDropTargetId.value === folder.value.id) {
+    folderDropTargetId.value = null
+  }
 }
 
 const onDrop = async (event: DragEvent) => {
-  clearTimeout(expandTimeout)
-  expandTimeout = 0
+  cancelAutoExpand()
   droppable.value = false
 
   if (!acceptsDrop(event)) {
@@ -107,40 +173,19 @@ const onDrop = async (event: DragEvent) => {
   }
 
   event.preventDefault()
-
-  const playlist = await resolveDroppedValue<Playlist>(event)
-  if (!playlist || playlist.folder_id === folder.value.id) {
-    return
-  }
-
-  await playlistFolderStore.addPlaylistToFolder(folder.value, playlist)
-}
-
-const onDragLeaveHatch = () => (droppableOnHatch.value = false)
-
-const onDragOverHatch = (event: DragEvent) => {
-  if (!acceptsDrop(event)) {
-    return false
-  }
-
-  event.preventDefault()
-  droppableOnHatch.value = true
-}
-
-const onDropOnHatch = async (event: DragEvent) => {
-  droppableOnHatch.value = false
-  droppable.value = false
-
-  const playlist = (await resolveDroppedValue<Playlist>(event))!
-
-  // if the playlist isn't in the folder, don't do anything. The folder will handle the drop.
-  if (playlist.folder_id !== folder.value.id) {
-    return
-  }
-
-  // otherwise, the user is trying to remove the playlist from the folder.
   event.stopPropagation()
-  await playlistFolderStore.removePlaylistFromFolder(folder.value, playlist)
+
+  const dropped = await resolveDroppedValue<Playlist | PlaylistFolder>(event)
+  if (!dropped) {
+    return
+  }
+
+  if (dropped.type === 'playlist-folders') {
+    await playlistFolderStore.moveFolderToFolder(dropped, folder.value)
+    return
+  }
+
+  await playlistFolderStore.movePlaylistToFolder(dropped, folder.value)
 }
 
 const onContextMenu = (event: MouseEvent) =>
@@ -152,10 +197,6 @@ const onContextMenu = (event: MouseEvent) =>
 <style lang="postcss" scoped>
 @reference '@css/app.pcss';
 .droppable {
-  @apply ring-1 ring-offset-0 ring-k-highlight rounded-md cursor-copy;
-}
-
-.hatch.droppable {
-  @apply border-b-[3px] border-k-highlight;
+  @apply cursor-copy;
 }
 </style>

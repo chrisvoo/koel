@@ -11,6 +11,7 @@ use Tests\TestCase;
 use function Tests\create_admin;
 use function Tests\create_user;
 use function Tests\minimal_base64_encoded_image;
+use function Tests\stored_image_name;
 
 class AlbumTest extends TestCase
 {
@@ -40,6 +41,54 @@ class AlbumTest extends TestCase
         $this->getAs(
             'api/albums?sort=rating&order=desc',
         )->assertJsonStructure(AlbumResource::PAGINATION_JSON_STRUCTURE);
+    }
+
+    #[Test]
+    public function indexWithCursorReturnsCursorPagination(): void
+    {
+        Album::factory()->createMany(22);
+
+        $response = $this->getAs(
+            'api/albums?cursor=',
+        )->assertJsonStructure(AlbumResource::CURSOR_PAGINATION_JSON_STRUCTURE);
+
+        self::assertCount(21, $response->json('data'));
+        self::assertNotNull($response->json('meta.next_cursor'));
+        self::assertNull($response->json('meta.prev_cursor'));
+
+        $secondPage = $this->getAs(
+            'api/albums?cursor=' . $response->json('meta.next_cursor'),
+        )->assertJsonStructure(AlbumResource::CURSOR_PAGINATION_JSON_STRUCTURE);
+
+        self::assertCount(1, $secondPage->json('data'));
+        self::assertNull($secondPage->json('meta.next_cursor'));
+        self::assertNotNull($secondPage->json('meta.prev_cursor'));
+    }
+
+    #[Test]
+    public function indexWithCursorTraversesAllSupportedSortsWithoutDuplicates(): void
+    {
+        Album::factory()->createMany(30);
+
+        foreach (['name', 'year', 'created_at', 'artist_name', 'length', 'rating', 'favorite'] as $sort) {
+            $allIds = [];
+            $cursor = '';
+            $pages = 0;
+
+            while ($cursor !== null && $pages < 5) {
+                $pages++;
+                $r = $this
+                    ->getAs("api/albums?favorites_only=false&cursor={$cursor}&sort={$sort}&order=desc")
+                    ->assertOk()
+                    ->assertJsonStructure(AlbumResource::CURSOR_PAGINATION_JSON_STRUCTURE);
+
+                $allIds = array_merge($allIds, collect($r->json('data'))->pluck('id')->all());
+                $cursor = $r->json('meta.next_cursor');
+            }
+
+            self::assertCount(30, $allIds, "sort={$sort} returned wrong total");
+            self::assertCount(30, array_unique($allIds), "sort={$sort} returned duplicates");
+        }
     }
 
     #[Test]
@@ -73,7 +122,7 @@ class AlbumTest extends TestCase
 
         self::assertEquals('Updated Album Name', $album->name);
         self::assertEquals(2023, $album->year);
-        self::assertEquals("$ulid.webp", $album->cover);
+        self::assertEquals(stored_image_name($ulid), $album->cover);
     }
 
     #[Test]

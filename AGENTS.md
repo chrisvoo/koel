@@ -283,6 +283,7 @@ protected function isAccessible(User $user, ?string $path = null): bool
 
 ## PHP Conventions
 - Always prefer Laravel's built-in helpers over custom implementations (e.g. `str()->plural()`, `Str::slug()`, `Arr::flatten()`, etc.). Do not reimplement what Laravel already provides.
+- For guard clauses that throw on a condition, always reach for `throw_if($condition, ExceptionClass::class, ...$args)` / `throw_unless($condition, ExceptionClass::class, ...$args)` before writing `if (…) { throw new …; }`. The Laravel helpers read as a single declarative line, and the extra args are forwarded to the exception constructor. Plain `if`/`throw` is only correct when the throw branch has to do additional work (logging, side effects) before throwing.
 - All methods must have explicit visibility (`public`, `protected`, or `private`). Never omit the visibility keyword, even on interface methods or static methods.
 - Methods that don't reference `$this` must be declared `static`, unless the class is injectable (DI service) — in that case, prefer instance methods for better testability and decoupling.
 - Always use the least visibility possible. Use `private` by default; only use `protected` or `public` when required by inheritance or external access.
@@ -295,6 +296,7 @@ protected function isAccessible(User $user, ?string $path = null): bool
 - When parsing or manipulating URLs, use `Illuminate\Support\Uri` instead of `parse_url()`.
 - Do not add return type declarations to controller methods — controller responses are too dynamic/flexible for strict return types.
 - Keep controllers thin. A controller method's job is: parse input → authorize → delegate → shape the response (resources/JSON). When a method starts accumulating data-loading orchestration, eager-load bookkeeping, multi-collection merges, or any multi-step domain logic, push that work into a service. Prefer extending an existing service in the same domain (e.g. `MediaBrowser` for browse-side folder operations) over creating a new one. Services return raw domain objects (Collections, Models) — Resource/JSON wrapping stays in the controller. Authorization stays in the controller too, so unauthorized requests fail before expensive data loads.
+- NEVER perform direct Eloquent writes from a controller — no `$model->update(...)`, `->save()`, `->create(...)`, `->delete()`, `->fill()->save()`, relationship `attach`/`detach`/`sync`, or `Model::query()->update/delete`. Every persistence operation goes through a service method (the service may write on the model directly). Controllers only read (via repositories), authorize, and delegate. Even a one-line `$model->update($changes)` belongs in a service — it's the seam where validation, events, and transactions later live. When the obvious service method is a full-update path that doesn't fit (e.g. a partial patch, or one with side effects like folder re-attachment or rule-wiping you don't want), add a focused service method (e.g. `PlaylistService::patchDetails`) rather than writing inline or misusing the heavy one.
 - Value objects in `app/Values/` must use a `final readonly class` with a `private __construct(...)` and a `public static function make(...): self` factory. Call sites construct them via `Foo::make(...)`, never `new Foo(...)`. The reference shape is `App\Values\Radio\RadioStationCreateData`.
 
 ## Environment Variables Documentation
@@ -325,7 +327,7 @@ protected function isAccessible(User $user, ?string $path = null): bool
     - Required structure: a `## What's Changed` section with bullets in the form `* <full conventional-commit subject> by @<author> in <PR or commit URL>`, optionally a `## New Contributors` section, and a trailing `**Full Changelog**: https://github.com/koel/koel/compare/vPREV...vX.Y.Z` line.
     - Do not rewrite or summarize commit subjects — keep them verbatim. Direct-to-master commits without PRs link to the commit SHA URL instead of a PR URL.
     - **Publish (un-draft) the release before tagging koel/franken or koel/docker.** Both downstream build scripts `curl https://github.com/koel/koel/releases/download/vX.Y.Z/koel-vX.Y.Z.tar.gz`, and that URL returns 404 for draft releases — the build fails. Apply notes and publish in one shot: `gh release edit vX.Y.Z --repo koel/koel --notes-file /tmp/notes.md --draft=false`. Only leave it as a draft if you're releasing koel/koel in isolation (no franken/docker companion).
-- If a downstream build fails because koel/koel was still a draft at the time, recover with: `gh workflow run release.yml --repo koel/franken -f koel_version=vX.Y.Z` for franken, and `gh workflow run release.yml --repo koel/docker -f koel_version=vX.Y.Z` for docker (the docker dispatch input was added in koel/docker#222 — fallback for pre-#222 docker builds is `gh run rerun <failed-run-id> --repo koel/docker`).
+- If a downstream build fails because koel/koel was still a draft at the time, recover with `gh workflow run release.yml --repo koel/franken -f koel_version=vX.Y.Z` for franken. koel/docker has no such input — koel/docker#226 removed `workflow_dispatch` so a tag push is the only way to release — so recover there with `gh run rerun <failed-run-id> --repo koel/docker`, which replays the build against the tag that already exists.
 
 ## AI Assistant Tools
 - When AI assistant tool capabilities change (added, removed, or updated), always update the sample prompts in `AiSamplePrompts.vue` to reflect the current abilities.
@@ -347,6 +349,9 @@ protected function isAccessible(User $user, ?string $path = null): bool
 - For purely-local submits (no server call), pass `useOverlay: false` and have `onSubmit` just emit. Use the optional `validator` callback for non-HTML5 rules (e.g. trim/whitespace).
 - Read `resources/assets/js/components/playlist/CreatePlaylistFolderForm.vue` before writing a new form — that's the reference shape.
 
+## Vue Component Decomposition
+- Always try to break Vue components into smaller, self-managed-state subcomponents. A component that hosts multiple stages, multiple modes, or multiple distinct UI shapes should split each into its own focused child. The parent becomes a thin orchestrator (state machine + API calls + composition); each child owns one shape with clear props in and events out, no service dependencies of its own, and is testable in isolation with minimal mocks. Reference shape: `TwoFactorAuthSettings.vue` (orchestrator) → `TwoFactorEnrollment.vue` / `TwoFactorRecoveryCodes.vue` / `TwoFactorManageActions.vue` (focused children).
+
 ## Vue Component Styling
 - Put shared/base Tailwind classes directly on the HTML element via the `class` attribute.
 - For variant-specific styles (e.g. modes, states), use custom CSS classes (`.initial`, `.chat`, `.user`, `.error`, etc.) with `@apply` in a scoped `<style>` block.
@@ -354,6 +359,7 @@ protected function isAccessible(User $user, ?string $path = null): bool
 
 ## Testing Assertions
 - When asserting two Eloquent models are the same, use `assertTrue($modelA->is($modelB))` instead of comparing IDs.
+- Never resort to `ReflectionClass` / `ReflectionProperty` / `ReflectionMethod` in tests to peek at private state, instantiate classes with private constructors, or invoke private methods. If a test "needs" reflection, the smell is the test or the code: the production class should expose what's necessary via a public factory, the dependency should be injectable, or the test should construct the dependency itself (TOTP and similar deterministic primitives need no shared instance). Refactor instead of reaching for reflection.
 
 ## Model Factories
 - Use `createOne()` to create a single model and `createMany()` to create a collection. Never use `create()` directly, as its return type is ambiguous (single model or collection depending on arguments).
@@ -369,6 +375,10 @@ protected function isAccessible(User $user, ?string $path = null): bool
 
 ## Code Reviews
 - When addressing PR review comments, do NOT blindly follow them. Always use your own knowledge and logic to evaluate whether the feedback makes sense. If it doesn't, push back and explain why.
+- CodeRabbit (and similar bots) split their output across two GitHub layers. Before claiming a review has been addressed, query **both**:
+  - `gh api repos/{owner}/{repo}/pulls/{n}/comments` — inline review comments on specific file/line positions (🟡 Minor / 🟠 Major / 🔴 Critical / ⚠️ Potential issue).
+  - `gh api repos/{owner}/{repo}/issues/{n}/comments` — issue-level (conversation) comments. CodeRabbit's PR-level summary lives here, and the **Nitpick comments** are bundled in a collapsible section inside that summary's body.
+  - Hitting only `/pulls/{n}/comments` misses every nitpick. Scan the issue-level summary body for `<details><summary>Nitpick` sections and triage each independently alongside the inline findings.
 
 ## Linting & Static Analysis
 - When running lint or static analysis (backend or frontend), fix ALL warnings and errors to ensure 100% clean output — even pre-existing issues unrelated to current changes.

@@ -101,17 +101,35 @@ class AlbumBuilder extends FavoriteableBuilder
         ]);
     }
 
+    private function withLastPlayedSubquery(): self
+    {
+        throw_unless($this->user, new LogicException('User must be set to query last played timestamps.'));
+
+        return $this->addSelect([
+            'last_played_at' => DB::table('interactions')
+                ->join('songs as songs_for_last_played', 'songs_for_last_played.id', 'interactions.song_id')
+                ->whereColumn('songs_for_last_played.album_id', 'albums.id')
+                ->where('interactions.user_id', $this->user->id)
+                ->selectRaw('MAX(interactions.last_played_at)'),
+        ]);
+    }
+
     private function withRatingSubquery(): self
     {
         throw_unless($this->user, new LogicException('User must be set to query album ratings.'));
 
-        return $this->addSelect([
-            'rating' => DB::table('ratings')
-                ->where('rateable_type', 'album')
-                ->where('user_id', $this->user->id)
-                ->whereColumn('rateable_id', 'albums.id')
-                ->selectRaw('COALESCE(MAX(rating), 0)'),
-        ]);
+        $this->leftJoin('ratings as album_ratings', function (JoinClause $join): void {
+            $join->on('album_ratings.rateable_id', 'albums.id')->where('album_ratings.rateable_type', 'album')->where(
+                'album_ratings.user_id',
+                $this->user->id,
+            );
+        })->addSelect(DB::raw('(COALESCE(album_ratings.rating, 0)) as rating'));
+
+        if ($this->getQuery()->groups) {
+            $this->groupBy('album_ratings.rating');
+        }
+
+        return $this;
     }
 
     public function withUserContext(
@@ -127,6 +145,7 @@ class AlbumBuilder extends FavoriteableBuilder
             ->when($includeFavoriteStatus, static fn (self $query) => $query->withFavoriteStatus($favoritesOnly))
             ->when($includePlayCount, static fn (self $query) => $query->withPlayCount($includeFavoriteStatus))
             ->withLengthSubquery()
+            ->withLastPlayedSubquery()
             ->withRatingSubquery();
     }
 

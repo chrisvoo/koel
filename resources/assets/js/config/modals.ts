@@ -5,7 +5,7 @@ export interface Modals {
   ADD_USER_FORM: never
   CREATE_EMBED_FORM: { embeddable: Embeddable }
   CREATE_PLAYLIST_FORM: { folder: PlaylistFolder | null; playables: Playable[] }
-  CREATE_PLAYLIST_FOLDER_FORM: never
+  CREATE_PLAYLIST_FOLDER_FORM: { parent: PlaylistFolder | null }
   CREATE_SMART_PLAYLIST_FORM: { folder: PlaylistFolder | null }
   EDIT_ALBUM_FORM: { album: Album }
   EDIT_ARTIST_FORM: { artist: Artist }
@@ -20,4 +20,5 @@ export interface Modals {
   KOEL_PLUS: never
   PLAYLIST_COLLABORATION: { playlist: Playlist }
   CREATE_THEME_FORM: never
+  REORDER_HOME_BLOCKS: { blocks: { id: string; label: string }[] }
 }

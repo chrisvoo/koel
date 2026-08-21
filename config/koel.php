@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\Acl\Role;
+
 return [
     'storage_driver' => env('STORAGE_DRIVER', 'local') ?: 'local',
 
@@ -39,6 +41,7 @@ return [
 
     'streaming' => [
         'bitrate' => env('TRANSCODE_BIT_RATE') ?: env('OUTPUT_BIT_RATE', 128),
+        'aac_fast' => env('TRANSCODE_AAC_FAST', true),
         'method' => env('STREAMING_METHOD'),
         'ffmpeg_path' => env('FFMPEG_PATH') ?: find_ffmpeg_path(),
         'transcode_flac' => env('TRANSCODE_FLAC', true),
@@ -202,6 +205,10 @@ return [
         'user_header' => env('PROXY_AUTH_USER_HEADER', 'remote-user'),
         'preferred_name_header' => env('PROXY_AUTH_PREFERRED_NAME_HEADER', 'remote-preferred-name'),
         'allow_list' => array_map(static fn ($entry) => trim($entry), explode(',', env('PROXY_AUTH_ALLOW_LIST', ''))),
+    ],
+
+    'sso' => [
+        'default_role' => Role::tryFrom(strtolower((string) env('SSO_DEFAULT_ROLE', ''))) ?? Role::default(),
     ],
 
     'ai' => [

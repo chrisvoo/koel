@@ -11,7 +11,15 @@ use App\Http\Controllers\API\Artist\ArtistController;
 use App\Http\Controllers\API\Artist\ArtistSongController;
 use App\Http\Controllers\API\Artist\FetchArtistEventsController;
 use App\Http\Controllers\API\Artist\FetchArtistInformationController;
-use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\Auth\LoginWithCredentialsController;
+use App\Http\Controllers\API\Auth\LoginWithOneTimeTokenController;
+use App\Http\Controllers\API\Auth\LogoutController;
+use App\Http\Controllers\API\Auth\TwoFactor\ConfirmController as ConfirmTwoFactorController;
+use App\Http\Controllers\API\Auth\TwoFactor\DisableController as DisableTwoFactorController;
+use App\Http\Controllers\API\Auth\TwoFactor\EnrollController as EnrollTwoFactorController;
+use App\Http\Controllers\API\Auth\TwoFactor\RegenerateRecoveryCodesController;
+use App\Http\Controllers\API\Auth\TwoFactorChallengeController;
+use App\Http\Controllers\API\ChangePasswordController;
 use App\Http\Controllers\API\DisconnectFromLastfmController;
 use App\Http\Controllers\API\Embed\EmbedController;
 use App\Http\Controllers\API\Embed\EmbedOptionsController;
@@ -93,14 +101,16 @@ use Pusher\Pusher;
 
 Route::prefix('api')
     ->middleware('api')
+    // @mago-ignore lint:halstead (a flat list of route definitions, not logic to break up)
     ->group(static function (): void {
         Route::get('ping', static fn () => null);
 
         Route::middleware('throttle:10,1')->group(static function (): void {
-            Route::post('me', [AuthController::class, 'login'])->name('auth.login');
-            Route::post('me/otp', [AuthController::class, 'loginUsingOneTimeToken']);
+            Route::post('me', LoginWithCredentialsController::class)->name('auth.login');
+            Route::post('me/otp', LoginWithOneTimeTokenController::class);
+            Route::post('me/two-factor-challenge', TwoFactorChallengeController::class);
 
-            Route::delete('me', [AuthController::class, 'logout']);
+            Route::delete('me', LogoutController::class);
 
             Route::post('forgot-password', ForgotPasswordController::class);
             Route::post('reset-password', ResetPasswordController::class);
@@ -114,6 +124,7 @@ Route::prefix('api')
             });
         });
 
+        // @mago-ignore lint:halstead (a flat list of route definitions, not logic to break up)
         Route::middleware('auth')->group(static function (): void {
             Route::get('one-time-token', GetOneTimeTokenController::class);
             Route::post('broadcasting/auth', static function (Request $request) {
@@ -226,10 +237,16 @@ Route::prefix('api')
             Route::apiResource('user', UserController::class)->except('show');
             Route::get('me', [ProfileController::class, 'show']);
             Route::put('me', [ProfileController::class, 'update']);
+            Route::put('me/password', ChangePasswordController::class);
             Route::patch('me/preferences', UpdateUserPreferenceController::class);
             Route::post('me/equalizer-presets', [EqualizerPresetController::class, 'store']);
             Route::delete('me/equalizer-presets/{id}', [EqualizerPresetController::class, 'destroy']);
             Route::post('me/subsonic-api-key/regenerate', RegenerateSubsonicApiKeyController::class);
+
+            Route::post('me/two-factor', EnrollTwoFactorController::class);
+            Route::post('me/two-factor/confirm', ConfirmTwoFactorController::class);
+            Route::post('me/two-factor/recovery-codes', RegenerateRecoveryCodesController::class);
+            Route::delete('me/two-factor', DisableTwoFactorController::class);
 
             // Last.fm-related routes
             Route::post('lastfm/session-key', SetLastfmSessionKeyController::class);

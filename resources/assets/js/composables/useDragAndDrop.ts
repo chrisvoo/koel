@@ -1,3 +1,4 @@
+import { ref } from 'vue'
 import { pluralize } from '@/utils/formatters'
 import { arrayify, getPlayableProp } from '@/utils/helpers'
 import { logger } from '@/utils/logger'
@@ -11,6 +12,24 @@ import { mediaBrowser } from '@/services/mediaBrowser'
 type Draggable = MaybeArray<Playable> | Album | Artist | Genre | Playlist | PlaylistFolder | MaybeArray<Song | Folder>
 const draggableTypes = <const>['playables', 'album', 'artist', 'genre', 'playlist', 'playlist-folder', 'browser-media']
 type DraggableType = (typeof draggableTypes)[number]
+
+export const currentDragType = ref<DraggableType | null>(null)
+
+const clearDragState = () => (currentDragType.value = null)
+
+document.addEventListener('dragend', clearDragState)
+document.addEventListener('drop', clearDragState, true)
+
+// Empty text hides the ghost — used when the hover target would no-op.
+export const setDragText = (text: string): void => {
+  const ghost = document.querySelector<HTMLElement>('#dragGhost')
+  if (!ghost) {
+    return
+  }
+
+  ghost.textContent = text
+  ghost.style.display = text ? 'block' : 'none'
+}
 
 // A transparent 1x1 image used to suppress the browser's default drag ghost.
 const emptyDragImage = (() => {
@@ -89,6 +108,7 @@ export const useDraggable = (type: DraggableType) => {
       return
     }
 
+    currentDragType.value = type
     event.dataTransfer.effectAllowed = 'copyMove'
 
     let text: string
@@ -182,10 +202,15 @@ export const useDroppable = (acceptedTypes: DraggableType[]) => {
         case 'playlist':
           const id = String(JSON.parse(event.dataTransfer!.getData('application/x-koel.playlist')))
           return playlistStore.byId(id) as T | undefined
+        case 'playlist-folder':
+          const folderId = String(JSON.parse(event.dataTransfer!.getData('application/x-koel.playlist-folder')))
+          return playlistFolderStore.byId(folderId) as T | undefined
         default:
+          return undefined
       }
     } catch (error: unknown) {
       logger.error(error, event)
+      return undefined
     }
   }
 
@@ -213,7 +238,9 @@ export const useDroppable = (acceptedTypes: DraggableType[]) => {
           return playlist ? await playableStore.fetchForPlaylist(playlist) : <Song[]>[]
         case 'playlist-folder':
           const folder = playlistFolderStore.byId(<string>data)
-          return folder ? await playableStore.fetchForPlaylistFolder(folder) : <Song[]>[]
+          return folder
+            ? await playableStore.fetchForPlaylists(playlistFolderStore.playlistsInTree(folder))
+            : <Song[]>[]
         case 'browser-media':
           return await playableStore.resolveSongsFromMediaReferences(data)
         case 'genre':

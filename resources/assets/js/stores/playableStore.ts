@@ -43,6 +43,7 @@ export interface SongUpdateResult {
 }
 
 export type SongListPaginateParams = PaginateParams<PlayableListSortField>
+export type SongListCursorPaginateParams = CursorPaginateParams<PlayableListSortField>
 
 const watchPlayCount = (playable: Playable) => {
   watch(
@@ -81,11 +82,11 @@ export const playableStore = {
     const playable = this.vault.get(id)
 
     if (!playable) {
-      return
+      return undefined
     }
 
     if (isSong(playable) && playable.deleted) {
-      return
+      return undefined
     }
 
     return playable
@@ -245,10 +246,10 @@ export const playableStore = {
     return songs
   },
 
-  async fetchForPlaylistFolder(folder: PlaylistFolder) {
+  async fetchForPlaylists(playlists: Playlist[]) {
     const playables: Playable[] = []
 
-    for await (const playlist of playlistStore.byFolder(folder)) {
+    for await (const playlist of playlists) {
       playables.push(...(await this.fetchForPlaylist(playlist)))
     }
 
@@ -271,18 +272,19 @@ export const playableStore = {
     )
   },
 
-  async paginateSongsByGenre(genre: Genre | Genre['id'], params: SongListPaginateParams) {
+  async paginateSongsByGenre(genre: Genre | Genre['id'], params: SongListCursorPaginateParams) {
     const id = typeof genre === 'string' ? genre : genre.id
 
-    const resource = await http.get<PaginatorResource<Song>>(
-      `genres/${id}/songs?${new URLSearchParams(flattenParams(params))}`,
-    )
+    const query = new URLSearchParams(flattenParams(params))
+    query.set('cursor', params.cursor ?? '')
+
+    const resource = await http.get<CursorPaginatorResource<Song>>(`genres/${id}/songs?${query}`)
 
     const songs = this.syncWithVault(resource.data) as Song[]
 
     return {
       songs,
-      nextPage: resource.links.next ? ++resource.meta.current_page : null,
+      nextCursor: resource.meta.next_cursor,
     }
   },
 
@@ -297,11 +299,14 @@ export const playableStore = {
     return this.syncWithVault(await http.get<Song[]>(`genres/${id}/songs/queue?${params}`))
   },
 
-  async paginateSongs(params: SongListPaginateParams) {
-    const resource = await http.get<PaginatorResource<Playable>>(`songs?${new URLSearchParams(flattenParams(params))}`)
+  async paginateSongs(params: SongListCursorPaginateParams) {
+    const query = new URLSearchParams(flattenParams(params))
+    query.set('cursor', params.cursor ?? '')
+
+    const resource = await http.get<CursorPaginatorResource<Playable>>(`songs?${query}`)
     this.state.playables = unionBy(this.state.playables, this.syncWithVault(resource.data), 'id')
 
-    return resource.links.next ? ++resource.meta.current_page : null
+    return resource.meta.next_cursor
   },
 
   getMostPlayedSongs(count: number) {

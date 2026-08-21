@@ -103,8 +103,9 @@ Required when `STORAGE_DRIVER=webdav`.
 | Variable | Description | Default |
 |---|---|---|
 | `STREAMING_METHOD` | The streaming method. Options: `php`, `x-sendfile`, `x-accel-redirect`. See [Streaming Music](usage/streaming). Using `x-sendfile` or `x-accel-redirect` is highly recommended for better performance. | `php` |
-| `TRANSCODE_FLAC` | Whether to transcode FLAC to MP3 on the fly. Set to `false` to stream FLAC as-is. | `true` |
+| `TRANSCODE_FLAC` | Whether to transcode FLAC to AAC on the fly. Set to `false` to stream FLAC as-is. | `true` |
 | `TRANSCODE_BIT_RATE` | The bit rate (in kbps) for transcoded audio. Higher values mean better quality but slower streaming. | `128` |
+| `TRANSCODE_AAC_FAST` | Whether to use FFmpeg's faster AAC coding algorithm. Set to `false` to use its default AAC coder. | `true` |
 | `FFMPEG_PATH` | The full path to the ffmpeg binary. Automatically detected if left empty. | _(auto-detected)_ |
 | `TRANSCODE_TIMEOUT` | The maximum time in seconds allowed for transcoding a single file. Increase for very large files. `0` disables the timeout. | `300` |
 
@@ -145,6 +146,7 @@ Koel Plus only. See [Single Sign-On](plus/sso).
 | `SSO_OIDC_CLIENT_ID` | OAuth client ID registered with the IdP. | _(empty)_ |
 | `SSO_OIDC_CLIENT_SECRET` | OAuth client secret. | _(empty)_ |
 | `SSO_OIDC_BUTTON_LABEL` | Label shown on the OIDC login button. | `OpenID Connect` |
+| `SSO_DEFAULT_ROLE` | The role given to a user on their first SSO login: `user` or `guest`. Applies to OIDC, Google, and reverse-proxy auth. | `user` |
 
 ## Proxy Authentication
 
