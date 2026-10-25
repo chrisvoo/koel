@@ -34,6 +34,9 @@ class ScanCommand extends Command
     private string $mediaPath;
     private ProgressBar $progressBar;
 
+    /** @var array<ScanResult> Invalid files, collected while scanning, to list after the summary. */
+    private array $errorResults = [];
+
     public function __construct(
         private readonly DirectoryScanner $directoryScanner,
         private readonly WatchRecordScanner $watchRecordScanner,
@@ -125,12 +128,14 @@ class ScanCommand extends Command
             "<fg=red>{$summary->errorCount}</> invalid file(s)",
         ]);
 
-        $errors = $results->error();
-        if ($errors->isNotEmpty()) {
-            $rows = $errors->map(
-                static fn (ScanResult $result) => [$result->path, $result->type->value, $result->error]
-            )->values()->all();
-            $this->table(['Path', 'Type', 'Message'], $rows);
+        if ($this->errorResults) {
+            $this->table(
+                ['Path', 'Type', 'Message'],
+                array_map(
+                    static fn (ScanResult $result) => [$result->path, $result->type->value, $result->error],
+                    $this->errorResults,
+                ),
+            );
         }
     }
 
@@ -151,6 +156,10 @@ class ScanCommand extends Command
 
     public function onScanProgress(ScanResult $result): void
     {
+        if ($result->isError()) {
+            $this->errorResults[] = $result;
+        }
+
         if (!$this->option('verbose')) {
             $this->progressBar->advance();
 
