@@ -11,8 +11,10 @@
       You can still update your name and avatar here.
     </AlertBox>
 
-    <div class="flex flex-col gap-3 md:flex-row md:gap-8 w-full md:w-[640px]">
-      <div class="flex-1 space-y-5">
+    <div class="flex flex-col gap-6 max-w-md">
+      <EditableProfileAvatar v-model:avatar="data.avatar" :name="data.name" />
+
+      <div class="space-y-5">
         <FormRow>
           <template #label>Name</template>
           <TextInput v-model="data.name" data-testid="name" name="name" />
@@ -30,10 +32,6 @@
             type="email"
           />
         </FormRow>
-      </div>
-
-      <div>
-        <EditableProfileAvatar v-model:avatar="data.avatar" :name="data.name" />
       </div>
     </div>
 
@@ -58,7 +56,7 @@ import AlertBox from '@/components/ui/AlertBox.vue'
 import TextInput from '@/components/ui/form/TextInput.vue'
 import FormRow from '@/components/ui/form/FormRow.vue'
 
-const { toastSuccess } = useMessageToaster()
+const { toastSuccess, toastInfo } = useMessageToaster()
 const { currentUser } = useAuthorization()
 
 const isDemo = window.KOEL.is_demo
@@ -77,7 +75,14 @@ const { data, handleSubmit } = useForm<UpdateCurrentProfileData>({
   },
   onSuccess: () => {
     data.avatar = undefined
-    toastSuccess('Profile updated.')
+
+    if (data.email === currentUser.value.email) {
+      toastSuccess('Profile updated.')
+      return
+    }
+
+    toastInfo('Confirmation email sent.')
+    data.email = currentUser.value.email
   },
 })
 </script>

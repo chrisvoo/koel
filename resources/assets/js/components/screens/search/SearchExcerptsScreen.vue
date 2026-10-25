@@ -42,6 +42,7 @@ import { intersectionBy } from 'lodash-es'
 import { ref, toRef } from 'vue'
 import { eventBus } from '@/utils/eventBus'
 import { searchStore } from '@/stores/searchStore'
+import { usePageTitle } from '@/composables/usePageTitle'
 
 import ScreenHeader from '@/components/ui/ScreenHeader.vue'
 import ScreenEmptyState from '@/components/ui/ScreenEmptyState.vue'
@@ -56,20 +57,33 @@ const excerpt = toRef(searchStore.state, 'excerpt')
 const q = ref('')
 const searching = ref(false)
 
+usePageTitle().useScreenTitle('Search.Excerpt', () => q.value)
+
+let latestSearchId = 0
+
 const doSearch = async () => {
+  const searchId = ++latestSearchId
+
   searching.value = true
   await searchStore.excerptSearch(q.value)
-  searching.value = false
+
+  if (searchId === latestSearchId) {
+    searching.value = false
+  }
 }
 
-eventBus
-  .on('SEARCH_KEYWORDS_CHANGED', async _q => {
-    q.value = _q
+const searchKeywords = async (keywords: string) => {
+  q.value = keywords
+  await doSearch()
+}
+
+if (searchStore.state.keywords) {
+  searchKeywords(searchStore.state.keywords)
+}
+
+eventBus.on('SEARCH_KEYWORDS_CHANGED', searchKeywords).on('SONGS_DELETED', async songs => {
+  if (intersectionBy(songs, excerpt.value.playables, 'id').length !== 0) {
     await doSearch()
-  })
-  .on('SONGS_DELETED', async songs => {
-    if (intersectionBy(songs, excerpt.value.playables, 'id').length !== 0) {
-      await doSearch()
-    }
-  })
+  }
+})
 </script>

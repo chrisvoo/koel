@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Facades\License;
 use App\Models\Song;
 use App\Models\User;
+use App\Services\Integrations\MusicBrainzService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\URL;
@@ -24,6 +25,7 @@ class SongResource extends JsonResource
         'album_artist_id',
         'album_artist_name',
         'album_cover',
+        'album_small_cover',
         'length',
         'liked',
         'rating',
@@ -36,6 +38,7 @@ class SongResource extends JsonResource
         'created_at',
         'need_to_be_trimmed',
         'need_metatag_update',
+        'mbid',
     ];
 
     public const array PAGINATION_JSON_STRUCTURE = [
@@ -102,6 +105,7 @@ class SongResource extends JsonResource
         $isPlus = once(static fn () => License::isPlus());
         $user = $this->user ?? once(static fn () => auth()->user());
         $embedding = $request->routeIs('embeds.payload');
+        $musicBrainzEnabled = MusicBrainzService::enabled();
 
         $data = [
             'type' => Str::plural($this->song->type->value),
@@ -115,6 +119,7 @@ class SongResource extends JsonResource
             'album_artist_id' => $this->unless($embedding, $this->song->album_artist?->id),
             'album_artist_name' => $this->unless($embedding, $this->song->album_artist?->name),
             'album_cover' => image_storage_url($this->song->album?->cover),
+            'album_small_cover' => image_storage_url($this->song->album?->small_cover ?: $this->song->album?->cover),
             'length' => $this->song->length,
             'liked' => $this->unless($embedding, $this->song->favorite), // backwards compatibility
             'favorite' => $this->unless($embedding, $this->song->favorite),
@@ -128,6 +133,9 @@ class SongResource extends JsonResource
             'created_at' => $this->unless($embedding, $this->song->created_at),
             'need_to_be_trimmed' => $this->unless($embedding, $this->song->need_to_be_trimmed),
             'need_metatag_update' => $this->unless($embedding, $this->song->need_metatag_update),
+            'mbid' => $this->when($musicBrainzEnabled && !$embedding, $this->song->mbid),
+            'loudness' => $this->when($isPlus, fn () => $this->song->analysis?->loudness),
+            'true_peak' => $this->when($isPlus, fn () => $this->song->analysis?->true_peak),
             'embed_stream_url' => $this->when($embedding, fn () => URL::temporarySignedRoute(
                 'embeds.stream',
                 now()->addDay(),
@@ -151,6 +159,7 @@ class SongResource extends JsonResource
         } else {
             $data += [
                 'owner_id' => $this->unless($embedding, $this->song->owner->public_id),
+                'file_size' => $this->unless($embedding, $this->song->file_size),
                 'is_external' => $this->unless($embedding, fn () => $isPlus && !$this->song->ownedBy($user)),
             ];
         }

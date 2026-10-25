@@ -1,5 +1,9 @@
 <template>
-  <article class="w-[650px]" :class="(loading || encryptingOptions) && 'pointer-events-none opacity-70'">
+  <article
+    class="w-[650px]"
+    :class="(loading || encryptingOptions) && 'pointer-events-none opacity-70'"
+    @keydown.esc="emit('close')"
+  >
     <header>
       <h1>Embed {{ typeLabel }}</h1>
     </header>
@@ -48,6 +52,7 @@ import { copyText } from '@/utils/helpers'
 import { useMessageToaster } from '@/composables/useMessageToaster'
 import { useErrorHandler } from '@/composables/useErrorHandler'
 import { useForm } from '@/composables/useForm'
+import { clientUrl } from '@/utils/clientUrl'
 
 import Btn from '@/components/ui/form/Btn.vue'
 import EmbedOptionsPanel from '@/components/embed/EmbedOptionsPanel.vue'
@@ -89,7 +94,7 @@ const embedSrc = computed(() => {
     return null
   }
 
-  return `${window.KOEL.base_url}#/embed/${embed.value.id}/${encryptedOptions.value}`
+  return clientUrl(`/embed/${embed.value.id}/${encryptedOptions.value}`)
 })
 
 const code = computed(() => {

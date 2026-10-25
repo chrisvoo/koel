@@ -52,7 +52,7 @@
         >
           <FormRow v-if="editingOnlyOneSong">
             <template #label>Title</template>
-            <TextInput v-model="data.title" v-koel-focus data-testid="title-input" name="title" title="Title" />
+            <TextInput v-model="data.title" v-koel-focus data-testid="title-input" name="title" />
           </FormRow>
 
           <FormRow :cols="2">
@@ -146,7 +146,7 @@
           aria-labelledby="editSongTabLyrics"
         >
           <FormRow>
-            <TextArea v-model="data.lyrics" v-koel-focus data-testid="lyrics-input" name="lyrics" title="Lyrics" />
+            <TextArea v-model="data.lyrics" v-koel-focus data-testid="lyrics-input" name="lyrics" />
           </FormRow>
         </TabPanel>
 
@@ -182,7 +182,6 @@ import { pluralize } from '@/utils/formatters'
 import { eventBus } from '@/utils/eventBus'
 import type { SongUpdateData, SongUpdateResult } from '@/stores/playableStore'
 import { playableStore as songStore } from '@/stores/playableStore'
-import { useDialogBox } from '@/composables/useDialogBox'
 import { useMessageToaster } from '@/composables/useMessageToaster'
 import { genres } from '@/config/genres'
 import { useForm } from '@/composables/useForm'
@@ -210,7 +209,6 @@ const currentTab = ref(props.initialTab)
 const close = () => emit('close')
 
 const { toastSuccess } = useMessageToaster()
-const { showConfirmDialog } = useDialogBox()
 const { cover: defaultCover } = useBranding()
 
 const editingOnlyOneSong = songs.length === 1
@@ -250,14 +248,20 @@ if (allSongsAreInSameAlbum && allSongsAreFromSameArtist && songs[0].album_artist
   initialValues.album_artist_name = allSongsShareSameValue('album_artist_name') ? songs[0].album_artist_name : ''
 }
 
-const { data, isPristine, handleSubmit } = useForm<SongUpdateData>({
+const initialAlbumArtistName = initialValues.album_artist_name
+
+const withoutUntouchedAlbumArtist = ({ album_artist_name, ...otherData }: SongUpdateData): SongUpdateData =>
+  album_artist_name === initialAlbumArtistName ? otherData : { ...otherData, album_artist_name }
+
+const { data, handleSubmit, maybeClose } = useForm<SongUpdateData>({
   initialValues,
-  onSubmit: async data => await songStore.updateSongs(songs, data),
+  onSubmit: async data => await songStore.updateSongs(songs, withoutUntouchedAlbumArtist(data)),
   onSuccess: (result: SongUpdateResult) => {
     toastSuccess(`Updated ${pluralize(songs, 'song')}.`)
     eventBus.emit('SONGS_UPDATED', result)
     close()
   },
+  onClose: close,
 })
 
 const displayedTitle = computed(() => (editingOnlyOneSong ? data.title : `${songs.length} songs selected`))
@@ -269,12 +273,6 @@ const displayedArtistName = computed(() => {
 const displayedAlbumName = computed(() =>
   allSongsAreInSameAlbum || data.album_name ? data.album_name : 'Mixed Albums',
 )
-
-const maybeClose = async () => {
-  if (isPristine() || (await showConfirmDialog('Discard all changes?'))) {
-    close()
-  }
-}
 </script>
 
 <style lang="postcss" scoped>

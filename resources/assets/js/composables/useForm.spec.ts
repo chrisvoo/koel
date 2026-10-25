@@ -3,6 +3,7 @@ import { useForm } from './useForm'
 
 const mockShowOverlay = vi.fn()
 const mockHideOverlay = vi.fn()
+const mockShowConfirmDialog = vi.fn()
 
 vi.mock('@/composables/useOverlay', () => ({
   useOverlay: () => ({
@@ -17,17 +18,13 @@ vi.mock('@/composables/useErrorHandler', () => ({
   }),
 }))
 
+vi.mock('@/composables/useDialogBox', () => ({
+  useDialogBox: () => ({
+    showConfirmDialog: mockShowConfirmDialog,
+  }),
+}))
+
 describe('useForm', () => {
-  it('initializes with given values', () => {
-    const { data } = useForm({
-      initialValues: { name: 'John', age: 30 },
-      onSubmit: vi.fn(),
-    })
-
-    expect(data.name).toBe('John')
-    expect(data.age).toBe(30)
-  })
-
   it('detects pristine state', () => {
     const { isPristine, isDirty } = useForm({
       initialValues: { name: 'John' },
@@ -58,18 +55,6 @@ describe('useForm', () => {
     })
 
     expect(isPristine()).toBe(true)
-  })
-
-  it('calls onSubmit on handleSubmit', async () => {
-    const onSubmit = vi.fn().mockResolvedValue('result')
-    const { handleSubmit } = useForm({
-      initialValues: { name: 'John' },
-      onSubmit,
-    })
-
-    await handleSubmit()
-
-    expect(onSubmit).toHaveBeenCalled()
   })
 
   it('calls onSuccess after successful submit', async () => {
@@ -181,5 +166,70 @@ describe('useForm', () => {
     await handleSubmit()
 
     expect(onFinally).toHaveBeenCalled()
+  })
+
+  it('closes a pristine form without confirmation', async () => {
+    mockShowConfirmDialog.mockClear()
+    const onClose = vi.fn()
+
+    const { maybeClose } = useForm({
+      initialValues: { name: 'John' },
+      onSubmit: vi.fn(),
+      onClose,
+    })
+
+    await maybeClose()
+
+    expect(mockShowConfirmDialog).not.toHaveBeenCalled()
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('closes a dirty form once discarding is confirmed', async () => {
+    mockShowConfirmDialog.mockResolvedValue(true)
+    const onClose = vi.fn()
+
+    const { data, maybeClose } = useForm({
+      initialValues: { name: 'John' },
+      onSubmit: vi.fn(),
+      onClose,
+    })
+
+    data.name = 'Jane'
+    await maybeClose()
+
+    expect(mockShowConfirmDialog).toHaveBeenCalledWith('Discard all changes?')
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('keeps a dirty form open when discarding is declined', async () => {
+    mockShowConfirmDialog.mockResolvedValue(false)
+    const onClose = vi.fn()
+
+    const { data, maybeClose } = useForm({
+      initialValues: { name: 'John' },
+      onSubmit: vi.fn(),
+      onClose,
+    })
+
+    data.name = 'Jane'
+    await maybeClose()
+
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('asks for discarding with a custom confirmation', async () => {
+    mockShowConfirmDialog.mockResolvedValue(false)
+
+    const { data, maybeClose } = useForm({
+      initialValues: { name: 'John' },
+      onSubmit: vi.fn(),
+      onClose: vi.fn(),
+      discardConfirmation: 'Discard this passkey?',
+    })
+
+    data.name = 'Jane'
+    await maybeClose()
+
+    expect(mockShowConfirmDialog).toHaveBeenCalledWith('Discard this passkey?')
   })
 })

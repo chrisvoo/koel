@@ -11,10 +11,22 @@
       <span class="size-[48px] flex-none">
         <AlbumOrArtistThumbnail :entity="album" size="sm" />
       </span>
-      <a :href="url('albums.show', { id: album.id })" class="truncate">{{ album.name }}</a>
+      <span class="flex flex-col gap-1 min-w-0">
+        <a :href="url('albums.show', { id: album.id })" class="truncate">{{ album.name }}</a>
+        <span v-if="shouldShowColumn('artist')" class="md:hidden truncate text-[0.9rem] text-k-fg-50">
+          <a
+            v-if="artistStore.isStandard(album.artist_name)"
+            :href="url('artists.show', { id: album.artist_id })"
+            class="text-k-fg-50 hover:text-k-fg"
+          >
+            {{ album.artist_name }}
+          </a>
+          <template v-else>{{ album.artist_name }}</template>
+        </span>
+      </span>
     </span>
-    <span v-if="shouldShowColumn('artist')" class="artist truncate">
-      <a v-if="artistStore.isStandard(album.artist_id)" :href="url('artists.show', { id: album.artist_id })">
+    <span v-if="shouldShowColumn('artist')" class="artist max-md:hidden truncate">
+      <a v-if="artistStore.isStandard(album.artist_name)" :href="url('artists.show', { id: album.artist_id })">
         {{ album.artist_name }}
       </a>
       <template v-else>{{ album.artist_name }}</template>
@@ -30,8 +42,9 @@
       <FavoriteButton :favorite="album.favorite" @toggle="emit('toggle-favorite', album)" />
     </span>
     <span class="extra">
-      <button class="text-k-fg-50 hover:text-k-fg p-1" title="More actions" @click="onContextMenu">
+      <button v-koel-tooltip class="text-k-fg-50 hover:text-k-fg p-1" @click="onContextMenu">
         <Icon :icon="faEllipsis" />
+        <span class="sr-only">More actions</span>
       </button>
     </span>
   </article>

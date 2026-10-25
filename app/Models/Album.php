@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Builders\AlbumBuilder;
 use App\Models\Concerns\Albums\HasAlbumAttributes;
+use App\Models\Concerns\HasMbid;
 use App\Models\Concerns\MorphsToEmbeds;
 use App\Models\Concerns\MorphsToFavorites;
 use App\Models\Concerns\MorphsToRatings;
@@ -34,17 +35,22 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property ?Carbon $favorited_at When the scoped user favorited the album, if at all
  * @property ?Carbon $last_played_at When the scoped user last played the album, if at all
  * @property ?int $year
+ * @property ?string $description Description written by the user, as sanitized HTML
  * @property ?string $thumbnail The album's thumbnail file name
  * @property Artist $artist The album's artist
  * @property Carbon $created_at
  * @property Collection<array-key, Song> $songs
  * @property User $user
  * @property bool $is_unknown If the album is the Unknown Album
+ * @property bool $is_standard If the album is not the Unknown Album
+ * @property bool $is_identifiable If both the album and its artist are known, so online sources can look it up
  * @property int $user_id
  * @property string $artist_id
  * @property string $artist_name
  * @property string $cover The album cover's file name
+ * @property ?string $small_cover The file name of a sharp, downsized copy of the cover, for small renders
  * @property string $id
+ * @property ?string $mbid The MusicBrainz release ID
  * @property string $name Name of the album
  *
  * @method static AlbumFactory factory(...$parameters)
@@ -58,6 +64,7 @@ class Album extends Model implements AuditableContract, Embeddable, Favoriteable
 {
     use Auditable;
     use HasAlbumAttributes;
+    use HasMbid;
     use HasFactory;
     use HasUlids;
     use MorphsToEmbeds;
@@ -140,5 +147,19 @@ class Album extends Model implements AuditableContract, Embeddable, Favoriteable
         }
 
         return $array;
+    }
+
+    public function setYearIfMissing(?int $year): void
+    {
+        if (!$year || $this->year) {
+            return;
+        }
+
+        $stored = static::query()->whereKey($this->getKey())->whereNull('year')->update(['year' => $year]) > 0;
+
+        if ($stored) {
+            $this->year = $year;
+            $this->syncOriginalAttribute('year');
+        }
     }
 }

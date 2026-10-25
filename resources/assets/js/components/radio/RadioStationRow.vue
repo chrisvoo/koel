@@ -12,9 +12,21 @@
       >
         <img v-if="station.logo" :src="station.logo" alt="" class="w-full aspect-square object-cover" loading="lazy" />
       </span>
-      <span class="truncate" :title="station.name">{{ station.name }}</span>
+      <span class="flex flex-col gap-1 min-w-0">
+        <span class="truncate" :title="station.name">{{ station.name }}</span>
+        <span
+          v-if="shouldShowColumn('description') && station.description"
+          class="md:hidden truncate text-[0.9rem] text-k-fg-50"
+        >
+          {{ station.description }}
+        </span>
+      </span>
     </span>
-    <span v-if="shouldShowColumn('description')" class="description truncate" :title="station.description">
+    <span
+      v-if="shouldShowColumn('description')"
+      class="description max-md:hidden truncate"
+      :title="station.description"
+    >
       {{ station.description }}
     </span>
     <span v-if="shouldShowColumn('created_at')" class="created-at text-k-fg-50">{{ formatCreatedAt }}</span>
@@ -22,8 +34,9 @@
       <FavoriteButton :favorite="station.favorite" @toggle="emit('toggle-favorite', station)" />
     </span>
     <span class="extra">
-      <button class="text-k-fg-50 hover:text-k-fg p-1" title="More actions" @click="onContextMenu">
+      <button v-koel-tooltip class="text-k-fg-50 hover:text-k-fg p-1" @click="onContextMenu">
         <Icon :icon="faEllipsis" />
+        <span class="sr-only">More actions</span>
       </button>
     </span>
   </article>

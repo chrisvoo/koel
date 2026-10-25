@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Repositories\UserRepository;
 use App\Services\Scanners\DirectoryScanner;
 use App\Services\Scanners\WatchRecordScanner;
+use App\Services\SettingService;
 use App\Values\Scanning\ScanConfiguration;
 use App\Values\Scanning\ScanResult;
 use App\Values\WatchRecord\InotifyWatchRecord;
@@ -16,7 +17,6 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Symfony\Component\Console\Helper\ProgressBar;
-use Symfony\Component\Finder\Finder;
 
 class ScanCommand extends Command
 {
@@ -38,6 +38,7 @@ class ScanCommand extends Command
         private readonly DirectoryScanner $directoryScanner,
         private readonly WatchRecordScanner $watchRecordScanner,
         private readonly UserRepository $userRepository,
+        private readonly SettingService $settingService,
     ) {
         parent::__construct();
     }
@@ -57,13 +58,26 @@ class ScanCommand extends Command
             return self::INVALID;
         }
 
+        if (!Setting::get('media_path') && !$this->input->isInteractive()) {
+            $this->components->error("Media path hasn't been configured. Run this command interactively to set it up.");
+
+            return self::INVALID;
+        }
+
         $this->mediaPath = $this->getMediaPath();
 
         $config = ScanConfiguration::make(
             owner: $this->getOwner(),
             // When scanning via CLI, the songs should be public by default, unless explicitly specified otherwise.
             makePublic: !$this->option('private'),
-            ignores: collect($this->option('ignore'))->sort()->values()->all(),
+            ignores: collect($this->option('ignore'))
+                ->flatMap(static fn (string $tags) => explode(',', $tags))
+                ->map(static fn (string $tag) => trim($tag))
+                ->filter()
+                ->unique()
+                ->sort()
+                ->values()
+                ->all(),
             force: $this->option('force'),
         );
 
@@ -83,8 +97,8 @@ class ScanCommand extends Command
      */
     private function scanMediaPath(ScanConfiguration $config): void
     {
-        $this->directoryScanner->on(ScanEvent::PATHS_GATHERED, function (Finder $files): void {
-            $this->progressBar = new ProgressBar($this->output, $files->count());
+        $this->directoryScanner->on(ScanEvent::PATHS_GATHERED, function (int $pathCount): void {
+            $this->progressBar = new ProgressBar($this->output, $pathCount);
         });
 
         $this->directoryScanner->on(ScanEvent::SCAN_PROGRESS, [$this, 'onScanProgress']);
@@ -100,15 +114,15 @@ class ScanCommand extends Command
             $this->components->info('Ignoring tag(s): ' . implode(', ', $config->ignores));
         }
 
-        $results = $this->directoryScanner->scan((string) Setting::get('media_path'), $config, $jobs);
+        $summary = $this->directoryScanner->scan((string) Setting::get('media_path'), $config, $jobs);
 
         $this->newLine(2);
         $this->components->info('Scanning completed!');
 
         $this->components->bulletList([
-            "<fg=green>{$results->success()->count()}</> new or updated song(s)",
-            "<fg=yellow>{$results->skipped()->count()}</> unchanged song(s)",
-            "<fg=red>{$results->error()->count()}</> invalid file(s)",
+            "<fg=green>{$summary->successCount}</> new or updated song(s)",
+            "<fg=yellow>{$summary->skippedCount}</> unchanged song(s)",
+            "<fg=red>{$summary->errorCount}</> invalid file(s)",
         ]);
 
         $errors = $results->error();
@@ -171,14 +185,11 @@ class ScanCommand extends Command
             $path = $this->ask('Absolute path to your media directory');
 
             if (File::isDirectory($path) && File::isReadable($path)) {
-                Setting::set('media_path', $path);
-                break;
+                return $this->settingService->updateMediaPath($path);
             }
 
             $this->error('The path does not exist or is not readable. Try again.');
         }
-
-        return $path;
     }
 
     private function getOwner(): User

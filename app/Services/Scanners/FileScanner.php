@@ -17,7 +17,7 @@ class FileScanner
         private readonly MediaInfoScanner $mediaInfoScanner,
     ) {}
 
-    public function scan(string|SplFileInfo $path): ScanInformation
+    public function scan(string|SplFileInfo $path, ?string $originalFileName = null): ScanInformation
     {
         $file = $path instanceof SplFileInfo ? $path : new SplFileInfo($path);
         $filePath = $file->getRealPath();
@@ -27,7 +27,7 @@ class FileScanner
         if (Arr::get($raw, 'playtime_seconds')) {
             $this->getID3->CopyTagsToComments($raw);
 
-            return tap(ScanInformation::fromGetId3Info($raw, $filePath), function (ScanInformation $info) use (
+            return tap(ScanInformation::fromGetId3Info($raw, $filePath, $originalFileName), function (ScanInformation $info) use (
                 $filePath,
             ): void {
                 $info->lyrics = $info->lyrics ?: $this->lrcReader->tryReadForMediaFile($filePath);

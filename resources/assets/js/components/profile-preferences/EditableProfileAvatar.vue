@@ -1,20 +1,23 @@
 <template>
-  <div class="avatar-width ring-4 ring-white mt-8 rounded-full relative overflow-hidden aspect-square">
+  <div class="avatar-width ring-4 ring-white rounded-full relative overflow-hidden aspect-square">
     <UserAvatar v-if="previewedUser.avatar" :user="previewedUser" class="avatar-width" />
 
     <div
       class="absolute top-0 rounded-full w-full aspect-square flex items-center justify-center gap-2 pt-[50%] bg-black/50 opacity-0 hover:opacity-100 transition-opacity duration-300"
     >
-      <button class="control" title="Pick a new avatar" type="button" @click.prevent="openFileDialog">
+      <button v-koel-tooltip class="control" type="button" @click.prevent="openFileDialog">
         <Icon :icon="faUpload" />
+        <span class="sr-only">Pick a new avatar</span>
       </button>
 
-      <button v-if="isChanged" class="control" title="Reset avatar" type="button" @click.prevent="resetAvatar">
+      <button v-if="isChanged" v-koel-tooltip class="control" type="button" @click.prevent="resetAvatar">
         <Icon :icon="faRefresh" />
+        <span class="sr-only">Reset avatar</span>
       </button>
 
-      <button v-else class="control" title="Remove avatar" type="button" @click.prevent="removeAvatar">
+      <button v-else v-koel-tooltip class="control" type="button" @click.prevent="removeAvatar">
         <Icon :icon="faTimes" />
+        <span class="sr-only">Remove avatar</span>
       </button>
     </div>
 

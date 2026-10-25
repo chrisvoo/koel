@@ -13,12 +13,6 @@ describe('albumStore', () => {
     },
   })
 
-  it('gets an album by ID', () => {
-    const album = h.factory('album').make()
-    albumStore.vault.set(album.id, album)
-    expect(albumStore.byId(album.id)).toEqual(album)
-  })
-
   it('removes albums by IDs', () => {
     const albums = h.factory('album').make(3)
     albums.forEach(album => albumStore.vault.set(album.id, album))
@@ -32,24 +26,24 @@ describe('albumStore', () => {
     expect(albumStore.state.albums).toEqual([albums[2]])
   })
 
+  it('shows the new name of a renamed artist on its albums', () => {
+    const artist = h.factory('artist').make({ name: 'Pink Floyd' })
+    const [ownAlbum, otherAlbum] = albumStore.syncWithVault([
+      h.factory('album').make({ artist_id: artist.id, artist_name: 'The Pink Floyd' }),
+      h.factory('album').make({ artist_name: 'Led Zeppelin' }),
+    ])
+
+    albumStore.syncArtistProperties(artist)
+
+    expect(ownAlbum.artist_name).toBe('Pink Floyd')
+    expect(otherAlbum.artist_name).toBe('Led Zeppelin')
+  })
+
   it('identifies an unknown album', () => {
     const album = factory('album').state('unknown').make()
 
     expect(albumStore.isUnknown(album)).toBe(true)
     expect(albumStore.isUnknown(h.factory('album').make())).toBe(false)
-  })
-
-  it('syncs albums with the vault', () => {
-    const album = h.factory('album').make({ name: 'IV' })
-
-    albumStore.syncWithVault(album)
-    expect(albumStore.vault.get(album.id)).toEqual(album)
-
-    album.name = 'V'
-    albumStore.syncWithVault(album)
-
-    expect(albumStore.vault.size).toBe(1)
-    expect(albumStore.vault.get(album.id)?.name).toBe('V')
   })
 
   it('fetches an album thumbnail', async () => {

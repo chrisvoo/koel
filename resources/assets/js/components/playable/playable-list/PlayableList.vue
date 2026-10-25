@@ -7,30 +7,36 @@
     @keydown.enter.prevent.stop="handleEnter"
     @keydown.a.prevent="selectAllWithKeyboard"
   >
-    <PlayableListHeader v-if="config.hasHeader" :content-type="contentType" @sort="sort" />
-
     <VirtualScroller
+      carries-screen-header
       ref="virtualScroller"
-      v-slot="{ item }: { item: PlayableRow }"
       :item-height="calculatedItemHeight"
       :items="rows"
       @scrolled-to-end="$emit('scrolled-to-end')"
     >
-      <PlayableListItem
-        :key="item.playable.id"
-        :item="item"
-        :show-disc="showDiscLabel(item.playable)"
-        :draggable="!isMobile.any"
-        @click="onClick(item, $event)"
-        @dragleave="onDragLeave"
-        @dragstart="onDragStart(item, $event)"
-        @play="onPlay(item.playable)"
-        @contextmenu.prevent="onContextMenu(item, $event)"
-        @request-context-menu="onContextMenu(item, $event)"
-        @dragover.prevent="onDragOver"
-        @drop.prevent="onDrop(item, $event)"
-        @dragend.prevent="onDragEnd"
-      />
+      <template #before>
+        <ScreenHeaderPinned v-if="config.hasHeader">
+          <PlayableListHeader :content-type="contentType" @sort="sort" />
+        </ScreenHeaderPinned>
+      </template>
+
+      <template #default="{ item }: { item: PlayableRow }">
+        <PlayableListItem
+          :key="item.playable.id"
+          :item="item"
+          :show-disc="showDiscLabel(item.playable)"
+          :draggable="!isMobile.any"
+          @click="onClick(item, $event)"
+          @dragleave="onDragLeave"
+          @dragstart="onDragStart(item, $event)"
+          @play="onPlay(item.playable)"
+          @contextmenu.prevent="onContextMenu(item, $event)"
+          @request-context-menu="onContextMenu(item, $event)"
+          @dragover.prevent="onDragOver"
+          @drop.prevent="onDrop(item, $event)"
+          @dragend.prevent="onDragEnd"
+        />
+      </template>
     </VirtualScroller>
   </div>
 </template>
@@ -39,7 +45,7 @@
 import { useThrottleFn } from '@vueuse/core'
 import isMobile from 'ismobilejs'
 import type { Ref } from 'vue'
-import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, toRaw, watch } from 'vue'
 import { defineAsyncComponent, requireInjection } from '@/utils/helpers'
 import { getPlayableCollectionContentType } from '@/utils/typeGuards'
 import { preferenceStore as preferences } from '@/stores/preferenceStore'
@@ -47,7 +53,6 @@ import { queueStore } from '@/stores/queueStore'
 import { useDraggable, useDroppable } from '@/composables/useDragAndDrop'
 import { useListSelection } from '@/composables/useListSelection'
 import { playback } from '@/services/playbackManager'
-import { useSwipeDirection } from '@/composables/useSwipeDirection'
 import { useContextMenu } from '@/composables/useContextMenu'
 
 import {
@@ -61,13 +66,13 @@ import {
 import PlayableListItem from '@/components/playable/playable-list/PlayableListItem.vue'
 import VirtualScroller from '@/components/ui/VirtualScroller.vue'
 import PlayableListHeader from '@/components/playable/playable-list/PlayableListHeader.vue'
+import ScreenHeaderPinned from '@/components/ui/ScreenHeaderPinned.vue'
 
 const emit = defineEmits<{
   (e: 'press:enter', event: KeyboardEvent): void
   (e: 'press:delete'): void
   (e: 'reorder', song: Playable, placement: Placement): void
   (e: 'sort', field: MaybeArray<PlayableListSortField>, order: SortOrder): void
-  (e: 'swipe', direction: 'up' | 'down'): void
   (e: 'scrolled-to-end'): void
 }>()
 
@@ -87,17 +92,23 @@ const wrapper = ref<HTMLElement>()
 const virtualScroller = ref<InstanceType<typeof VirtualScroller>>()
 const sortFields = ref<PlayableListSortField[]>([])
 
-useSwipeDirection(
-  () => wrapper.value,
-  direction => emit('swipe', direction),
-)
+let rowsByPlayableId = new Map<Playable['id'], PlayableRow>()
 
 const rows = computed(() => {
+  const previousRowsByPlayableId = rowsByPlayableId
+  rowsByPlayableId = new Map()
+
   return playables.value.map<PlayableRow>(playable => {
-    return reactive({
-      playable,
-      selected: false,
-    })
+    const previousRow = previousRowsByPlayableId.get(playable.id)
+
+    const row =
+      previousRow && toRaw(previousRow.playable) === toRaw(playable) && !rowsByPlayableId.has(playable.id)
+        ? previousRow
+        : reactive({ playable, selected: false })
+
+    rowsByPlayableId.set(playable.id, row)
+
+    return row
   })
 })
 
@@ -126,7 +137,7 @@ const contentType = computed(() => getPlayableCollectionContentType(rows.value.m
 
 const getAllPlayablesWithSort = () => rows.value.map(row => row.playable)
 
-watch(selected, () => setSelectedPlayables(selected.value.map(({ playable }) => playable)), { deep: true })
+watch(selected, () => setSelectedPlayables(selected.value.map(({ playable }) => playable)))
 
 const sort = (field: MaybeArray<PlayableListSortField>, order: SortOrder) => {
   // we simply pass the sort event from the header up to the parent component
@@ -138,7 +149,7 @@ const render = () => {
   reapplySelection()
 }
 
-watch(playables, () => render(), { deep: true })
+watch(rows, () => render())
 
 const handleDelete = () => {
   emit('press:delete') // eslint-disable-line vue/custom-event-name-casing

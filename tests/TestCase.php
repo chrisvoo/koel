@@ -7,6 +7,8 @@ use App\Helpers\Ulid;
 use App\Helpers\Uuid;
 use App\Models\Album;
 use App\Observers\AlbumObserver;
+use App\Services\Image\ImageStorage;
+use App\Services\Integrations\MusicBrainzRateLimiter;
 use App\Services\License\CommunityLicenseService;
 use App\Services\MediaBrowser;
 use App\Services\Network\Network;
@@ -39,12 +41,15 @@ abstract class TestCase extends BaseTestCase
 
         License::swap($this->app->make(CommunityLicenseService::class));
         $this->app->instance(Network::class, new FakeNetwork());
+        $this->app->instance(MusicBrainzRateLimiter::class, new MusicBrainzRateLimiter(requestIntervalSeconds: 0));
         $this->fileSystem = File::getFacadeRoot();
 
         // Replace the AlbumObserver with a partial that skips the `saved` event (which dispatches
         // thumbnail generation jobs). All other observer methods are preserved.
         // Tests that verify the `saved` behavior can re-bind the real observer.
-        $this->app->instance(AlbumObserver::class, new class extends AlbumObserver {
+        $observerStorage = $this->app->make(ImageStorage::class);
+
+        $this->app->instance(AlbumObserver::class, new class($observerStorage) extends AlbumObserver {
             public function saved(Album $album): void
             {
                 // no-op: prevent thumbnail job dispatch noise in tests
@@ -71,6 +76,7 @@ abstract class TestCase extends BaseTestCase
         config([
             'koel.image_storage_dir' => sandbox_dir() . '/img/storage',
             'koel.artifacts_path' => sandbox_path('artifacts/'),
+            'filesystems.disks.images.root' => public_path(sandbox_dir() . '/img/storage'),
         ]);
 
         File::ensureDirectoryExists(public_path(config('koel.image_storage_dir')));

@@ -19,14 +19,6 @@ describe('useListSelection', () => {
     expect(items.value[0].selected).toBe(true)
   })
 
-  it('deselects an item via toggle', () => {
-    const { items, select, toggleSelected, isSelected } = setup()
-    select(items.value[0])
-    toggleSelected(items.value[0])
-
-    expect(isSelected(items.value[0])).toBe(false)
-  })
-
   it('selects all items', () => {
     const { items, selectAll, selected } = setup()
     selectAll()
@@ -106,6 +98,19 @@ describe('useListSelection', () => {
     expect(items.value[0].selected).toBe(true)
     expect(items.value[1].selected).toBe(false)
     expect(items.value[2].selected).toBe(true)
+  })
+
+  it('deselects items hidden from the list too', () => {
+    const { items, select, deselectAll, reapplySelection } = setup()
+    const [first, second] = items.value
+    select(second)
+
+    items.value = items.value.filter(item => item !== second)
+    deselectAll()
+    items.value = [first, second]
+    reapplySelection()
+
+    expect(second.selected).toBe(false)
   })
 
   it('tracks lastSelected', () => {

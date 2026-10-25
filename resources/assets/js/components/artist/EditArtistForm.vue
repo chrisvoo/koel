@@ -1,22 +1,17 @@
 <template>
-  <form @submit.prevent="handleSubmit" @keydown.esc="maybeClose">
+  <form class="md:w-[560px]" @submit.prevent="handleSubmit" @keydown.esc="maybeClose">
     <header>
       <h1>Edit Artist</h1>
     </header>
 
     <main class="space-y-5">
-      <FormRow>
-        <template #label>Name</template>
-        <TextInput
-          v-model="data.name"
-          v-koel-focus
-          name="name"
-          placeholder="Artist name"
-          required
-          title="Artist name"
-        />
-      </FormRow>
-      <ArtworkField v-model="data.image">Pick or paste an image (optional)</ArtworkField>
+      <AlbumOrArtistEditTabs v-model:description="data.description">
+        <FormRow>
+          <template #label>Name</template>
+          <TextInput v-model="data.name" v-koel-focus name="name" placeholder="Artist name" required />
+        </FormRow>
+        <ArtworkField v-model="data.image">Pick or paste an image (optional)</ArtworkField>
+      </AlbumOrArtistEditTabs>
     </main>
 
     <footer>
@@ -28,18 +23,18 @@
 
 <script setup lang="ts">
 import { pick } from 'lodash-es'
-import { toRaw } from 'vue'
 
 import type { ArtistUpdateData } from '@/stores/artistStore'
 import { artistStore } from '@/stores/artistStore'
 import { useMessageToaster } from '@/composables/useMessageToaster'
-import { useDialogBox } from '@/composables/useDialogBox'
-import { useForm } from '@/composables/useForm'
+import { useAlbumOrArtistEditForm } from '@/composables/useAlbumOrArtistEditForm'
+import { encyclopediaService } from '@/services/encyclopediaService'
 
 import FormRow from '@/components/ui/form/FormRow.vue'
 import Btn from '@/components/ui/form/Btn.vue'
 import TextInput from '@/components/ui/form/TextInput.vue'
 import ArtworkField from '@/components/ui/form/ArtworkField.vue'
+import AlbumOrArtistEditTabs from '@/components/ui/album-artist/AlbumOrArtistEditTabs.vue'
 
 const props = defineProps<{ artist: Artist }>()
 const emit = defineEmits<{ (e: 'close'): void }>()
@@ -47,31 +42,18 @@ const emit = defineEmits<{ (e: 'close'): void }>()
 const { artist } = props
 
 const { toastSuccess } = useMessageToaster()
-const { showConfirmDialog } = useDialogBox()
 
 const close = () => emit('close')
 
-const { data, isPristine, handleSubmit } = useForm<ArtistUpdateData>({
-  initialValues: { ...pick(artist, 'name', 'image') },
-  onSubmit: async data => {
-    const formData = structuredClone(toRaw(data))
-
-    if (formData.image === artist.image) {
-      // If the image is the same, don't send it (the image URL) to the server.
-      delete formData.image
-    }
-
-    await artistStore.update(artist, formData)
-  },
+const { data, handleSubmit, maybeClose } = useAlbumOrArtistEditForm<ArtistUpdateData>({
+  initialValues: { ...pick(artist, 'name', 'image'), description: artist.description ?? '' },
+  artworkField: 'image',
+  fetchOnlineDescription: async () => (await encyclopediaService.fetchForArtist(artist))?.bio?.full ?? '',
+  onSubmit: async data => await artistStore.update(artist, data),
   onSuccess: () => {
     toastSuccess('Artist updated.')
     close()
   },
+  onClose: close,
 })
-
-const maybeClose = async () => {
-  if (isPristine() || (await showConfirmDialog('Discard all changes?'))) {
-    close()
-  }
-}
 </script>

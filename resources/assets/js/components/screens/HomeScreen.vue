@@ -6,9 +6,9 @@
         <template #controls>
           <button
             v-if="!libraryEmpty"
+            v-koel-tooltip
             type="button"
             class="w-9 h-9 rounded-full flex items-center justify-center text-k-fg-70 hover:text-k-fg hover:bg-k-fg-5 transition shrink-0"
-            title="Reorder home blocks"
             data-testid="reorder-home-blocks-btn"
             @click="openReorderModal"
           >
@@ -24,7 +24,7 @@
         <Icon :icon="faVolumeOff" />
       </template>
       No songs found.
-      <span v-if="currentUserCan.manageSettings()" class="secondary block"> Have you set up your library yet? </span>
+      <EmptyLibraryHint />
     </ScreenEmptyState>
 
     <div v-else class="home-sections space-y-12 w-full">
@@ -32,6 +32,7 @@
         v-for="block in orderedBlocks"
         :key="block.id"
         :is="block.component"
+        v-bind="block.props"
         :loading
         :data-testid="block.id"
       />
@@ -55,25 +56,17 @@ import { preferenceStore } from '@/stores/preferenceStore'
 import { userStore } from '@/stores/userStore'
 import { useRouter } from '@/composables/useRouter'
 import { useModal } from '@/composables/useModal'
-import { usePolicies } from '@/composables/usePolicies'
 import { useErrorHandler } from '@/composables/useErrorHandler'
 
-import MostPlayedSongs from '@/components/screens/home/MostPlayedSongs.vue'
 import RecentlyPlayedPlayables from '@/components/screens/home/RecentlyPlayedPlayables.vue'
-import NewAlbums from '@/components/screens/home/NewAlbums.vue'
-import NewSongs from '@/components/screens/home/NewSongs.vue'
-import TopArtists from '@/components/screens/home/TopArtists.vue'
-import TopAlbums from '@/components/screens/home/TopAlbums.vue'
-import NewArtists from '@/components/screens/home/NewArtists.vue'
-import RandomAlbums from '@/components/screens/home/RandomAlbums.vue'
-import RandomArtists from '@/components/screens/home/RandomArtists.vue'
-import LeastPlayedSongs from '@/components/screens/home/LeastPlayedSongs.vue'
-import RandomSongs from '@/components/screens/home/RandomSongs.vue'
+import AlbumArtistShelf from '@/components/screens/home/AlbumArtistShelf.vue'
+import PlayableShelf from '@/components/screens/home/PlayableShelf.vue'
 import SimilarSongs from '@/components/screens/home/SimilarSongs.vue'
 import ScreenHeader from '@/components/ui/ScreenHeader.vue'
 import ScreenEmptyState from '@/components/ui/ScreenEmptyState.vue'
 import BtnScrollToTop from '@/components/ui/BtnScrollToTop.vue'
 import ScreenBase from '@/components/screens/ScreenBase.vue'
+import EmptyLibraryHint from '@/components/ui/EmptyLibraryHint.vue'
 
 const ReorderBlocksModal = defineAsyncComponent(() => import('@/components/screens/home/ReorderBlocksModal.vue'))
 
@@ -81,24 +74,89 @@ interface Block {
   id: string
   label: string
   component: Component
+  props?: Record<string, unknown>
 }
 
 const blocks: Block[] = [
   { id: 'recently-played-songs', label: 'Recently Played', component: RecentlyPlayedPlayables },
-  { id: 'recently-added-albums', label: 'Latest Albums', component: NewAlbums },
+  {
+    id: 'recently-added-albums',
+    label: 'Latest Albums',
+    component: AlbumArtistShelf,
+    props: { header: 'Latest Albums', stateKey: 'recentlyAddedAlbums', emptyText: 'No albums added yet.' },
+  },
   { id: 'similar-songs', label: 'You Might Also Like', component: SimilarSongs },
-  { id: 'most-played-albums', label: 'Top Albums', component: TopAlbums },
-  { id: 'most-played-songs', label: 'Most Played', component: MostPlayedSongs },
-  { id: 'most-played-artists', label: 'Top Artists', component: TopArtists },
-  { id: 'recently-added-songs', label: 'New Songs', component: NewSongs },
-  { id: 'recently-added-artists', label: 'New Artists', component: NewArtists },
-  { id: 'least-played-songs', label: 'Hidden Gems', component: LeastPlayedSongs },
-  { id: 'random-songs', label: 'Random Songs', component: RandomSongs },
-  { id: 'random-albums', label: 'Random Albums', component: RandomAlbums },
-  { id: 'random-artists', label: 'Random Artists', component: RandomArtists },
+  {
+    id: 'most-played-albums',
+    label: 'Top Albums',
+    component: AlbumArtistShelf,
+    props: { header: 'Top Albums', stateKey: 'mostPlayedAlbums', emptyText: 'No albums found.' },
+  },
+  {
+    id: 'most-played-songs',
+    label: 'Most Played',
+    component: PlayableShelf,
+    props: { header: 'Most Played', stateKey: 'mostPlayedSongs', emptyText: 'Nothing played as of late.' },
+  },
+  {
+    id: 'most-played-artists',
+    label: 'Top Artists',
+    component: AlbumArtistShelf,
+    props: { header: 'Top Artists', stateKey: 'mostPlayedArtists', emptyText: 'No artists found.' },
+  },
+  {
+    id: 'recently-added-songs',
+    label: 'New Songs',
+    component: PlayableShelf,
+    props: { header: 'New Songs', stateKey: 'recentlyAddedSongs', emptyText: 'No songs available.' },
+  },
+  {
+    id: 'recently-added-artists',
+    label: 'New Artists',
+    component: AlbumArtistShelf,
+    props: { header: 'New Artists', stateKey: 'recentlyAddedArtists', emptyText: 'No new artists.' },
+  },
+  {
+    id: 'least-played-songs',
+    label: 'Hidden Gems',
+    component: PlayableShelf,
+    props: { header: 'Hidden Gems', stateKey: 'leastPlayedSongs', emptyText: 'No songs to rediscover.' },
+  },
+  {
+    id: 'random-songs',
+    label: 'Random Songs',
+    component: PlayableShelf,
+    props: {
+      header: 'Random Songs',
+      stateKey: 'randomSongs',
+      emptyText: 'No songs available.',
+      refresh: () => overviewStore.refreshRandomSongs(),
+    },
+  },
+  {
+    id: 'random-albums',
+    label: 'Random Albums',
+    component: AlbumArtistShelf,
+    props: {
+      header: 'Random Albums',
+      stateKey: 'randomAlbums',
+      emptyText: 'No albums yet.',
+      refresh: () => overviewStore.refreshRandomAlbums(),
+    },
+  },
+  {
+    id: 'random-artists',
+    label: 'Random Artists',
+    component: AlbumArtistShelf,
+    props: {
+      header: 'Random Artists',
+      stateKey: 'randomArtists',
+      emptyText: 'No artists yet.',
+      refresh: () => overviewStore.refreshRandomArtists(),
+    },
+  },
 ]
 
-const { currentUserCan } = usePolicies()
 const { openModal } = useModal()
 
 const librarySummary = computed(() => {
@@ -114,6 +172,7 @@ const libraryEmpty = computed(() => commonStore.state.song_length === 0)
 
 const loading = ref(false)
 let initialized = false
+let overviewOutdated = false
 
 // Sort `blocks` so they appear in the order saved in the preference. Blocks
 // whose id isn't in the saved list fall to the end (Infinity), keeping their
@@ -143,12 +202,13 @@ eventBus
     void systemStore.refresh()
   })
   .on('SONG_UPLOADED', () => {
-    overviewStore.fetch()
+    overviewOutdated = true
     void systemStore.refresh()
   })
 
 useRouter().onScreenActivated('Home', async () => {
   if (!initialized) {
+    overviewOutdated = false
     loading.value = true
     try {
       await overviewStore.fetch()
@@ -159,6 +219,9 @@ useRouter().onScreenActivated('Home', async () => {
     } finally {
       loading.value = false
     }
+  } else if (overviewOutdated) {
+    overviewOutdated = false
+    await overviewStore.fetch()
   }
 })
 </script>

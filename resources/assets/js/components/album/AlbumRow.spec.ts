@@ -30,14 +30,21 @@ describe('albumRow.vue', () => {
     return { album, ...h.render(Component, { props: { album } }) }
   }
 
+  it('shows a compilation album artist without a link', () => {
+    renderComponent({ artist_id: 'various', artist_name: 'Various Artists' })
+
+    expect(screen.getAllByText('Various Artists')).not.toHaveLength(0)
+    expect(screen.queryByRole('link', { name: 'Various Artists' })).toBeNull()
+  })
+
   it('renders the album name and artist link', () => {
     renderComponent()
 
     screen.getByText('IV')
-    expect(screen.getByRole('link', { name: 'Led Zeppelin' })).toHaveProperty(
-      'href',
-      expect.stringContaining('/artists/led-zeppelin'),
-    )
+    const artistLinks = screen.getAllByRole('link', { name: 'Led Zeppelin' })
+
+    expect(artistLinks).toHaveLength(2)
+    artistLinks.forEach(link => expect(link).toHaveProperty('href', expect.stringContaining('/artists/led-zeppelin')))
   })
 
   it('emits toggle-favorite when the favorite button is clicked', async () => {

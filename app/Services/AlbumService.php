@@ -8,7 +8,6 @@ use App\Repositories\AlbumRepository;
 use App\Services\Image\ImageStorage;
 use App\Values\Album\AlbumUpdateData;
 use App\Values\ImageWritingConfig;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Symfony\Component\Finder\Finder;
@@ -16,6 +15,7 @@ use Symfony\Component\Finder\Finder;
 class AlbumService
 {
     public function __construct(
+        private readonly RichTextSanitizer $richTextSanitizer,
         private readonly AlbumRepository $albumRepository,
         private readonly ImageStorage $imageStorage,
         private readonly Finder $finder,
@@ -31,16 +31,9 @@ class AlbumService
 
         throw_if($existingAlbumWithTheSameName?->isNot($album), AlbumNameConflictException::class);
 
-        $data = $dto->toArray();
+        $data = $this->imageStorage->storeOptionalImage($dto->cover)->applyToAttributes($dto->toArray(), 'cover');
 
-        if (is_string($dto->cover)) {
-            // A non-empty string means the user is uploading another cover,
-            // when an empty string means the user is removing the cover.
-            $data['cover'] = rescue_if($dto->cover, fn () => $this->imageStorage->storeImage($dto->cover), '');
-        } else {
-            // If the cover is null, the user's not changing or removing the cover at all.
-            Arr::forget($data, 'cover');
-        }
+        $data = $this->richTextSanitizer->applySanitizedToAttributes($data, 'description', $dto->description);
 
         $album->update($data);
 
@@ -58,8 +51,22 @@ class AlbumService
 
     public function trySetAlbumCoverFromDirectory(Album $album, string $directory): void
     {
+        $cover = $this->findCachedCoverInDirectory($directory);
+
+        if ($cover && !File::exists($cover)) {
+            Cache::forget(cache_key($directory, 'cover'));
+            $cover = $this->findCachedCoverInDirectory($directory);
+        }
+
+        if ($cover && is_image($cover)) {
+            $this->storeAlbumCover($album, $cover);
+        }
+    }
+
+    private function findCachedCoverInDirectory(string $directory): ?string
+    {
         // As directory scanning can be expensive, we cache and reuse the result.
-        Cache::remember(cache_key($directory, 'cover'), now()->addDay(), function () use ($album, $directory): ?string {
+        return Cache::remember(cache_key($directory, 'cover'), now()->addDay(), function () use ($directory): ?string {
             $matches = array_keys(iterator_to_array(
                 $this->finder::create()
                     ->depth(0)
@@ -70,32 +77,34 @@ class AlbumService
                     ->in($directory),
             ));
 
-            $cover = $matches[0] ?? null;
-
-            if ($cover && is_image($cover)) {
-                $this->storeAlbumCover($album, $cover);
-            }
-
-            return $cover;
+            return $matches[0] ?? null;
         });
     }
 
     public function generateAlbumThumbnail(Album $album): string
     {
         $this->imageStorage->storeImage(
-            source: image_storage_path($album->cover),
+            source: $this->imageStorage->get($album->cover),
             config: ImageWritingConfig::make(maxWidth: 48, blur: 10),
-            path: image_storage_path($album->thumbnail),
+            fileName: $album->thumbnail,
         );
 
         return $album->thumbnail;
     }
 
+    public function generateAlbumSmallCover(Album $album): void
+    {
+        $album->small_cover = $this->imageStorage->storeImage(
+            source: $this->imageStorage->get($album->cover),
+            config: ImageWritingConfig::make(maxWidth: 144),
+        );
+
+        $album->saveQuietly();
+    }
+
     public function getOrCreateAlbumThumbnail(Album $album): ?string
     {
-        $thumbnailPath = image_storage_path($album->thumbnail);
-
-        if ($thumbnailPath && !File::exists($thumbnailPath)) {
+        if ($album->thumbnail && !$this->imageStorage->exists($album->thumbnail)) {
             $this->generateAlbumThumbnail($album);
         }
 

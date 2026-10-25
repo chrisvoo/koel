@@ -1,7 +1,7 @@
 <template>
   <ScreenBase>
     <template #header>
-      <ScreenHeader :disabled="loading" :layout="songs.length ? headerLayout : 'collapsed'">
+      <ScreenHeader :disabled="loading" :layout="songs.length ? 'expanded' : 'collapsed'">
         All Songs
 
         <template #thumbnail>
@@ -28,7 +28,6 @@
         ref="songList"
         class="-m-6"
         @sort="sort"
-        @swipe="onSwipe"
         @press:enter="onPressEnter"
         @scrolled-to-end="fetchSongs"
       />
@@ -53,7 +52,7 @@ import { useRouter } from '@/composables/useRouter'
 import { useErrorHandler } from '@/composables/useErrorHandler'
 import { usePlayableList } from '@/composables/usePlayableList'
 import { usePlayableListControls } from '@/composables/usePlayableListControls'
-import { useLocalStorage } from '@/composables/useLocalStorage'
+import { usePersistedSort } from '@/composables/usePersistedSort'
 import { playback } from '@/services/playbackManager'
 
 import ScreenHeader from '@/components/ui/ScreenHeader.vue'
@@ -67,33 +66,37 @@ const totalDuration = computed(() => secondsToHumanReadable(commonStore.state.so
 const {
   PlayableList: SongList,
   ThumbnailStack,
-  headerLayout,
   thumbnails,
   playables: songs,
   playableList: songList,
   onPressEnter,
   playSelected,
-  onSwipe,
   sort: composableSort,
-} = usePlayableList(toRef(playableStore.state, 'playables'), { type: 'Songs' }, { filterable: false, sortable: true })
+} = usePlayableList(
+  toRef(playableStore.state, 'playables'),
+  { type: 'Songs' },
+  { filterable: false, sortable: true, sortedOnServer: true },
+)
 
 const { PlayableListControls: SongListControls, config } = usePlayableListControls('Songs')
 const { go, url } = useRouter()
-const { get: lsGet, set: lsSet } = useLocalStorage()
+const { getSavedSort, saveSort } = usePersistedSort('all-songs', 'title')
 
 const loading = ref(false)
-let sortField: MaybeArray<PlayableListSortField> = lsGet<PlayableListSortField>('all-songs-sort-field', 'title')!
-let sortOrder: SortOrder = lsGet<SortOrder>('all-songs-sort-order', 'asc')!
+let { sortField, sortOrder } = getSavedSort()
 
 const cursor = ref<string | null>('')
 const moreSongsAvailable = computed(() => cursor.value !== null)
 const showSkeletons = computed(() => loading.value && songs.value.length === 0)
+
+let listVersion = 0
 
 const fetchSongs = async () => {
   if (!moreSongsAvailable.value || loading.value) {
     return
   }
 
+  const requestedListVersion = listVersion
   loading.value = true
 
   try {
@@ -107,6 +110,18 @@ const fetchSongs = async () => {
   } finally {
     loading.value = false
   }
+
+  if (requestedListVersion !== listVersion) {
+    await refetchFromStart()
+  }
+}
+
+const refetchFromStart = async () => {
+  listVersion++
+  cursor.value = ''
+  playableStore.state.playables = []
+
+  await fetchSongs()
 }
 
 const playAll = async (shuffle: boolean) => {
@@ -121,15 +136,12 @@ const playAll = async (shuffle: boolean) => {
 }
 
 const sort = async (field: MaybeArray<PlayableListSortField>, order: SortOrder) => {
-  cursor.value = ''
-  playableStore.state.playables = []
   sortField = field
   sortOrder = order
 
-  lsSet('all-songs-sort-field', field)
-  lsSet('all-songs-sort-order', order)
+  saveSort(field, order)
 
-  await fetchSongs()
+  await refetchFromStart()
 }
 
 onMounted(async () => {

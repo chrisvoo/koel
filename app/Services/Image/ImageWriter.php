@@ -2,15 +2,17 @@
 
 namespace App\Services\Image;
 
+use App\Services\Network\SafeHttp;
 use App\Values\ImageWritingConfig;
 use Illuminate\Container\Attributes\Config;
 use Illuminate\Image\Image as ProcessableImage;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Image;
 use Illuminate\Support\Str;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use Intervention\Image\Drivers\Imagick\Driver as ImagickDriver;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Interfaces\ImageManagerInterface;
 use RuntimeException;
 use Throwable;
 
@@ -24,11 +26,28 @@ class ImageWriter
     /** A 1x1 PNG, encoded to verify that a format the driver claims to support really works. */
     private const string PROBE_IMAGE = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
 
+    /** @var array<string, string> */
+    private static array $supportedFormatsByDriver = [];
+
     private readonly string $format;
 
-    public function __construct(#[Config('images.default')] string $driver = 'gd')
-    {
-        $this->format = self::findSupportedFormat($driver);
+    private readonly ?ImageManagerInterface $fastAvifManager;
+
+    public function __construct(
+        private readonly SafeHttp $http,
+        #[Config('images.default')]
+        private readonly string $driver = 'gd',
+    ) {
+        self::$supportedFormatsByDriver[$driver] ??= self::findSupportedFormat($driver);
+        $this->format = self::$supportedFormatsByDriver[$driver];
+
+        $this->fastAvifManager = $this->format === 'avif'
+            ? match ($driver) {
+                'gd' => ImageManager::usingDriver(GdDriver::class),
+                'imagick' => ImageManager::usingDriver(ImagickDriver::class),
+                default => null,
+            }
+            : null;
     }
 
     public function format(): string
@@ -40,10 +59,12 @@ class ImageWriter
      * Some builds advertise a format their encoder can't actually produce, yielding empty
      * output instead of failing, so the format is confirmed against a real encode.
      */
-    private static function canActuallyEncode(string $format): bool
+    private static function canActuallyEncode(string $driver, string $format): bool
     {
         return (bool) rescue(
-            static fn (): bool => Image::fromBase64(self::PROBE_IMAGE)->optimize($format)->toBytes() !== '',
+            static fn (): bool => (
+                Image::fromBase64(self::PROBE_IMAGE)->using($driver)->optimize($format)->toBytes() !== ''
+            ),
             false,
             report: false,
         );
@@ -63,7 +84,7 @@ class ImageWriter
         }
 
         foreach (self::FORMATS as $format) {
-            if ($imageDriver->supports($format) && self::canActuallyEncode($format)) {
+            if ($imageDriver->supports($format) && self::canActuallyEncode($driver, $format)) {
                 return $format;
             }
         }
@@ -73,33 +94,63 @@ class ImageWriter
 
     public function write(string $destination, mixed $source, ?ImageWritingConfig $config = null): void
     {
+        $bytes = $this->encode($source, $config);
+
+        throw_if(File::put($destination, $bytes) === false, RuntimeException::class, "Failed to write $destination");
+    }
+
+    public function encode(mixed $source, ?ImageWritingConfig $config = null): string
+    {
         $config ??= ImageWritingConfig::default();
 
-        $image = self::read($source)
-            ->scale(width: $config->maxWidth)
-            ->when($config->blur, static fn (ProcessableImage $image) => $image->blur($config->blur))
-            ->optimize($this->format, $config->quality);
+        $bytes = $this->fastAvifManager
+            ? $this->encodeAvifFast($this->fastAvifManager, $source, $config)
+            : $this
+                ->read($source)
+                ->scale(width: $config->maxWidth)
+                ->when($config->blur, static fn (ProcessableImage $image) => $image->blur($config->blur))
+                ->optimize($this->format, $config->quality)
+                ->toBytes();
 
-        $bytes = $image->toBytes();
+        throw_if($bytes === '', RuntimeException::class, 'Encoding produced an empty image');
 
-        throw_if($bytes === '', RuntimeException::class, "Encoding produced an empty image for $destination");
-        throw_if(File::put($destination, $bytes) === false, RuntimeException::class, "Failed to write $destination");
+        return $bytes;
+    }
+
+    private function read(mixed $source): ProcessableImage
+    {
+        return Image::fromBytes($this->readBytes($source));
+    }
+
+    private function encodeAvifFast(ImageManagerInterface $manager, mixed $source, ImageWritingConfig $config): string
+    {
+        $encoder = $this->driver === 'gd'
+            ? new FastGdAvifEncoder($config->quality)
+            : new FastImagickAvifEncoder($config->quality);
+
+        $image = $manager->decodeBinary($this->readBytes($source))->scaleDown(width: $config->maxWidth);
+
+        if ($config->blur) {
+            $image->blur($config->blur);
+        }
+
+        return $image->encode($encoder)->toString();
     }
 
     /**
      * @param mixed $source A data URI, a base64-encoded image, a URL, a local file path, or raw image bytes.
      */
-    private static function read(mixed $source): ProcessableImage
+    private function readBytes(mixed $source): string
     {
         if (Str::startsWith($source, 'data:')) {
-            return Image::fromBase64(Str::after($source, 'base64,'));
+            return base64_decode(Str::after($source, 'base64,'), true) ?: '';
         }
 
         if (Str::isUrl($source)) {
-            return Image::fromBytes(self::fetch($source));
+            return $this->fetch($source);
         }
 
-        return self::isLocalFile($source) ? Image::fromPath($source) : Image::fromBytes($source);
+        return self::isLocalFile($source) ? File::get($source) : $source;
     }
 
     private static function isLocalFile(string $source): bool
@@ -107,19 +158,22 @@ class ImageWriter
         return strlen($source) < PHP_MAXPATHLEN && is_file($source);
     }
 
-    /**
-     * Koel poses as a browser here, as some hosts serve images only to recognized user agents.
-     */
-    private static function fetch(string $url): string
+    private function fetch(string $url): string
     {
         try {
-            return Http::withUserAgent(http_user_agent())
-                ->get($url)
-                ->throwIfClientError()
-                ->throwIfServerError()
-                ->body();
+            $response = $this->http->get($url, ['User-Agent' => http_user_agent()]);
+
+            // Some hosts serve images only to browsers, while others, like Wikimedia, refuse clients posing as one.
+            if ($response->clientError()) {
+                $response = $this->http->get($url, ['User-Agent' => koel_user_agent()]);
+            }
+
+            return $response->throwIfClientError()->throwIfServerError()->body();
         } catch (Throwable $e) {
-            throw new RuntimeException('Failed to fetch image from URL: ' . $url, previous: $e);
+            throw new RuntimeException(
+                sprintf('Failed to fetch image from URL: %s (%s)', $url, $e->getMessage()),
+                previous: $e,
+            );
         }
     }
 }

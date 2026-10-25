@@ -13,20 +13,20 @@
     <main>
       <div class="grid grid-cols-[max-content_1fr] gap-x-5 gap-y-5">
         <label for="themeName">Name</label>
-        <TextInput id="themeName" v-model="data.name" v-koel-focus placeholder="My Fancy Theme" required title="Name" />
+        <TextInput id="themeName" v-model="data.name" v-koel-focus placeholder="My Fancy Theme" required />
 
         <label>Colors</label>
         <div>
           <div class="inline-grid grid-cols-3 gap-4 items-center">
-            <ColorPicker v-model="data.fg_color" title="Foreground color">
+            <ColorPicker v-model="data.fg_color" v-koel-tooltip="'Foreground color'" aria-label="Foreground color">
               <Icon :icon="faFont" size="lg" />
             </ColorPicker>
 
-            <ColorPicker v-model="data.bg_color" title="Background color">
+            <ColorPicker v-model="data.bg_color" v-koel-tooltip="'Background color'" aria-label="Background color">
               <Icon :icon="faFillDrip" size="lg" />
             </ColorPicker>
 
-            <ColorPicker v-model="data.highlight_color" title="Highlight color">
+            <ColorPicker v-model="data.highlight_color" v-koel-tooltip="'Highlight color'" aria-label="Highlight color">
               <Icon :icon="faHighlighter" size="lg" />
             </ColorPicker>
           </div>
@@ -56,15 +56,7 @@
             <option value="">Default</option>
             <option v-for="name in availableFonts" :key="name" :value="name">{{ name }}</option>
           </SelectBox>
-          <TextInput
-            v-model="data.font_size"
-            aria-label="Font size"
-            class="w-20!"
-            min="1"
-            step="0.5"
-            title="Font size"
-            type="number"
-          />
+          <TextInput v-model="data.font_size" aria-label="Font size" class="w-20!" min="1" step="0.5" type="number" />
         </div>
       </div>
     </main>
@@ -87,7 +79,6 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { logger } from '@/utils/logger'
 import { useImageFileInput } from '@/composables/useImageFileInput'
 import { useForm } from '@/composables/useForm'
-import { useDialogBox } from '@/composables/useDialogBox'
 import { useMessageToaster } from '@/composables/useMessageToaster'
 import { themeStore } from '@/stores/themeStore'
 import type { ThemeData } from '@/stores/themeStore'
@@ -106,12 +97,16 @@ const toggleCssClass = props.toggleCssClass
 
 const close = () => emit('close')
 
-const { showConfirmDialog } = useDialogBox()
+const restoreThemeAndClose = () => {
+  themeStore.setTheme()
+  close()
+}
+
 const { toastSuccess } = useMessageToaster()
 
 const style = window.getComputedStyle(document.body)
 
-const { data, isPristine, handleSubmit } = useForm<ThemeData>({
+const { data, handleSubmit, maybeClose } = useForm<ThemeData>({
   initialValues: {
     name: '',
     font_family: style.getPropertyValue('--font-family'),
@@ -127,6 +122,7 @@ const { data, isPristine, handleSubmit } = useForm<ThemeData>({
     themeStore.setTheme(theme)
     close()
   },
+  onClose: restoreThemeAndClose,
 })
 
 const previewing = ref(false)
@@ -200,14 +196,6 @@ watch(
 const { onImageInputChange: onBackgroundImageChange } = useImageFileInput({
   onImageDataUrl: dataUrl => (data.bg_image = dataUrl),
 })
-
-const maybeClose = async () => {
-  if (isPristine() || (await showConfirmDialog('Discard all changes?'))) {
-    // restore the theme
-    themeStore.setTheme()
-    close()
-  }
-}
 
 onMounted(async () => {
   try {

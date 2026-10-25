@@ -7,12 +7,12 @@ use App\Models\Artist;
 use App\Repositories\ArtistRepository;
 use App\Services\Image\ImageStorage;
 use App\Values\Artist\ArtistUpdateData;
-use Illuminate\Support\Arr;
 use Webmozart\Assert\Assert;
 
 class ArtistService
 {
     public function __construct(
+        private readonly RichTextSanitizer $richTextSanitizer,
         private readonly ArtistRepository $artistRepository,
         private readonly ImageStorage $imageStorage,
     ) {}
@@ -29,16 +29,9 @@ class ArtistService
 
         throw_if($existingArtistWithTheSameName?->isNot($artist), ArtistNameConflictException::class);
 
-        $data = $dto->toArray();
+        $data = $this->imageStorage->storeOptionalImage($dto->image)->applyToAttributes($dto->toArray(), 'image');
 
-        if (is_string($dto->image)) {
-            // A non-empty string means the user is uploading another image,
-            // when an empty string means the user is removing the image.
-            $data['image'] = rescue_if($dto->image, fn () => $this->imageStorage->storeImage($dto->image), '');
-        } else {
-            // If the image is null, the user's not changing or removing the image at all.
-            Arr::forget($data, 'image');
-        }
+        $data = $this->richTextSanitizer->applySanitizedToAttributes($data, 'description', $dto->description);
 
         $artist->update($data);
 

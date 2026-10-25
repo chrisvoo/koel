@@ -20,7 +20,7 @@ const REDIRECT_KEY = 'redirect'
 
 const { get: lsGet, set: lsSet, remove: lsRemove } = useLocalStorage(false) // authentication local storage data aren't namespaced
 
-const isTwoFactorChallengeRequired = (response: LoginResponse): response is TwoFactorChallengeRequired => {
+export const isTwoFactorChallengeRequired = (response: LoginResponse): response is TwoFactorChallengeRequired => {
   return 'two_factor' in response && response.two_factor
 }
 
@@ -54,6 +54,8 @@ export const authService = {
   regenerateRecoveryCodes: async (code: string) =>
     await http.post<{ recovery_codes: string[] }>('me/two-factor/recovery-codes', { code }),
 
+  logOutOtherSessions: async () => await http.delete('me/sessions/others'),
+
   async logout() {
     await http.delete('me')
     this.destroy()
@@ -79,7 +81,6 @@ export const authService = {
 
   setTokensUsingCompositeToken(compositeToken: CompositeToken) {
     this.setApiToken(compositeToken.token)
-    this.setAudioToken(compositeToken['audio-token'])
   },
 
   destroy: () => {
@@ -87,18 +88,13 @@ export const authService = {
     lsRemove(AUDIO_TOKEN_STORAGE_KEY)
   },
 
-  setAudioToken: (token: string) => lsSet(AUDIO_TOKEN_STORAGE_KEY, token),
-
-  getAudioToken: () => {
-    // for backward compatibility, we first try to get the audio token, and fall back to the (full-privileged) API token
-    return lsGet(AUDIO_TOKEN_STORAGE_KEY) || lsGet(API_TOKEN_STORAGE_KEY)
-  },
-
   requestResetPasswordLink: async (email: string) => await http.post('forgot-password', { email }),
 
   resetPassword: async (email: string, password: string, token: string) => {
     return await http.post('reset-password', { email, password, token })
   },
+
+  confirmEmailChange: async (signedPath: string) => await http.post(signedPath),
 
   getOneTimeToken: async () => (await http.get<{ token: string }>('one-time-token')).token,
 

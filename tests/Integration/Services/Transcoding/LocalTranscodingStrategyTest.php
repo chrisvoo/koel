@@ -7,7 +7,10 @@ use App\Models\Song;
 use App\Models\Transcode;
 use App\Services\Transcoding\LocalTranscodingStrategy;
 use App\Services\Transcoding\Transcoder;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Sleep;
 use Mockery\MockInterface;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -61,11 +64,12 @@ class LocalTranscodingStrategyTest extends TestCase
             'location' => '/path/to/transcode.m4a',
             'bit_rate' => 128,
             'hash' => 'mocked-checksum',
+            'file_size' => 1_024,
         ]);
 
         File::expects('isReadable')->with('/path/to/transcode.m4a')->andReturn(true);
-
-        File::expects('hash')->with('/path/to/transcode.m4a')->andReturn('mocked-checksum');
+        File::expects('size')->with('/path/to/transcode.m4a')->andReturn(1_024);
+        File::expects('hash')->never();
 
         $transcodedPath = $this->strategy->getTranscodeLocation($transcode->song, $transcode->bit_rate);
 
@@ -98,5 +102,68 @@ class LocalTranscodingStrategyTest extends TestCase
 
         self::assertSame($destination, $transcodedLocation);
         self::assertSame($transcode->refresh()->location, $transcodedLocation);
+    }
+
+    #[Test]
+    public function retranscodeIfFileSizeDiffersFromRecord(): void
+    {
+        $song = Song::factory()->createOne(['path' => '/path/to/song.flac']);
+
+        $ulid = Ulid::freeze();
+        Transcode::factory()->for($song)->createOne([
+            'location' => '/path/to/transcode.m4a',
+            'bit_rate' => 128,
+            'hash' => 'mocked-checksum',
+            'file_size' => 1_024,
+        ]);
+
+        $destination = artifact_path("transcodes/128/$ulid.m4a", ensureDirectoryExists: false);
+
+        File::expects('isReadable')->with('/path/to/transcode.m4a')->andReturn(true);
+        File::expects('size')->with('/path/to/transcode.m4a')->andReturn(512);
+        File::expects('delete')->with('/path/to/transcode.m4a');
+        File::expects('hash')->with($destination)->andReturn('mocked-checksum');
+        File::expects('ensureDirectoryExists')->with(dirname($destination));
+        File::expects('size')->with($destination)->andReturn(1_024);
+
+        $this->transcoder->expects('transcode')->with('/path/to/song.flac', $destination, 128);
+
+        self::assertSame($destination, $this->strategy->getTranscodeLocation($song, 128));
+    }
+
+    #[Test]
+    public function holdTheSongsTranscodeLockWhileTranscoding(): void
+    {
+        $song = Song::factory()->createOne(['path' => '/path/to/song.flac']);
+        $lockKey = cache_key('transcode', $song->id, 128);
+
+        File::expects('ensureDirectoryExists');
+        File::expects('hash')->andReturn('mocked-checksum');
+        File::expects('size')->andReturn(1_024);
+
+        $this->transcoder
+            ->expects('transcode')
+            ->andReturnUsing(static function () use ($lockKey): void {
+                self::assertFalse(Cache::lock($lockKey, 10)->get());
+            });
+
+        $this->strategy->getTranscodeLocation($song, 128);
+
+        self::assertTrue(Cache::lock($lockKey, 10)->get());
+    }
+
+    #[Test]
+    public function neverTranscodeWithoutTheLock(): void
+    {
+        $this->freezeTime();
+        Sleep::fake(syncWithCarbon: true);
+
+        $song = Song::factory()->createOne(['path' => '/path/to/song.flac']);
+        Cache::lock(cache_key('transcode', $song->id, 128), 600)->get();
+
+        $this->transcoder->expects('transcode')->never();
+        $this->expectException(LockTimeoutException::class);
+
+        $this->strategy->getTranscodeLocation($song, 128);
     }
 }
