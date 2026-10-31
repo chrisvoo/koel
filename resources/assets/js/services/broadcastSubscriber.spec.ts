@@ -1,9 +1,15 @@
 import type { Broadcaster } from 'laravel-echo'
 import Echo from 'laravel-echo'
-import { describe, expect, it } from 'vite-plus/test'
+import { describe, expect, it, vi } from 'vite-plus/test'
 import { createHarness } from '@/__tests__/TestHarness'
 import { uploadService } from '@/services/uploadService'
 import { broadcastSubscriber } from '@/services/broadcastSubscriber'
+
+vi.mock('pusher-js', () => ({
+  default: vi.fn().mockImplementation(function () {
+    return {}
+  }),
+}))
 
 /**
  * For testing purposes, we create a fake Echo instance that extends the Echo<'null'> class,
@@ -59,6 +65,20 @@ describe('broadcastSubscriber', () => {
     expect(instance.options.key).toBe('the-key')
     expect(instance.options.cluster).toBe('eu')
     expect(instance.options.authEndpoint).toBe(`${window.KOEL.base_url}api/broadcasting/auth`)
+  })
+
+  it('connects to a self-hosted Reverb server', async () => {
+    window.KOEL.reverb = { app_key: 'reverb-key', host: 'ws.example.com', port: 8080, tls: false }
+
+    const instance = await broadcastSubscriber.newEchoInstance()
+
+    expect(instance.options.broadcaster).toBe('reverb')
+    expect(instance.options.key).toBe('reverb-key')
+    expect(instance.options.wsHost).toBe('ws.example.com')
+    expect(instance.options.wsPort).toBe(8080)
+    expect(instance.options.forceTLS).toBe(false)
+
+    window.KOEL.reverb = null
   })
 
   it('falls back to no broadcaster when the server rendered no credentials', async () => {

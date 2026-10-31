@@ -17,7 +17,7 @@
 
             <ListFilter />
 
-            <Btn size="small" v-if="canAdd" v-koel-tooltip variant="highlight" @click.prevent="requestAddStationForm">
+            <Btn size="small" v-if="canAdd" variant="highlight" @click.prevent="requestAddStationForm">
               <Icon :icon="faAdd" fixed-width />
               <span class="sr-only">Add a new station</span>
             </Btn>
@@ -35,7 +35,7 @@
       <template v-if="preferences.radio_stations_favorites_only"> No favorite stations. </template>
       <template v-else>
         No stations found.
-        <span class="secondary block">Add a station to get started.</span>
+        <span v-if="canAdd" class="secondary block">Add a station to get started.</span>
       </template>
     </ScreenEmptyState>
 

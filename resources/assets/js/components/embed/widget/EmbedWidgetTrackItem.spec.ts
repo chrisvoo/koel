@@ -6,13 +6,14 @@ import EmbedWidgetTrackItem from './EmbedWidgetTrackItem.vue'
 describe('playableEmbedItem.vue', async () => {
   const h = createHarness()
 
-  const renderComponent = (playable: Playable) => {
+  const renderComponent = (playable: Playable, preview = false) => {
     const rendered = h.render(EmbedWidgetTrackItem, {
       props: {
         item: {
           playable,
           selected: false,
         } satisfies PlayableRow,
+        preview,
       },
       global: {
         stubs: {
@@ -40,6 +41,12 @@ describe('playableEmbedItem.vue', async () => {
     renderComponent(episode)
 
     screen.getByText(`${episode.podcast_author} - ${episode.podcast_title}`)
+  })
+
+  it('caps the length at 30 seconds in Preview mode', () => {
+    renderComponent(h.factory('song').make({ length: 200 }), true)
+
+    screen.getByText('00:30')
   })
 
   it('emits the play event on double-click', async () => {

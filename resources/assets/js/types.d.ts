@@ -13,6 +13,16 @@ declare module 'youtube-player' {
   export default createYouTubePlayer
 }
 
+declare module 'node:crypto' {
+  export const webcrypto: Crypto
+}
+
+declare module 'node:stream/web' {
+  export const ReadableStream: typeof globalThis.ReadableStream
+  export const TransformStream: typeof globalThis.TransformStream
+  export const WritableStream: typeof globalThis.WritableStream
+}
+
 declare module 'ismobilejs' {
   let apple: { device: boolean }
   let any: boolean
@@ -93,6 +103,13 @@ type LoginResponse = CompositeToken | TwoFactorChallengeRequired
 
 type SSOProvider = 'Google' | 'OpenID Connect' | 'Reverse Proxy'
 
+interface ReverbServer {
+  readonly app_key: string
+  readonly host: string
+  readonly port: number
+  readonly tls: boolean
+}
+
 interface KoelGlobals {
   base_url: string
   clean_urls?: boolean
@@ -102,6 +119,7 @@ interface KoelGlobals {
     readonly app_key: string
     readonly app_cluster: string
   }
+  reverb: ReverbServer | null
   branding: Branding
   gravatar: {
     readonly url: string
@@ -299,15 +317,15 @@ interface RadioStation extends IStreamable {
 type Playable = Song | Episode
 
 type Streamable = Playable | RadioStation
-type Embeddable = Playable | Playlist | Artist | Album
+type Embeddable = Playable | Playlist | Artist | Album | UserFavorites
 type Rateable = Song | Album | Artist | Podcast
 
 interface Embed {
   type: 'embeds'
   id: string
   user_id: User['id']
-  embeddable_id: Embeddable['id']
-  embeddable_type: 'playable' | 'playlist' | 'artist' | 'album'
+  embeddable_id: Exclude<Embeddable, UserFavorites>['id'] | null
+  embeddable_type: 'playable' | 'playlist' | 'artist' | 'album' | 'favorites'
 }
 
 type WidgetReadyEmbed = Embed & {
@@ -378,6 +396,11 @@ interface SerializedSmartPlaylistRule {
 }
 
 type SmartPlaylistInputTypes = Record<SmartPlaylistModel['type'], SmartPlaylistOperator[]>
+
+interface UserFavorites {
+  type: 'favorites'
+  owner_name: User['name']
+}
 
 interface FavoriteList {
   name: 'Favorites'
@@ -807,11 +830,37 @@ interface CursorPaginatorResource<T> {
 
 type EditSongFormTabName = 'details' | 'lyrics' | 'visibility' | 'flags'
 
+type ToastType = 'info' | 'success' | 'warning' | 'danger' | 'loading'
+
+interface ToastAction {
+  label: string
+  handler: Closure
+  primary?: boolean
+}
+
 interface ToastMessage {
   id: string
-  type: 'info' | 'success' | 'warning' | 'danger'
+  type: ToastType
   content: string
+  icon?: import('vue').Component
+  component?: import('vue').Component
+  props?: Record<string, unknown>
+  actions?: ToastAction[]
+  progress?: () => number
+  persistent?: boolean
   timeout: number // seconds
+  onDismiss?: Closure
+}
+
+type ToastDetails = string | (Pick<ToastMessage, 'content'> & Partial<Omit<ToastMessage, 'id' | 'type' | 'content'>>)
+
+type ToastOutcome<T> = ToastDetails | ((value: T) => ToastDetails)
+
+interface ToastPromiseMessages<T> {
+  loading: ToastDetails
+  success: ToastOutcome<T>
+  error: ToastOutcome<unknown>
+  warning?: (value: T) => ToastDetails | undefined
 }
 
 interface Genre {

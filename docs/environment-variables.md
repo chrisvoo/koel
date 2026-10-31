@@ -107,9 +107,10 @@ Required when `STORAGE_DRIVER=webdav`.
 | `STREAMING_METHOD` | The streaming method. Options: `php`, `x-sendfile`, `x-accel-redirect`. See [Streaming Music](usage/streaming). Using `x-sendfile` or `x-accel-redirect` is highly recommended for better performance. | `php` |
 | `TRANSCODE_FLAC` | Whether to transcode FLAC to AAC on the fly. Set to `false` to stream FLAC as-is. | `true` |
 | `TRANSCODE_ON_SCAN` | Whether to transcode songs that need it as soon as they're scanned or uploaded, instead of on their first play. Songs uploaded to cloud or remote storage are transcoded while the upload is processed; others use a queue job if a queue is configured. | `false` |
+| `PREVIEWS_ON_SCAN` | Whether to create a 30-second, lower-quality preview of each song as soon as it's scanned or uploaded. Embeds in Preview mode <PlusBadge /> play it instead of the full song. To create previews for songs already in your library, run [`koel:create-song-previews`](cli-commands#koel-create-song-previews). | `false` |
 | `TRANSCODE_BIT_RATE` | The bit rate (in kbps) for transcoded audio. Higher values mean better quality but slower streaming. | `128` |
 | `TRANSCODE_AAC_FAST` | Whether to use FFmpeg's faster AAC coding algorithm. Set to `false` to use its default AAC coder. Has no effect when FFmpeg has the `libfdk_aac` encoder, which Koel then uses instead. | `true` |
-| `FFMPEG_PATH` | The full path to the ffmpeg binary. Automatically detected if left empty. | _(auto-detected)_ |
+| `FFMPEG_PATH` | The full path to the ffmpeg binary. Automatically detected if left empty. See [FFmpeg](usage/ffmpeg). | _(auto-detected)_ |
 | `TRANSCODE_TIMEOUT` | The maximum time in seconds allowed for transcoding a single file. Increase for very large files. `0` disables the timeout. | `300` |
 
 ## Downloading
@@ -139,6 +140,13 @@ Also see [Service Integrations](service-integrations) for detailed setup instruc
 | `PUSHER_APP_KEY` | Your Pusher app key. Once it's set, Koel broadcasts through Pusher. | _(empty)_ |
 | `PUSHER_APP_SECRET` | Your Pusher app secret. | _(empty)_ |
 | `PUSHER_APP_CLUSTER` | Your Pusher app cluster, e.g. `eu` or `ap1`. | _(empty)_ |
+| `BROADCAST_CONNECTION` | Set to `reverb` to use your own [Reverb](usage/remote-controller#using-your-own-server) server instead of Pusher. | `pusher` once `PUSHER_APP_KEY` is set, otherwise `null` |
+| `REVERB_APP_ID` | Your Reverb app ID. Any value you choose. | _(empty)_ |
+| `REVERB_APP_KEY` | Your Reverb app key. Any value you choose. | _(empty)_ |
+| `REVERB_APP_SECRET` | Your Reverb app secret. Any value you choose; keep it private. | _(empty)_ |
+| `REVERB_HOST` | The public host name browsers connect to, e.g. `ws.example.com`. | _(empty)_ |
+| `REVERB_PORT` | The public port browsers connect to. | `443` |
+| `REVERB_SCHEME` | `https` or `http`. | `https` |
 
 ## SSO (Single Sign-On)
 

@@ -136,15 +136,7 @@ class SongResource extends JsonResource
             'mbid' => $this->when($musicBrainzEnabled && !$embedding, $this->song->mbid),
             'loudness' => $this->when($isPlus, fn () => $this->song->analysis?->loudness),
             'true_peak' => $this->when($isPlus, fn () => $this->song->analysis?->true_peak),
-            'embed_stream_url' => $this->when($embedding, fn () => URL::temporarySignedRoute(
-                'embeds.stream',
-                now()->addDay(),
-                [
-                    'song' => $this->song->id,
-                    'embed' => $request->route('embed')->id, // @phpstan-ignore-line
-                    'options' => $request->route('options'),
-                ],
-            )),
+            $this->mergeWhen($embedding, fn (): array => $this->resolveEmbedPlaybackAttributes($request)),
         ];
 
         if ($this->song->isEpisode()) {
@@ -165,5 +157,17 @@ class SongResource extends JsonResource
         }
 
         return $data;
+    }
+
+    /** @return array<string, mixed> */
+    private function resolveEmbedPlaybackAttributes(Request $request): array
+    {
+        return [
+            'embed_stream_url' => URL::temporarySignedRoute('embeds.stream', now()->addDay(), [
+                'song' => $this->song->id,
+                'embed' => $request->route('embed')->id, // @phpstan-ignore-line
+                'options' => $request->route('options'),
+            ]),
+        ];
     }
 }

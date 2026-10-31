@@ -56,15 +56,20 @@
           </Btn>
         </template>
 
-        <Btn variant="success" v-if="showAddToButton" ref="addToButton">
+        <Btn variant="neutral" v-if="showAddToButton" ref="addToButton">
           {{ showingAddToMenu ? 'Cancel' : 'Add To…' }}
         </Btn>
+      </BtnGroup>
 
-        <Btn variant="destructive" v-if="config.clearQueue" @click.prevent="clearQueue">Clear</Btn>
+      <BtnGroup v-if="config.clearQueue">
+        <Btn v-koel-tooltip variant="neutral" @click.prevent="clearQueue">
+          <ListXIcon :size="16" />
+          <span class="sr-only">Clear queue</span>
+        </Btn>
       </BtnGroup>
 
       <BtnGroup v-if="config.refresh">
-        <Btn variant="success" v-if="config.refresh" v-koel-tooltip @click.prevent="refresh">
+        <Btn variant="neutral" v-if="config.refresh" @click.prevent="refresh">
           <Icon :icon="faRotateRight" fixed-width />
           <span class="sr-only">Refresh</span>
         </Btn>
@@ -90,6 +95,7 @@
 </template>
 
 <script lang="ts" setup>
+import { ListXIcon } from 'lucide-vue-next'
 import { faPlay, faRandom, faRotateRight } from '@fortawesome/free-solid-svg-icons'
 import type { Ref } from 'vue'
 import { computed, onBeforeUnmount, onMounted, ref, toRef, watch } from 'vue'

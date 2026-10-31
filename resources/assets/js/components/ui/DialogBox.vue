@@ -2,7 +2,7 @@
   <dialog
     ref="dialog"
     :class="`${type}`"
-    class="m-auto rounded-md bg-k-bg text-k-fg-70 shadow-xl border-0 p-0 min-w-[320px] max-w-[calc(100vw - 40px)] backdrop:bg-black/70"
+    class="m-auto rounded-xl bg-k-bg text-k-fg-70 shadow-2xl border border-k-fg-10 p-0 min-w-[320px] max-w-[calc(100vw - 40px)] backdrop:bg-black/70"
   >
     <div class="flex gap-5 py-6 px-7">
       <aside>
@@ -22,7 +22,7 @@
     </div>
 
     <footer class="flex justify-end gap-2 px-6 py-4 bg-k-fg-3">
-      <Btn variant="ghost" v-if="showCancelButton" name="cancel" @click.prevent="cancel">Cancel</Btn>
+      <Btn variant="neutral" v-if="showCancelButton" name="cancel" @click.prevent="cancel">Cancel</Btn>
       <Btn name="ok">OK</Btn>
     </footer>
   </dialog>

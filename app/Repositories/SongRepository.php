@@ -3,14 +3,11 @@
 namespace App\Repositories;
 
 use App\Builders\SongBuilder;
-use App\Enums\EmbeddableType;
 use App\Enums\PlayableType;
-use App\Exceptions\EmbeddableNotFoundException;
 use App\Exceptions\NonSmartPlaylistException;
 use App\Facades\License;
 use App\Models\Album;
 use App\Models\Artist;
-use App\Models\Embed;
 use App\Models\Folder;
 use App\Models\Genre;
 use App\Models\Organization;
@@ -202,7 +199,6 @@ class SongRepository extends Repository implements ScoutableRepository
         return Song::query(type: $type, user: $scopedUser ?? $this->auth->user())
             ->withUserContext()
             ->where('interactions.play_count', '>', 0)
-            ->addSelect('interactions.last_played_at')
             ->orderByDesc('interactions.last_played_at')
             ->limit($count)
             ->get();
@@ -718,6 +714,20 @@ class SongRepository extends Repository implements ScoutableRepository
         return Song::query(type: PlayableType::SONG)->whereNull('songs.file_size')->count();
     }
 
+    /** @return LazyCollection<int, Song> */
+    public function lazyGetSongsWithoutPreview(): LazyCollection
+    {
+        return Song::query(type: PlayableType::SONG)
+            ->withoutEagerLoads()
+            ->whereDoesntHave('preview')
+            ->lazyById(column: 'songs.id', alias: 'id');
+    }
+
+    public function countSongsWithoutPreview(): int
+    {
+        return Song::query(type: PlayableType::SONG)->whereDoesntHave('preview')->count();
+    }
+
     /** @return Collection<int, Song> */
     public function getNewestEpisodesForUser(int $count, ?User $user = null): Collection
     {
@@ -856,17 +866,5 @@ class SongRepository extends Repository implements ScoutableRepository
         $resultIds = $candidateIds->intersect($accessibleCandidateIds)->take($limit)->values()->all();
 
         return $this->getMany(ids: $resultIds, preserveOrder: true, scopedUser: $user);
-    }
-
-    public function getForEmbed(Embed $embed): Collection
-    {
-        throw_unless((bool) $embed->embeddable, new EmbeddableNotFoundException());
-
-        return match (EmbeddableType::from($embed->embeddable_type)) {
-            EmbeddableType::ALBUM => $this->getByAlbum($embed->embeddable, $embed->user),
-            EmbeddableType::ARTIST => $this->getByArtist($embed->embeddable, $embed->user),
-            EmbeddableType::PLAYLIST => $this->getByPlaylist($embed->embeddable, $embed->user),
-            EmbeddableType::PLAYABLE => $this->getMany(ids: [$embed->embeddable->getKey()], scopedUser: $embed->user),
-        };
     }
 }

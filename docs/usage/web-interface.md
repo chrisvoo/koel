@@ -126,6 +126,7 @@ the music track)
 or a textarea.
 
 * <kbd>h</kbd> shows the Home screen
+* <kbd>,</kbd> opens Settings
 * <kbd>q</kbd> toggles the Queue screen
 * <kbd>f</kbd> puts the focus into the search box and opens the [instant search](search.md) screen
 * <kbd>Enter</kbd> plays a song. If multiple songs are being selected, <kbd>Enter</kbd> adds them to the bottom of the
@@ -139,8 +140,7 @@ or a textarea.
 * <kbd>→</kbd> seeks forward 10 seconds
 * <kbd>←</kbd> seeks backward 10 seconds
 * <kbd>0</kbd>–<kbd>9</kbd> jumps to 0%–90% of the current song
-* <kbd>↑</kbd> increases volume by 10%
-* <kbd>↓</kbd> decreases volume by 10%
+* <kbd>↑</kbd>/<kbd>↓</kbd> turn the volume up/down by 10% (unless a list is focused)
 * <kbd>m</kbd> mutes/unmutes
 * <kbd>e</kbd> opens the equalizer
 * <kbd>v</kbd> toggles the visualizer
@@ -149,6 +149,8 @@ or a textarea.
 * <kbd>?</kbd> shows the list of keyboard shortcuts
 * <kbd>Cmd/Ctrl</kbd>+<kbd>a</kbd> selects all songs in the current song-list screen when the list is focused
 * <kbd>Delete</kbd> removes selected song(s) from the current queue/playlist
+* <kbd>↑</kbd>/<kbd>↓</kbd> navigate up/down in a focused list; add <kbd>Shift</kbd> to extend the selection
+* <kbd>Backspace</kbd> or <kbd>Alt</kbd>+<kbd>↑</kbd> opens the parent folder in the Media Browser
 
 With a browser that supports [MediaSession](https://developer.mozilla.org/en-US/docs/Web/API/MediaSession) — basically,
 all modern browsers — you can control Koel using hardware media keys without even having Koel _or the browser_ focused.

@@ -145,11 +145,11 @@ Route::prefix('api')
             Route::post('email-change/confirm/{user}', ConfirmEmailChangeController::class)
                 ->middleware('signed:relative')
                 ->name('email-change.confirm');
+        });
 
-            Route::middleware('embeds.enabled')->group(static function (): void {
-                Route::get('embeds/{embed}/{options}', [EmbedController::class, 'getPayload'])->name('embeds.payload');
-                Route::post('embed-options', [EmbedOptionsController::class, 'encrypt']);
-            });
+        Route::middleware(['embeds.enabled', 'throttle:60,1,embeds'])->group(static function (): void {
+            Route::get('embeds/{embed}/{options}', [EmbedController::class, 'getPayload'])->name('embeds.payload');
+            Route::post('embed-options', [EmbedOptionsController::class, 'encrypt']);
         });
 
         // @mago-ignore lint:halstead (a flat list of route definitions, not logic to break up)
@@ -341,8 +341,8 @@ Route::prefix('api')
 
             // Podcast routes
             Route::middleware('podcasts.enabled')->group(static function (): void {
-                Route::apiResource('podcasts', PodcastController::class);
-                Route::apiResource('podcasts.episodes', PodcastEpisodeController::class);
+                Route::apiResource('podcasts', PodcastController::class)->only(['index', 'store', 'show']);
+                Route::apiResource('podcasts.episodes', PodcastEpisodeController::class)->only(['index']);
                 Route::delete('podcasts/{podcast}/subscriptions', UnsubscribeFromPodcastController::class);
             });
 

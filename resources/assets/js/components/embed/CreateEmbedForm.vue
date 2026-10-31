@@ -31,9 +31,9 @@
       </div>
     </main>
     <footer class="flex items-center">
-      <div class="flex-1">
+      <div class="flex-1 flex gap-2">
         <Btn type="submit" @click.prevent="copyCode">Copy Code</Btn>
-        <Btn variant="ghost" @click="emit('close')">Close</Btn>
+        <Btn variant="neutral" @click="emit('close')">Close</Btn>
       </div>
       <label>
         <CheckBox v-model="showCode" />
@@ -84,7 +84,6 @@ const {
     preview: false,
   },
   onSubmit: async data => (encryptedOptions.value = await embedService.encryptOptions(data)),
-  useOverlay: false,
 })
 
 watch(options, async () => await encryptOptions(), { immediate: true })
@@ -135,6 +134,9 @@ switch (embeddable.type) {
     break
   case 'episodes':
     typeLabel = 'Podcast Episode'
+    break
+  case 'favorites':
+    typeLabel = 'Favorites'
     break
   default:
     throw new Error('Unknown embeddable type')

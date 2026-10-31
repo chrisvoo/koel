@@ -1,8 +1,9 @@
 import vueSnapshotSerializer from 'jest-serializer-vue'
-import { expect, vi } from 'vite-plus/test'
+import { afterAll, expect, vi } from 'vite-plus/test'
 import './shims/popover'
 import './shims/storage'
 import './shims/mediaSession'
+import './shims/nodeWebApis'
 
 declare global {
   interface Window {
@@ -11,6 +12,8 @@ declare global {
 }
 
 expect.addSnapshotSerializer(vueSnapshotSerializer)
+
+afterAll(() => vi.dynamicImportSettled())
 
 globalThis.ResizeObserver =
   globalThis.ResizeObserver ||
@@ -43,6 +46,7 @@ window.KOEL = {
   build: null,
   is_demo: false,
   pusher: { app_key: '', app_cluster: '' },
+  reverb: null,
   branding: { name: 'Koel', logo: '', cover: '' },
   gravatar: { url: 'https://www.gravatar.com/avatar', default: 'robohash' },
   mailer_configured: true,

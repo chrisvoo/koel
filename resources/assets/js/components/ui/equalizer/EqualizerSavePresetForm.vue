@@ -9,7 +9,7 @@
       required
     />
     <Btn type="submit" variant="ghost">Save</Btn>
-    <Btn type="button" variant="ghost" @click.prevent="maybeClose">Cancel</Btn>
+    <Btn type="button" variant="neutral" @click.prevent="maybeClose">Cancel</Btn>
   </form>
 </template>
 
@@ -28,7 +28,6 @@ const { data, handleSubmit, maybeClose } = useForm<{ name: string }>({
   initialValues: { name: '' },
   validator: ({ name }) => name.trim().length > 0,
   onSubmit: async ({ name }) => emit('submit', name.trim()),
-  useOverlay: false,
   onClose: () => emit('cancel'),
   discardConfirmation: 'Discard preset name?',
 })

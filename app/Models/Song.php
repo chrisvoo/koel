@@ -10,13 +10,11 @@ use App\Casts\SongTitleCast;
 use App\Enums\PlayableType;
 use App\Enums\SongStorageType;
 use App\Models\Concerns\HasMbid;
-use App\Models\Concerns\MorphsToEmbeds;
 use App\Models\Concerns\MorphsToFavorites;
 use App\Models\Concerns\MorphsToRatings;
 use App\Models\Concerns\Songs\HasSongAttributes;
 use App\Models\Concerns\Songs\HasSongRelationships;
 use App\Models\Concerns\SupportsDeleteWhereValueNotIn;
-use App\Models\Contracts\Embeddable;
 use App\Models\Contracts\Favoriteable;
 use App\Models\Contracts\Rateable;
 use App\Observers\SongObserver;
@@ -45,6 +43,7 @@ use PhanAn\Poddle\Values\EpisodeMetadata;
  * @property ?bool $favorite Whether the song is liked by the current user (dynamically calculated)
  * @property ?Carbon $favorited_at When the current user favorited the song, if at all
  * @property ?int $play_count The number of times the song has been played by the current user (dynamically calculated)
+ * @property ?Carbon $last_played_at When the current user last played the song, if at all (dynamically calculated)
  * @property ?string $mbid The MusicBrainz recording ID
  * @property ?string $album_name
  * @property ?string $artist_name
@@ -69,6 +68,7 @@ use PhanAn\Poddle\Values\EpisodeMetadata;
  * @property bool $need_to_be_trimmed
  * @property bool $need_metatag_update
  * @property ?SongAnalysis $analysis The loudness and waveform, if analyzed.
+ * @property ?Transcode $preview
  * @property string $id
  * @property string $lyrics
  * @property string $path
@@ -98,7 +98,7 @@ use PhanAn\Poddle\Values\EpisodeMetadata;
 #[UseEloquentBuilder(SongBuilder::class)]
 #[Unguarded]
 #[Hidden(['updated_at', 'path', 'path_hash', 'mtime'])]
-class Song extends Model implements AuditableContract, Favoriteable, Embeddable, Rateable
+class Song extends Model implements AuditableContract, Favoriteable, Rateable
 {
     use Auditable;
     use HasFactory;
@@ -106,7 +106,6 @@ class Song extends Model implements AuditableContract, Favoriteable, Embeddable,
     use HasSongAttributes;
     use HasSongRelationships;
     use HasUuids;
-    use MorphsToEmbeds;
     use MorphsToFavorites;
     use MorphsToRatings;
     use Searchable;
@@ -130,6 +129,7 @@ class Song extends Model implements AuditableContract, Favoriteable, Embeddable,
             'need_to_be_trimmed' => 'boolean',
             'need_metatag_update' => 'boolean',
             'favorited_at' => 'datetime',
+            'last_played_at' => 'datetime',
         ];
     }
 
