@@ -6,8 +6,15 @@
           v-if="showsProgressRing"
           :aria-label="`Upload progress for ${file.name}`"
           :value="file.status === 'Ready' ? 0 : file.progress"
-          class="size-4 shrink-0 ml-4"
+          class="size-4 shrink-0 ml-4 text-k-highlight"
           data-testid="upload-item-progress"
+        />
+        <Icon
+          v-if="isProcessing"
+          :icon="faSpinner"
+          class="size-4 shrink-0 ml-4 text-k-highlight"
+          data-testid="upload-item-processing-spinner"
+          spin
         />
         <a
           v-if="file.song"
@@ -28,18 +35,11 @@
         <span v-if="file.status === 'Retrying'" class="shrink-0 px-3 text-k-fg-50" data-testid="upload-item-state">
           Retrying&hellip;
         </span>
-        <Btn variant="ghost" v-if="canAbort" v-koel-tooltip class="px-3!" icon-only unrounded @click="abort">
-          <Icon :icon="faXmark" />
-          <span class="sr-only">Abort</span>
-        </Btn>
-        <Btn v-if="canRetry" v-koel-tooltip class="h-full px-4!" icon-only unrounded variant="success" @click="retry">
-          <Icon :icon="faRotateBack" />
-          <span class="sr-only">Retry</span>
-        </Btn>
-        <Btn v-if="canRemove" class="h-full px-4!" icon-only unrounded variant="destructive" @click="remove">
-          <Icon :icon="faTrashCan" />
-          <span class="sr-only">Remove</span>
-        </Btn>
+        <span v-if="canStop || canRetry || canRemove" class="shrink-0 flex gap-1.5 pr-1.5">
+          <Btn v-if="canStop" size="small" variant="neutral" @click="stop">Stop</Btn>
+          <Btn v-if="canRetry" size="small" variant="success" @click="retry">Retry</Btn>
+          <Btn v-if="canRemove" size="small" variant="neutral" @click="remove">Remove</Btn>
+        </span>
         <span
           v-if="file.status === 'Uploaded'"
           v-koel-tooltip
@@ -49,9 +49,8 @@
           <Icon :icon="faCircleCheck" />
           <span class="sr-only">Uploaded</span>
         </span>
-        <span v-if="isProcessing" v-koel-tooltip class="px-3 text-k-fg-50" data-testid="upload-item-processing">
-          <Icon :icon="faSpinner" spin />
-          <span class="sr-only">Processing</span>
+        <span v-if="isProcessing" class="shrink-0 px-3 text-k-fg-50" data-testid="upload-item-processing">
+          Processing
         </span>
       </div>
     </div>
@@ -59,15 +58,7 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  faCircleCheck,
-  faExclamationTriangle,
-  faInfoCircle,
-  faRotateBack,
-  faSpinner,
-  faTrashCan,
-  faXmark,
-} from '@fortawesome/free-solid-svg-icons'
+import { faCircleCheck, faExclamationTriangle, faInfoCircle, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import { computed, defineAsyncComponent, toRefs } from 'vue'
 import { useDialogBox } from '@/composables/useDialogBox'
 import type { UploadFile } from '@/services/uploadService'
@@ -86,7 +77,7 @@ const { url } = useRouter()
 const isProcessing = computed(() => file.value.status === 'Processing')
 const showsProgressRing = computed(() => ['Ready', 'Uploading', 'Retrying'].includes(file.value.status))
 const canRetry = computed(() => file.value.status === 'Canceled' || file.value.status === 'Errored')
-const canAbort = computed(() => file.value.status === 'Uploading')
+const canStop = computed(() => file.value.status === 'Uploading')
 
 const canRemove = computed(
   () => !['Uploading', 'Uploaded', 'Skipped'].includes(file.value.status) && !isProcessing.value,
@@ -95,21 +86,13 @@ const canRemove = computed(
 const cssClass = computed(() => file.value.status.toLowerCase())
 const showsReasonInRow = computed(() => ['Skipped', 'Errored', 'Canceled'].includes(file.value.status))
 
-const progressBarWidth = computed(() => {
-  if (isProcessing.value) {
-    return '100%'
-  }
-
-  return file.value.status === 'Uploading' ? `${file.value.progress}%` : '0'
-})
-
 const { showConfirmDialog } = useDialogBox()
 
 const remove = () => uploadService.remove(file.value)
 const retry = () => uploadService.retry(file.value)
 
-const abort = async () => {
-  if ((await showConfirmDialog('Abort this upload?')) && file.value.status === 'Uploading') {
+const stop = async () => {
+  if ((await showConfirmDialog('Stop this upload?')) && file.value.status === 'Uploading') {
     uploadService.abort(file.value)
   }
 }
@@ -117,17 +100,7 @@ const abort = async () => {
 
 <style lang="postcss" scoped>
 @reference '@css/app.pcss';
-article > div::before {
-  width: v-bind(progressBarWidth);
-  content: '';
-  @apply absolute h-full top-0 left-0 z-0 duration-200 ease-out bg-k-highlight;
-}
-
 .uploaded:hover {
   @apply bg-k-fg-10;
-}
-
-.processing {
-  @apply text-k-highlight-fg;
 }
 </style>

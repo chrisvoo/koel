@@ -14,9 +14,19 @@
       @dragover.prevent
     >
       <div v-if="showsFilters" :class="{ 'flex-1': !showsDropPrompt }" class="min-h-0 flex flex-col gap-4">
-        <UploadSummary v-if="hasFiles" class="mb-4" />
+        <UploadSummary v-if="hasFiles" class="mb-4">
+          <Btn
+            v-if="unfinishedCount"
+            size="small"
+            variant="destructive"
+            data-testid="upload-stop-all-btn"
+            @click="stopAll"
+          >
+            Stop All
+          </Btn>
+        </UploadSummary>
 
-        <SegmentedControl v-model="currentFilter" :options="filterOptions" class="self-center" name="upload-filter">
+        <SegmentedControl v-model="currentFilter" :options="filterOptions" class="self-start" name="upload-filter">
           <template #default="{ option }">
             {{ option.label }}
             <span
@@ -51,9 +61,9 @@
             </template>
           </VirtualScroller>
 
-          <footer v-if="currentFilter === 'errored' && filterCounts.errored" class="flex justify-end gap-2">
-            <Btn variant="success" data-testid="upload-retry-all-btn" @click="retryAll">Retry All</Btn>
-            <Btn variant="destructive" data-testid="upload-remove-all-btn" @click="removeFailedEntries">
+          <footer v-if="currentFilter === 'errored' && filterCounts.errored" class="flex justify-end gap-1.5">
+            <Btn size="small" variant="success" data-testid="upload-retry-all-btn" @click="retryAll">Retry All</Btn>
+            <Btn size="small" variant="neutral" data-testid="upload-remove-all-btn" @click="removeFailedEntries">
               Remove Failed
             </Btn>
           </footer>
@@ -101,6 +111,7 @@ import { acceptedExtensions } from '@/utils/mediaHelper'
 import { uploadService } from '@/services/uploadService'
 import type { UploadFile, UploadStatus } from '@/services/uploadService'
 import { useUpload } from '@/composables/useUpload'
+import { useDialogBox } from '@/composables/useDialogBox'
 
 import ScreenHeader from '@/components/ui/ScreenHeader.vue'
 import ScreenEmptyState from '@/components/ui/ScreenEmptyState.vue'
@@ -167,6 +178,8 @@ const filterCounts = computed<Record<UploadFilter, number>>(() => ({
   duplicated: duplicatedSongs.value.length,
 }))
 
+const unfinishedCount = computed(() => uploadService.countUnfinishedFiles())
+
 const showsFilters = computed(() => hasFiles.value || duplicatedSongs.value.length > 0)
 
 const showsDropPrompt = computed(
@@ -200,6 +213,14 @@ const onDrop = async (event: DragEvent) => {
 
 const retryAll = () => uploadService.retryAll()
 const removeFailedEntries = () => uploadService.removeFailed()
+
+const { showConfirmDialog } = useDialogBox()
+
+const stopAll = async () => {
+  if (await showConfirmDialog('Stop all uploads?')) {
+    uploadService.stopAll()
+  }
+}
 
 watch(
   () => filterCounts.value.errored,

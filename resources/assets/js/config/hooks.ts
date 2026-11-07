@@ -1,5 +1,6 @@
 export const Action = {
   APPLICATION_CREATED: 'application-created',
+  QUEUE_ENDED: 'queue-ended',
 } as const
 
 export const Filter = {
@@ -14,6 +15,9 @@ export const Filter = {
   POLICIES: 'policies',
   SELECTED_UPLOADS: 'selected-uploads',
   PLAYABLE_CONTEXT_MENU_SECTIONS: 'playable-context-menu-sections',
+  FORGOT_PASSWORD_URL: 'forgot-password-url',
+  PREFERENCE_ROWS: 'preference-rows',
+  HOME_BLOCKS: 'home-blocks',
 } as const
 
 export type ActionName = (typeof Action)[keyof typeof Action]

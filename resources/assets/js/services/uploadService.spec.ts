@@ -176,6 +176,17 @@ describe('uploadService', () => {
     expect(file.song).toBe(song)
   })
 
+  it('adds an uploaded song to the library totals', () => {
+    commonStore.state.song_count = 2
+    commonStore.state.song_length = 300
+    const song = h.factory('song').make({ length: 120 })
+
+    uploadService.handleUploadResult({ song, album: h.factory('album').make() })
+
+    expect(commonStore.state.song_count).toBe(3)
+    expect(commonStore.state.song_length).toBe(420)
+  })
+
   it('retries a file that failed on the network, and uploads fewer at once', async () => {
     mockPostWithProgressRejection(new Error('Network error'))
     h.mock(uploadService, 'proceed')
@@ -528,6 +539,26 @@ describe('uploadService', () => {
 
     expect(uploadService.tracker.size).toBe(1)
     expect(uploadService.tracker.count(['Ready'])).toBe(1)
+  })
+
+  it('stops all unfinished uploads and clears them from the queue', () => {
+    const abortMock = vi.fn()
+    const uploading = createUploadFile({ status: 'Uploading' })
+    uploadService.abortHandles.set(uploading.id, abortMock)
+
+    uploadService.tracker.add([
+      uploading,
+      createUploadFile({ status: 'Ready' }),
+      createUploadFile({ status: 'Retrying' }),
+      createUploadFile({ status: 'Processing' }),
+      createUploadFile({ status: 'Uploaded' }),
+    ])
+
+    uploadService.stopAll()
+
+    expect(abortMock).toHaveBeenCalled()
+    expect(uploadService.tracker.count(['Ready', 'Uploading', 'Retrying'])).toBe(0)
+    expect(uploadService.tracker.count(['Processing', 'Uploaded'])).toBe(2)
   })
 
   it('invalidates album and artist song caches when handling an upload result', () => {

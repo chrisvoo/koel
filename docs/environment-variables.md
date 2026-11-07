@@ -52,6 +52,7 @@ Required when `STORAGE_DRIVER=s3`. Remember to set your CORS policy to allow acc
 | `AWS_REGION` | The region of your bucket. Set to `auto` for Cloudflare R2. | _(empty)_ |
 | `AWS_ENDPOINT` | The endpoint URL for S3-compatible services. | _(empty)_ |
 | `AWS_BUCKET` | The name of your S3 bucket. | _(empty)_ |
+| `PRESIGNED_UPLOAD_MAX_SIZE` | The largest file in MB that can be uploaded. Files go straight to the bucket without passing through PHP, so PHP's `upload_max_filesize` doesn't apply. | `2048` |
 
 ### Dropbox
 
@@ -98,7 +99,8 @@ Required when `STORAGE_DRIVER=webdav`.
 | `IGNORE_DOT_FILES` | Whether to ignore dot files and folders when scanning. Greatly improves performance if your media root has folders like `.git` or `.cache`. | `true` |
 | `SYNC_LOG_LEVEL` | The verbosity of sync logs (found under `storage/logs/`). Options: `all`, `error`. | `error` |
 | `SCAN_LOG_MAX_FILES` | How many scan logs to keep under `storage/logs/`. A scan with nothing to report writes none. `0` keeps them all. | `30` |
-| `ANALYZE_AUDIO_ON_SCAN` <PlusBadge /> | Whether to analyze each song's loudness and waveform as soon as it's scanned or uploaded. Songs uploaded to cloud or remote storage are analyzed while the upload is processed; others use a queue job if a queue is configured. Requires FFmpeg. See [Volume Normalization & Waveforms](plus/volume-normalization). | `false` |
+| `ANALYZE_AUDIO_ON_SCAN` <PlusBadge /> | Whether to analyze each song's loudness and waveform as soon as it's scanned or uploaded. The analysis runs as a queue job if a queue is configured. Requires FFmpeg. See [Volume Normalization & Waveforms](plus/volume-normalization). | `false` |
+| `AUDIO_ANALYSIS_QUEUE` <PlusBadge /> | The queue for the audio analysis jobs. Set it (e.g. to `analysis`) and run your workers with `php artisan queue:work --queue=default,analysis` so that uploads are always handled before the analysis. | _(empty: the default queue)_ |
 
 ## Streaming & Transcoding
 

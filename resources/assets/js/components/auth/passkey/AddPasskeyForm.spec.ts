@@ -52,8 +52,28 @@ describe('addPasskeyForm.vue', () => {
     expect(addMock).toHaveBeenCalledWith('MacBook', proof)
   })
 
-  it('needs no proof from a single sign-on user without passkeys', async () => {
+  it('confirms the password of a single sign-on user who has one', async () => {
     h.actingAsUser(h.factory('user').state('current').make({ sso_provider: 'Google' }) as CurrentUser)
+    const addMock = h.mock(passkeyService, 'add').mockResolvedValue(passkey)
+    renderComponent()
+
+    await fillIn('MacBook', 'secret')
+
+    expect(addMock).toHaveBeenCalledWith('MacBook', { password: 'secret', code: '' })
+  })
+
+  it('needs no proof from a reverse proxy user without passkeys', async () => {
+    h.actingAsUser(h.factory('user').state('current').make({ sso_provider: 'Reverse Proxy' }) as CurrentUser)
+    const addMock = h.mock(passkeyService, 'add').mockResolvedValue(passkey)
+    renderComponent()
+
+    await fillIn('MacBook')
+
+    expect(addMock).toHaveBeenCalledWith('MacBook', {})
+  })
+
+  it('needs no proof from a user without a password or passkeys', async () => {
+    h.actingAsUser(h.factory('user').state('current').make({ has_password: false }) as CurrentUser)
     const addMock = h.mock(passkeyService, 'add').mockResolvedValue(passkey)
     renderComponent()
 

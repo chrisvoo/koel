@@ -115,6 +115,20 @@ describe('albumStore', () => {
     expect(syncPropsMock).toHaveBeenCalledWith(album)
   })
 
+  it('moves the songs of a merged album to the kept album', async () => {
+    const album = h.factory('album').make()
+    const keptAlbum = h.factory('album').make()
+    albumStore.syncWithVault(album)
+    const [song] = playableStore.syncWithVault(h.factory('song').make({ album_id: album.id })) as Song[]
+    h.mock(http, 'put').mockResolvedValueOnce(keptAlbum)
+
+    const result = await albumStore.update(album, { name: keptAlbum.name, year: keptAlbum.year, merge: true })
+
+    expect(result.id).toBe(keptAlbum.id)
+    expect(albumStore.byId(album.id)).toBeUndefined()
+    expect(song.album_id).toBe(keptAlbum.id)
+  })
+
   it('toggles favorite', async () => {
     const album = h.factory('album').make({ favorite: false })
     albumStore.syncWithVault(album)
@@ -136,5 +150,25 @@ describe('albumStore', () => {
 
     expect(postMock).toHaveBeenNthCalledWith(2, 'favorites/toggle', { type: 'album', id: album.id })
     expect(album.favorite).toBe(false)
+  })
+
+  it('favorites several at once', async () => {
+    const albums = h.factory('album').make({ favorite: false }, 2)
+    const postMock = h.mock(http, 'post')
+
+    await albumStore.favorite(albums)
+
+    expect(postMock).toHaveBeenCalledWith('favorites', { type: 'album', ids: albums.map(({ id }) => id) })
+    expect(albums.every(({ favorite }) => favorite)).toBe(true)
+  })
+
+  it('undoes favorite of several at once', async () => {
+    const albums = h.factory('album').make({ favorite: true }, 2)
+    const deleteMock = h.mock(http, 'delete')
+
+    await albumStore.undoFavorite(albums)
+
+    expect(deleteMock).toHaveBeenCalledWith('favorites', { type: 'album', ids: albums.map(({ id }) => id) })
+    expect(albums.some(({ favorite }) => favorite)).toBe(false)
   })
 })

@@ -35,6 +35,11 @@ You can click on any artist, album, or genre name to see all the songs that belo
 On the artist and album screens, you can also find other albums and songs by the same artist as well as extra metadata
 like the artist or album's information when [configured](../service-integrations).
 
+In list view, the Artists, Albums, and Radio screens let you select items the same way as songs: click, hold
+<kbd>Shift</kbd> or <kbd>Ctrl/Cmd</kbd> while clicking, or use <kbd>↑</kbd>/<kbd>↓</kbd> and <kbd>Cmd/Ctrl</kbd>+<kbd>a</kbd>.
+Right-click a selection of artists or albums to play, shuffle, download (if allowed), or favorite them all at once.
+For radio stations, you can favorite them all at once.
+
 On any screen with a song list (a "song-list screen") you can:
 
 * Sort the list by clicking on the column headers
@@ -82,7 +87,7 @@ Right-clicking the footer area brings up the context menu for the currently play
 
 As a user with `manage songs` permission (Community edition) or the song owner (Koel Plus), you can edit a song's metadata by right-clicking on it and
 choosing "Edit…".
-A dialog will appear, allowing you to change the song's title, artist, album, genre, lyrics, and more.
+A dialog will appear, allowing you to change the song's title, artist, album, genres, lyrics, and more.
 
 <img loading="lazy" src="../assets/img/interface/edit-song.webp" alt="Edit song" style="width: 480px">
 

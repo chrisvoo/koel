@@ -27,6 +27,11 @@ return [
         'memory_limit' => env('MEMORY_LIMIT'),
         'jobs' => env('SCAN_JOBS', 4),
         'analyze_audio' => env('ANALYZE_AUDIO_ON_SCAN', false),
+        'analysis_queue' => env('AUDIO_ANALYSIS_QUEUE') ?: null,
+    ],
+
+    'upload' => [
+        'presigned_max_size' => (int) (env('PRESIGNED_UPLOAD_MAX_SIZE') ?: 2048) * 1024 * 1024,
     ],
 
     /*

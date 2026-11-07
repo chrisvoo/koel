@@ -26,10 +26,15 @@ class ChangePasswordController extends Controller
     #[DisabledInDemo(Response::HTTP_NO_CONTENT)]
     public function __invoke(ChangePasswordRequest $request)
     {
-        abort_if($this->user->is_sso, Response::HTTP_FORBIDDEN, 'Password is managed by your SSO provider.');
+        abort_if(
+            $this->user->sso_provider === 'Reverse Proxy',
+            Response::HTTP_FORBIDDEN,
+            'Password is managed by your SSO provider.',
+        );
 
         throw_unless(
-            $this->hash->check($request->current_password, $this->user->password),
+            $this->user->can_set_password_without_current_one
+            || $this->hash->check($request->current_password, $this->user->password),
             ValidationException::withMessages(['current_password' => 'Invalid current password']),
         );
 

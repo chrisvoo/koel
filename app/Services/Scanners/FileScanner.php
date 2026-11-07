@@ -2,11 +2,11 @@
 
 namespace App\Services\Scanners;
 
+use App\Exceptions\UnreadableMediaFileException;
 use App\Services\SimpleLrcReader;
 use App\Values\Scanning\ScanInformation;
 use getID3;
 use Illuminate\Support\Arr;
-use RuntimeException;
 use SplFileInfo;
 
 class FileScanner
@@ -44,6 +44,6 @@ class FileScanner
             });
         }
 
-        throw new RuntimeException($syncError);
+        throw UnreadableMediaFileException::create($syncError);
     }
 }

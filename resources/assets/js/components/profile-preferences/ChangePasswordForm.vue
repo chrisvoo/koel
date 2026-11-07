@@ -1,15 +1,14 @@
 <template>
   <form @submit.prevent="handleSubmit">
     <SettingGroup>
-      <template #title>Change Password</template>
+      <template #title>{{ currentUser.has_password ? 'Change Password' : 'Set a Password' }}</template>
 
-      <AlertBox v-if="currentUser.sso_provider">
-        Your password is managed by your single sign-on provider ({{ currentUser.sso_provider }}). You can't change it
-        here.
+      <AlertBox v-if="currentUser.sso_provider === 'Reverse Proxy'">
+        Your password is managed by your reverse proxy. You can't change it here.
       </AlertBox>
 
       <div v-else class="space-y-5 max-w-md">
-        <FormRow>
+        <FormRow v-if="currentUser.has_password">
           <template #label>Current Password</template>
           <PasswordField
             v-model="data.current_password"
@@ -32,8 +31,8 @@
         </FormRow>
       </div>
 
-      <template v-if="!currentUser.sso_provider" #footer>
-        <Btn :disabled="loading" type="submit">Update Password</Btn>
+      <template v-if="currentUser.sso_provider !== 'Reverse Proxy'" #footer>
+        <Btn :disabled="loading" type="submit">{{ currentUser.has_password ? 'Update Password' : 'Set Password' }}</Btn>
         <span v-if="isDemo" class="text-[.95rem] opacity-70 ml-2">Changes will not be saved in the demo version.</span>
       </template>
     </SettingGroup>
@@ -66,9 +65,10 @@ const { data, loading, handleSubmit } = useForm<{ current_password: string; new_
       return
     }
 
-    await authService.changePassword(current_password, new_password)
+    await authService.changePassword(currentUser.value.has_password ? current_password : undefined, new_password)
   },
   onSuccess: () => {
+    currentUser.value.has_password = true
     data.current_password = ''
     data.new_password = ''
   },

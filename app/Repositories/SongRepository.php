@@ -86,7 +86,7 @@ class SongRepository extends Repository implements ScoutableRepository
         return Song::query()
             ->withoutEagerLoads()
             ->whereKey($ids)
-            ->select('songs.id', 'songs.path', 'songs.storage')
+            ->select('songs.id', 'songs.path', 'songs.storage', 'songs.album_id', 'songs.artist_id')
             ->get();
     }
 
@@ -98,6 +98,17 @@ class SongRepository extends Repository implements ScoutableRepository
     public function getManyByPaths(array $paths): Collection
     {
         return Song::query()->wherePathIn($paths)->get();
+    }
+
+    /** @return Collection<int, Song> */
+    public function getLabeledTracksOnDisc(Album $album, int $disc): Collection
+    {
+        return Song::query()
+            ->withoutEagerLoads()
+            ->whereBelongsTo($album)
+            ->where('disc', $disc)
+            ->whereNotNull('track_label')
+            ->get();
     }
 
     /** @param array<string> $hashes */

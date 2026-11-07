@@ -270,6 +270,7 @@ interface Song extends BasePlayable {
   album_artist_name: Artist['name']
   genre: string
   track: number | null
+  track_label: string | null
   disc: number
   year: number | null
   lyrics: string
@@ -552,6 +553,7 @@ interface User {
    */
   subsonic_api_key?: string
   two_factor?: boolean
+  has_password?: boolean
   /**
    * What the *current user* (the one making the request) is permitted to do
    * *to this user* — the result of running UserPolicy from their perspective.
@@ -569,6 +571,7 @@ type CurrentUser = User & {
   abilities: Ability[]
   subsonic_api_key: string
   two_factor: boolean
+  has_password: boolean
 }
 
 type AiProvider = 'openai' | 'anthropic' | 'gemini' | 'deepseek' | 'groq' | 'mistral' | 'openrouter' | 'xai'
@@ -673,6 +676,7 @@ interface HookSlotNames {
   'sidebar.footer': true
   'screen.header': true
   'accept-invitation-form.footer': true
+  'login-form.footer': true
   'profile-tab.footer': true
 }
 
